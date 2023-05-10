@@ -39,6 +39,14 @@ cmake .. && make
 
 在“执行脚本”处填`pot popclip $PLAINTEXT`。
 
+## Todo
+
+- [ ] 插件排序
+- [ ] 插件图标
+- [ ] 增加软件细节设置
+- [ ] 快捷键
+- [ ] 增加默认插件功能
+
 ## 致谢
 
 - [Qt6](https://www.qt.io/product/qt6)
