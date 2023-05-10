@@ -170,21 +170,21 @@ void PopupItem::exec()
 {
     STARRY_DEBUGER
     QStringList args = m_script.split(" ");
-    qDebug() << args;
+
     if (args.at(0) == "") // m_script为空时，args为只含有一个元素""的QList
     {
         qWarning() << "执行脚本为空";
+        return;
+    } else if (args.at(0) == "starry" && args.size() >= 2 && args.at(1) == "copy2clipboard") // TODO: 写成函数调用的形式
+    {
+        QString selection = QGuiApplication::clipboard()->text(QClipboard::Mode::Selection);
+        QGuiApplication::clipboard()->setText(selection);
         return;
     }
 
     // 获取cmd
     QString cmd = args.at(0);
     args.pop_front(); 
-
-    // if (args.isEmpty()) // 防止在m_process->start(cmd, args)执行出错
-    // {
-    //     args.push_back("");
-    // }
 
     // 是否需要将selection作为参数传递
     for (QString &arg : args)

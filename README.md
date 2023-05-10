@@ -27,6 +27,18 @@ cd Starry && mkdir build && cd build
 cmake .. && make
 ```
 
+## 插件示例
+
+创建新插件的办法：托盘菜单-设置-插件-创建新插件
+
+### 示例-复制到剪贴版
+
+在“执行脚本”处填`starry copy2clipboard`。
+
+### 示例-Pot翻译
+
+托盘-设置-插件-创建新插件，在“执行脚本”处填`pot popclip $PLAINTEXT`。
+
 ## 致谢
 
 - [Qt6](https://www.qt.io/product/qt6)

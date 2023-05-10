@@ -63,7 +63,7 @@ void Settings::init()
         m_pluginEditor = new PluginEditor;
     }
     QObject::connect(m_pluginEditor, &PluginEditor::created, this, &Settings::addPluginItem);
-    
+       
     // 创建新插件按钮
     Button *newPluginButton = new Button("创建新插件", m_pluginListWidget);
     newPluginButton->setAlignment(Qt::AlignCenter);
