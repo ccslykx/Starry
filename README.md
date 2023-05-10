@@ -37,7 +37,7 @@ cmake .. && make
 
 ### 示例-Pot翻译
 
-托盘-设置-插件-创建新插件，在“执行脚本”处填`pot popclip $PLAINTEXT`。
+在“执行脚本”处填`pot popclip $PLAINTEXT`。
 
 ## 致谢
 
