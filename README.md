@@ -17,6 +17,14 @@
 
 本软件基于`Qt6`开发，使用`CMake`构建，适用于基于`X11`的Linux桌面环境。
 
+依赖项
+
+```
+libxtst
+```
+
+**注意**：需要修改`/usr/include/X11/extensions/record.h`文件，找到`#include <X11/extensions/recordconst.h>`，在下面一行添加`#include <X11/Xlib.h>`
+
 ## 手动编译
 
 ```
@@ -46,6 +54,8 @@ cmake .. && make
 - [ ] 增加软件细节设置
 - [ ] 快捷键
 - [ ] 增加默认插件功能
+- [ ] 需要时间执行的脚本，转圈等待
+- [ ] 完善异常处理
 
 ## 致谢
 
