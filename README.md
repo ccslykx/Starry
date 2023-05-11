@@ -17,17 +17,26 @@
 
 本软件基于`Qt6`开发，使用`CMake`构建，适用于基于`X11`的Linux桌面环境。
 
-依赖项
-
-```
-libxtst
-```
-
-**注意**：需要修改`/usr/include/X11/extensions/record.h`文件，找到`#include <X11/extensions/recordconst.h>`，在下面一行添加`#include <X11/Xlib.h>`
-
 ## 手动编译
 
+### 安装依赖项（Debian）
+
+```bash
+apt update
+apt install git cmake g++ qt6-base-dev libqt6core6 libqt6widgets6 libqt6concurrent6 libqt6gui6 libx11-dev libxtst-dev
 ```
+
+编辑`/usr/include/X11/extension/record.h`文件
+
+```
+vim /usr/include/X11/extension/record.h
+```
+
+找到`#include <X11/extensions/recordconst.h>`，在下面一行添加`#include <X11/Xlib.h>`
+
+### 编译Starry
+
+```bash
 git clone https://github.com/ccslykx/Starry.git
 
 cd Starry && mkdir build && cd build
