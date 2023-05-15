@@ -8,8 +8,7 @@
 ![Email](https://img.shields.io/badge/Outlook-ccslykx@outlook.com-0078D4?logo=microsoftoutlook&logoColor=0078D4&style=for-the-badge)
 
 
-## 依赖与使用环境
-
+## 适用环境
 
 ![Qt](https://img.shields.io/badge/-Qt-brightgreen?logo=qt&logoColor=white)
 ![CMake](https://img.shields.io/badge/-CMake-064F8C?logo=cmake&logoColor=white)
@@ -17,19 +16,20 @@
 
 本软件基于`Qt6`开发，使用`CMake`构建，适用于基于`X11`的Linux桌面环境。
 
+
 ## 手动编译
 
-### 安装依赖项（Debian）
+### 安装依赖项（Debian 11 bullseye）
 
 ```bash
 apt update
 apt install git cmake g++ qt6-base-dev libqt6core6 libqt6widgets6 libqt6concurrent6 libqt6gui6 libx11-dev libxtst-dev
 ```
 
-编辑`/usr/include/X11/extension/record.h`文件
+编辑`/usr/include/X11/extensions/record.h`文件
 
 ```
-vim /usr/include/X11/extension/record.h
+vim /usr/include/X11/extensions/record.h
 ```
 
 找到`#include <X11/extensions/recordconst.h>`，在下面一行添加`#include <X11/Xlib.h>`
@@ -44,6 +44,7 @@ cd Starry && mkdir build && cd build
 cmake .. && make
 ```
 
+
 ## 插件示例
 
 创建新插件的办法：托盘菜单-设置-插件-创建新插件
@@ -56,6 +57,7 @@ cmake .. && make
 
 在“执行脚本”处填`pot popclip $PLAINTEXT`。
 
+
 ## Todo
 
 - [ ] 插件排序
@@ -66,10 +68,12 @@ cmake .. && make
 - [ ] 需要时间执行的脚本，转圈等待
 - [ ] 完善异常处理
 
+
 ## 致谢
 
 - [Qt6](https://www.qt.io/product/qt6)
 - [WHLUG/xrecord-example](https://github.com/WHLUG/xrecord-example)
+
 
 ## 反馈&交流
 

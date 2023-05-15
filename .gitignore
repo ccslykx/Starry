@@ -33,3 +33,9 @@
 
 # Build
 build/*
+
+# IDE
+.vscode
+
+# Test
+*test*
