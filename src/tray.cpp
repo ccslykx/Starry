@@ -130,6 +130,9 @@ void PopupTray::init()
     m_menu->addAction(exitTray);
 
     this->setContextMenu(m_menu);
+
+    QIcon trayIcon(":/starry.png");
+    this->setIcon(trayIcon);
 }
 
 void PopupTray::connectX11()

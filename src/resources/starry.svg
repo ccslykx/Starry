@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="1024"
+   height="1024"
+   viewBox="0 0 270.93333 270.93333"
+   version="1.1"
+   id="svg2605"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="starry.svg"
+   inkscape:export-filename="starry.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview2607"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="px"
+     showgrid="false"
+     inkscape:zoom="0.64693624"
+     inkscape:cx="316.10534"
+     inkscape:cy="401.12145"
+     inkscape:window-width="1586"
+     inkscape:window-height="1259"
+     inkscape:window-x="303"
+     inkscape:window-y="79"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs2602">
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient3194">
+      <stop
+         style="stop-color:#ff0000;stop-opacity:1"
+         offset="0.1045001"
+         id="stop3192" />
+      <stop
+         style="stop-color:#ff7f2a;stop-opacity:1;"
+         offset="0.90367138"
+         id="stop3190" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient3194"
+       id="linearGradient3196"
+       x1="0"
+       y1="0"
+       x2="270.93332"
+       y2="270.93332"
+       gradientUnits="userSpaceOnUse" />
+  </defs>
+  <g
+     inkscape:label="图层 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="fill:url(#linearGradient3196);stroke-width:33.8668;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:60;stroke-opacity:0.485415;fill-opacity:1"
+       id="rect3141"
+       width="270.93332"
+       height="270.93332"
+       x="0"
+       y="0"
+       rx="67.452713"
+       ry="67.724579" />
+    <text
+       xml:space="preserve"
+       style="font-style:oblique;font-size:112.889px;font-family:'得意黑';-inkscape-font-specification:'得意黑 Oblique';text-align:center;text-anchor:middle;fill:#ff0000;stroke-width:33.8667;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:60;stroke-opacity:0.485415"
+       x="133.83871"
+       y="166.39825"
+       id="text3640"><tspan
+         sodipodi:role="line"
+         id="tspan3638"
+         style="font-style:oblique;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:112.889px;font-family:'得意黑';-inkscape-font-specification:'得意黑 Oblique';fill:#ffffff;stroke-width:33.8667"
+         x="133.83871"
+         y="166.39825">Starry</tspan></text>
+  </g>
+</svg>

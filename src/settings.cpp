@@ -92,7 +92,10 @@ void Settings::init()
         m_aboutWidget = new QWidget(m_contentWidget);
     }
 
-    QLabel *aboutIcon = new QLabel("Starry", m_aboutWidget);
+    QPixmap aboutPixmap(":/starry.png");
+    QLabel *aboutIcon = new QLabel("Starry");
+    aboutIcon->setPixmap(aboutPixmap.scaled(256, 256, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+    aboutIcon->setFixedSize(256, 256);
     aboutIcon->setAlignment(Qt::AlignCenter);
     QLabel *aboutContent = new QLabel("版本：" + STARRY_VERSION + "\n作者：Ccslykx\n联系方式：ccslykx@outlook.com", m_aboutWidget);
     aboutContent->setAlignment(Qt::AlignCenter);

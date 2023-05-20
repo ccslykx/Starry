@@ -1,5 +1,6 @@
 <RCC>
     <qresource>
+        <file>starry.png</file>
         <file>PluginItem_Delete.png</file>
     </qresource>
 </RCC>
