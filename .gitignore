@@ -32,10 +32,11 @@
 *.app
 
 # Build
-build/*
+build
+release
 
 # IDE
 .vscode
 
 # Test
-*test*
+test
