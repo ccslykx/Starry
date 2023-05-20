@@ -1,6 +1,6 @@
 # Starry 
 
-<img src="./src/resources/starry.svg" width=64 height=64>
+<img src="./src/resources/starry.png" width=64 height=64>
 
 以划词弹窗的形式调用其他软件的命令行指令。如果你喜欢本软件，请给我一个免费的Star，谢谢～
 
@@ -40,7 +40,7 @@ vim /usr/include/X11/extensions/record.h
 
 ```bash
 git clone https://github.com/ccslykx/Starry.git
-
+软件
 cd Starry && mkdir build && cd build
 
 cmake .. && make
