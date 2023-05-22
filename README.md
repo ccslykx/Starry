@@ -24,8 +24,14 @@
 ### 安装依赖项（Debian 11 bullseye）
 
 ```bash
-apt update
-apt install git cmake g++ qt6-base-dev libqt6core6 libqt6widgets6 libqt6concurrent6 libqt6gui6 libx11-dev libxtst-dev
+sudo apt update
+sudo apt install git cmake g++ qt6-base-dev libqt6core6 libqt6widgets6 libqt6concurrent6 libqt6gui6 libx11-dev libxtst-dev
+```
+
+### Ubuntu 22.04 用户还需要安装以下依赖项
+
+```bash
+sudo apt install libgl1-mesa-dev
 ```
 
 编辑`/usr/include/X11/extensions/record.h`文件
@@ -40,7 +46,7 @@ vim /usr/include/X11/extensions/record.h
 
 ```bash
 git clone https://github.com/ccslykx/Starry.git
-软件
+
 cd Starry && mkdir build && cd build
 
 cmake .. && make
