@@ -28,16 +28,18 @@ sudo apt update
 sudo apt install git cmake g++ qt6-base-dev libqt6core6 libqt6widgets6 libqt6concurrent6 libqt6gui6 libx11-dev libxtst-dev
 ```
 
-### Ubuntu 22.04 用户还需要安装以下依赖项
+**Ubuntu 22.04 用户还需要安装以下依赖项**
 
 ```bash
 sudo apt install libgl1-mesa-dev
 ```
 
+**修正编译错误（可能是X11的bug？）**
+
 编辑`/usr/include/X11/extensions/record.h`文件
 
 ```
-vim /usr/include/X11/extensions/record.h
+sudo vim /usr/include/X11/extensions/record.h
 ```
 
 找到`#include <X11/extensions/recordconst.h>`，在下面一行添加`#include <X11/Xlib.h>`
