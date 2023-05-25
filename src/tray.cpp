@@ -131,7 +131,7 @@ void PopupTray::init()
 
     this->setContextMenu(m_menu);
 
-    QIcon trayIcon(":/starry.png");
+    QIcon trayIcon(STARRY_ICON(32));
     this->setIcon(trayIcon);
 }
 

@@ -91,8 +91,7 @@ void Settings::init()
     {
         m_aboutWidget = new QWidget(m_contentWidget);
     }
-
-    QPixmap aboutPixmap(":/starry.png");
+    QPixmap aboutPixmap(STARRY_ICON(256));
     QLabel *aboutIcon = new QLabel("Starry");
     aboutIcon->setPixmap(aboutPixmap.scaled(256, 256, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
     aboutIcon->setFixedSize(256, 256);
@@ -130,9 +129,11 @@ void Settings::init()
     readPlugins();
 
     // 主界面
+    QIcon windowIcon(STARRY_ICON(64));
     this->setLayout(mainLayout);
     this->setMinimumSize(800, 600);
     this->setWindowTitle(tr("Starry 设置"));
+    this->setWindowIcon(windowIcon);
 }
 
 void Settings::addPluginItem(PluginItem* plugin)

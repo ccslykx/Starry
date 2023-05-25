@@ -6,6 +6,8 @@
 #define STARRY_VERSION_PATCH QString("0")
 #define STARRY_VERSION STARRY_VERSION_MAJOR + "." + STARRY_VERSION_MINOR + "." + STARRY_VERSION_PATCH
 
+#define STARRY_ICON(size) ":/starry_" + QString::number(size) + "x" + QString::number(size) + ".png"
+
 // #define DEBUG
 
 #ifdef DEBUG
