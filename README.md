@@ -1,6 +1,6 @@
 # Starry 
 
-<img src="./src/resources/starry.png" width=64 height=64>
+<img src="./src/resources/starry_1024x1024.png" width=64 height=64>
 
 以划词弹窗的形式调用其他软件的命令行指令。如果你喜欢本软件，请给我一个免费的Star，谢谢～
 
