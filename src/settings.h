@@ -6,12 +6,13 @@
 #include <QListWidget>
 #include <QListWidgetItem>
 #include <QStackedWidget>
-#include <QVector>
 #include <QMouseEvent>
 #include <QVBoxLayout>
 #include <QSettings>
+#include <QVector>
 
 class Settings;
+class SortableQListWidget;
 class PluginItem;
 class MenuItem;
 class Button;
@@ -31,7 +32,7 @@ class Settings : public QWidget
 public:
     static Settings* instance(QWidget *parent = (QWidget*)nullptr);
     void init();
-    void addPluginItem(PluginItem*); 
+    void addPluginItem(PluginItem*); // 添加到 m_pluginListWidget
     void deletePluginItem(PluginItem*);
     void addMenuItem(MenuItem*);
     const QVector<PluginItem*> getPlugins(bool onlyEnabled = true); // 获取所有插件的信息
@@ -51,10 +52,12 @@ private:
     ~Settings();
 
     void closeEvent(QCloseEvent *ev);
+    void refreashPluginIndex();
 
 private:
     static Settings         *m_instance;
     
+    QString                 m_configFile = "";
     QListWidget             *m_menuListWidget = nullptr; // 菜单页
     QStackedWidget          *m_contentWidget = nullptr; // 内容页
     QWidget                 *m_pluginWidget = nullptr; // 内容页-插件
@@ -64,9 +67,8 @@ private:
 
     PluginEditor            *m_pluginEditor = nullptr;
 
-    QVector<PluginItem*>    m_plugins;
-    QVector<MenuItem*>      m_menus;
-    QString                 m_configFile = "";
+    // QVector<QPair<PluginItem*, int>>    m_plugins; // PluginItem*, index
+    QVector<QPair<MenuItem*, int>>      m_menus; // MenuItem*, index
 };
 
 class PluginItem : public QWidget
@@ -79,6 +81,8 @@ public:
     QString     name();
     QString     tip();
     QString     script();
+    int         index();
+    void        setIndex(int);
 
 private:
     PluginItem(QPixmap icon, QString name, QString tip, QString script, bool enable = true, QWidget *parent = (QWidget*)nullptr);
@@ -93,6 +97,7 @@ public:
     Switcher    *m_switcher;
     Button      *m_edit;
     QLabel      *m_move;
+    int         m_index;
 };
 
 class MenuItem : public QLabel

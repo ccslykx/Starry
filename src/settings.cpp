@@ -13,9 +13,9 @@
 #include <QFontMetrics>
 
 /* Settings */
-Settings* Settings::m_instance = nullptr;
+Settings *Settings::m_instance = nullptr;
 
-Settings* Settings::instance(QWidget *parent)
+Settings *Settings::instance(QWidget *parent)
 {
     STARRY_DEBUGER
     if (!m_instance)
@@ -31,8 +31,8 @@ void Settings::init()
     // m_configFile = QApplication::applicationDirPath() + "/starry.conf";
     m_configFile = QDir::homePath() + "/.config/Starry/starry.conf";
     qDebug() << "CONFIG:" << m_configFile;
-    m_menus = QVector<MenuItem*>();
-    m_plugins = QVector<PluginItem*>();
+    m_menus = QVector<QPair<MenuItem *, int>>();
+    // m_plugins = QVector<QPair<PluginItem*, int>>();
     // 菜单页（左侧）
     if (!m_menuListWidget)
     {
@@ -57,19 +57,24 @@ void Settings::init()
     {
         m_pluginListWidget = new QListWidget(m_pluginWidget);
         m_pluginListWidget->setItemAlignment(Qt::AlignVCenter);
+        m_pluginListWidget->setDragDropMode(QAbstractItemView::InternalMove);
     }
     if (!m_pluginEditor)
     {
         m_pluginEditor = new PluginEditor;
     }
-    QObject::connect(m_pluginEditor, &PluginEditor::created, this, &Settings::addPluginItem);
-       
+    QObject::connect(m_pluginEditor, &PluginEditor::created, this, [this](PluginItem *item)
+                     {
+        item->setIndex(this->m_pluginListWidget->count()); // 新建的放在最后
+        // this->m_plugins.push_back({item, item->index()});
+        addPluginItem(item); });
+
     // 创建新插件按钮
     Button *newPluginButton = new Button("创建新插件", m_pluginListWidget);
     newPluginButton->setAlignment(Qt::AlignCenter);
     newPluginButton->setStyleSheet(LABEL_BUTTON_STYLE);
     QObject::connect(newPluginButton, &Button::clicked, this, &Settings::createPlugin);
-    
+
     QVBoxLayout *pluginsLayout = new QVBoxLayout(m_pluginWidget);
     pluginsLayout->addWidget(m_pluginListWidget);
     pluginsLayout->addWidget(newPluginButton);
@@ -80,7 +85,7 @@ void Settings::init()
     {
         m_shortcutWidget = new QListWidget(m_contentWidget);
     }
-    QLabel  *shortcutHelp = new QLabel("如果有什么需要的快捷捷功能，请联系作者", m_shortcutWidget);
+    QLabel *shortcutHelp = new QLabel("如果有什么需要的快捷捷功能，请联系作者", m_shortcutWidget);
     shortcutHelp->setAlignment(Qt::AlignCenter);
     QListWidgetItem *shortcutItem = new QListWidgetItem(m_shortcutWidget);
     shortcutItem->setSizeHint(QSize(m_shortcutWidget->size().width(), LABEL_BUTTON_HEIGHT));
@@ -98,7 +103,7 @@ void Settings::init()
     aboutIcon->setAlignment(Qt::AlignCenter);
     QLabel *aboutContent = new QLabel("版本：" + STARRY_VERSION + "\n作者：Ccslykx\n联系方式：ccslykx@outlook.com", m_aboutWidget);
     aboutContent->setAlignment(Qt::AlignCenter);
-    
+
     QVBoxLayout *aboutLayout = new QVBoxLayout(m_aboutWidget);
     aboutLayout->setAlignment(Qt::AlignCenter);
     aboutLayout->addWidget(aboutIcon);
@@ -115,7 +120,7 @@ void Settings::init()
     QHBoxLayout *mainLayout = new QHBoxLayout(this);
     mainLayout->addWidget(m_menuListWidget);
     mainLayout->addWidget(m_contentWidget);
-    
+
     // 添加 菜单页 项目
     MenuItem *plugins = MenuItem::create(tr("插件"), m_menuListWidget);
     MenuItem *shortcuts = MenuItem::create(tr("快捷键"), m_menuListWidget);
@@ -136,40 +141,39 @@ void Settings::init()
     this->setWindowIcon(windowIcon);
 }
 
-void Settings::addPluginItem(PluginItem* plugin)
+void Settings::addPluginItem(PluginItem *plugin)
 {
     STARRY_DEBUGER
     QListWidgetItem *listWidgetItem = new QListWidgetItem;
 
     QSize size(m_pluginListWidget->size().width() - 14, LABEL_BUTTON_HEIGHT);
-
     listWidgetItem->setSizeHint(size);
-    m_plugins.push_back(plugin);
-    m_pluginListWidget->insertItem(0, listWidgetItem); // 新建的插件放在最上
+    m_pluginListWidget->addItem(listWidgetItem);
     m_pluginListWidget->setItemWidget(listWidgetItem, plugin);
-    QObject::connect(plugin->m_edit, &Button::clicked, this, [this, plugin](){
-        this->editPlugin(plugin);
-    });
-    QObject::connect(plugin->m_delete, &Button::clicked, this, [this, plugin](){
+
+    QObject::connect(plugin->m_edit, &Button::clicked, this, [this, plugin]()
+                     { this->editPlugin(plugin); });
+    QObject::connect(plugin->m_delete, &Button::clicked, this, [this, plugin]()
+                     {
         QMessageBox *box = new QMessageBox(QMessageBox::Icon::Question,  "提示", "确实要删除插件" + plugin->name() + "吗？", QMessageBox::Yes | QMessageBox::Cancel);
         QObject::connect(box, &QMessageBox::accepted, this, [this, plugin, box] {
             this->deletePluginItem(plugin);
             delete box;
         });
-        box->show();
-    });
+        box->show(); });
 }
 
-void Settings::deletePluginItem(PluginItem* plugin)
+void Settings::deletePluginItem(PluginItem *plugin)
 {
     STARRY_DEBUGER
-    m_pluginListWidget->takeItem(m_pluginListWidget->currentRow());
-    m_plugins.removeOne(plugin);
+    int cur = m_pluginListWidget->currentRow();
+    m_pluginListWidget->takeItem(cur);
+    refreashPluginIndex();
     delete plugin;
     plugin = nullptr;
 }
 
-void Settings::addMenuItem(MenuItem* menu)
+void Settings::addMenuItem(MenuItem *menu)
 {
     STARRY_DEBUGER
     QListWidgetItem *listWidgetItem = new QListWidgetItem(m_menuListWidget);
@@ -177,42 +181,47 @@ void Settings::addMenuItem(MenuItem* menu)
     QSize size(m_menuListWidget->size().width() - 2, LABEL_BUTTON_HEIGHT);
 
     listWidgetItem->setSizeHint(size);
-    m_menus.push_back(menu);
+    int newItemIndex = m_menus.size();
+    m_menus.push_back({menu, newItemIndex});
+    m_menuListWidget->addItem(listWidgetItem);
     m_menuListWidget->setItemWidget(listWidgetItem, menu);
 }
 
-const QVector<PluginItem*> Settings::getPlugins(bool onlyEnabled)
+const QVector<PluginItem *> Settings::getPlugins(bool onlyEnabled)
 {
     STARRY_DEBUGER
-    QVector<PluginItem*> plugins;
-    if (onlyEnabled)
+    refreashPluginIndex();
+    QVector<PluginItem *> items;
+    for (int i = 0; i < m_pluginListWidget->count(); ++i)
     {
-        for (PluginItem* plugin : m_plugins)
+        QListWidgetItem *item = m_pluginListWidget->item(i);
+        PluginItem *pluginItem = (PluginItem *)m_pluginListWidget->itemWidget(item);
+        if (onlyEnabled && !pluginItem->m_switcher->isOn()) // 如果只添加已启用的插件
         {
-            if (plugin->m_switcher->isOn())
-            {
-                plugins.push_back(plugin);
-            }
+            continue;
         }
-        return plugins;
-    } else {
-        return QVector<PluginItem*>(m_plugins.constBegin(), m_plugins.constEnd());
+        items.push_back(pluginItem);
     }
+    return items;
 }
 
 void Settings::savePlugins()
 {
     STARRY_DEBUGER
+    refreashPluginIndex();
     QSettings settings(m_configFile, QSettings::NativeFormat);
     settings.remove(QString("PLUGINS")); // 解决重启后之前已经删除的插件仍被加载
     settings.beginGroup(QString("PLUGINS"));
-    for (PluginItem *plugin : m_plugins)
+    for (int i = 0; i < m_pluginListWidget->count(); ++i)
     {
-        settings.beginGroup(plugin->name());
+        QListWidgetItem *item = m_pluginListWidget->item(i);
+        PluginItem *pluginItem = (PluginItem *)m_pluginListWidget->itemWidget(item);
+        settings.beginGroup(pluginItem->name());
         // settings.setValue(QString("Icon"), TODO);
-        settings.setValue(QString("Tip"), plugin->tip());
-        settings.setValue(QString("Script"), plugin->script());
-        settings.setValue(QString("Enabled"), plugin->m_switcher->isOn());
+        settings.setValue(QString("Index"), pluginItem->index());
+        settings.setValue(QString("Tip"), pluginItem->tip());
+        settings.setValue(QString("Script"), pluginItem->script());
+        settings.setValue(QString("Enabled"), pluginItem->m_switcher->isOn());
         settings.endGroup();
     }
     settings.endGroup();
@@ -221,6 +230,7 @@ void Settings::savePlugins()
 void Settings::readPlugins()
 {
     STARRY_DEBUGER
+    QVector<PluginItem *> tmpPluginItems;
     QSettings settings(m_configFile, QSettings::NativeFormat);
     settings.beginGroup(QString("PLUGINS"));
     QStringList plugins = settings.childGroups();
@@ -228,14 +238,26 @@ void Settings::readPlugins()
     {
         QPixmap pixmap;
         settings.beginGroup(pluginName);
+        int index = settings.value(QString("Index")).toInt();
         QString tip = settings.value(QString("Tip")).toString();
         QString script = settings.value(QString("Script")).toString();
         bool enable = settings.value(QString("Enabled")).toBool();
         settings.endGroup();
         PluginItem *pluginItem = PluginItem::create(pixmap, pluginName, tip, script, enable, m_pluginListWidget);
-        addPluginItem(pluginItem);
+        pluginItem->setIndex(index);
+        tmpPluginItems.push_back(pluginItem);
     }
     settings.endGroup();
+
+    // 排序后添加到 pluginListWidget
+    std::sort(tmpPluginItems.begin(), tmpPluginItems.end(), [](PluginItem *l, PluginItem *r)
+    { 
+        return l->index() < r->index(); 
+    });
+    for (PluginItem *item : tmpPluginItems)
+    {
+        addPluginItem(item);
+    }
 }
 
 void Settings::showContent()
@@ -285,19 +307,28 @@ void Settings::closeEvent(QCloseEvent *ev)
     ev->accept();
 }
 
+void Settings::refreashPluginIndex()
+{
+    for (int i = 0; i < m_pluginListWidget->count(); ++i)
+    {
+        QListWidgetItem *item = m_pluginListWidget->item(i);
+        PluginItem *pluginItem = (PluginItem *)m_pluginListWidget->itemWidget(item);
+        pluginItem->setIndex(i);
+    }
+}
 
 /* PluginItem */
 
-PluginItem* PluginItem::create(QPixmap icon, QString name, QString tip, 
-    QString script, bool enable, QWidget *parent)
+PluginItem *PluginItem::create(QPixmap icon, QString name, QString tip,
+                               QString script, bool enable, QWidget *parent)
 {
     STARRY_DEBUGER
     PluginItem *item = new PluginItem(icon, name, tip, script, enable, parent);
     return item;
 }
 
-PluginItem::PluginItem(QPixmap icon, QString name, QString tip, 
-    QString script, bool enable, QWidget *parent)
+PluginItem::PluginItem(QPixmap icon, QString name, QString tip,
+                       QString script, bool enable, QWidget *parent)
 {
     STARRY_DEBUGER
     this->setParent(parent);
@@ -337,7 +368,7 @@ PluginItem::PluginItem(QPixmap icon, QString name, QString tip,
 
     m_edit->setStyleSheet(LABEL_BUTTON_STYLE);
     m_edit->setFixedSize(PLUGIN_BUTTON_HEIGHT, PLUGIN_BUTTON_HEIGHT);
-    
+
     // m_move->setStyleSheet(LABEL_BUTTON_STYLE);
     // m_move->setFixedSize(PLUGIN_BUTTON_HEIGHT, PLUGIN_BUTTON_HEIGHT);
 
@@ -348,13 +379,13 @@ PluginItem::PluginItem(QPixmap icon, QString name, QString tip,
     layout->addWidget(m_tip);
     layout->addWidget(m_switcher);
     layout->addWidget(m_edit);
-    // layout->addWidget(m_move); 
+    // layout->addWidget(m_move);
 
     this->setLayout(layout);
     this->setFixedHeight(LABEL_BUTTON_HEIGHT);
 }
 
-QPixmap* PluginItem::icon()
+QPixmap *PluginItem::icon()
 {
     STARRY_DEBUGER
     return this->m_icon;
@@ -378,9 +409,21 @@ QString PluginItem::script()
     return m_script;
 }
 
+int PluginItem::index()
+{
+    STARRY_DEBUGER
+    return m_index;
+}
+
+void PluginItem::setIndex(int index)
+{
+    STARRY_DEBUGER
+    this->m_index = index;
+}
+
 /* MenuItem */
 
-MenuItem* MenuItem::create(QString text, QWidget *parent)
+MenuItem *MenuItem::create(QString text, QWidget *parent)
 {
     STARRY_DEBUGER
     MenuItem *item = new MenuItem(text, parent);
@@ -398,7 +441,7 @@ MenuItem::MenuItem(QString &text, QWidget *parent)
 }
 
 /* Button */
-Button::Button(const QString& text, QWidget *parent)
+Button::Button(const QString &text, QWidget *parent)
 {
     STARRY_DEBUGER
     this->setText(text);
@@ -409,16 +452,14 @@ void Button::mouseReleaseEvent(QMouseEvent *ev)
 {
     STARRY_DEBUGER
     if (ev != nullptr && ev->button() == Qt::LeftButton)
-	{
-		emit clicked();
-	}
+    {
+        emit clicked();
+    }
 }
 
 /* Switcher */
 Switcher::Switcher(const QString &on, const QString &off, bool status, QWidget *parent)
-    : m_on(on)
-    , m_off(off)
-    , m_isOn(status)
+    : m_on(on), m_off(off), m_isOn(status)
 {
     STARRY_DEBUGER
     this->setParent(parent);
@@ -440,7 +481,9 @@ void Switcher::setStatus(bool status)
     {
         this->setText(m_on);
         this->setStyleSheet(LABEL_BUTTON_STYLE + QString("background-color: #59C837"));
-    } else {
+    }
+    else
+    {
         this->setText(m_off);
         this->setStyleSheet(LABEL_BUTTON_STYLE + QString("background-color: gray"));
     }
@@ -456,10 +499,10 @@ void Switcher::mouseReleaseEvent(QMouseEvent *ev)
 {
     STARRY_DEBUGER
     if (ev != nullptr && ev->button() == Qt::LeftButton)
-	{
+    {
         switchStatus();
-		emit m_isOn ? switchOn() : switchOff();
-	}
+        emit m_isOn ? switchOn() : switchOff();
+    }
 }
 
 /* PluginEditor */
@@ -468,40 +511,70 @@ PluginEditor::PluginEditor()
 {
     STARRY_DEBUGER
     this->setWindowTitle(tr("创建新插件"));
-    
-    if (!m_iconLabel)   { m_iconLabel = new QLabel(tr("插件图标"), this); };
-    if (!m_nameLabel)   { m_nameLabel = new QLabel(tr("插件名称"), this); };
-    if (!m_tipLabel)    { m_tipLabel = new QLabel(tr("插件描述"), this); };
-    if (!m_scriptLabel) { m_scriptLabel = new QLabel(tr("执行脚本"), this); }
-    
-    if (!m_createButton)      { m_createButton = new Button(tr("创建"), this); }
-    if (!m_saveButton)      { m_saveButton = new Button(tr("保存"), this); }
+
+    if (!m_iconLabel)
+    {
+        m_iconLabel = new QLabel(tr("插件图标"), this);
+    };
+    if (!m_nameLabel)
+    {
+        m_nameLabel = new QLabel(tr("插件名称"), this);
+    };
+    if (!m_tipLabel)
+    {
+        m_tipLabel = new QLabel(tr("插件描述"), this);
+    };
+    if (!m_scriptLabel)
+    {
+        m_scriptLabel = new QLabel(tr("执行脚本"), this);
+    }
+
+    if (!m_createButton)
+    {
+        m_createButton = new Button(tr("创建"), this);
+    }
+    if (!m_saveButton)
+    {
+        m_saveButton = new Button(tr("保存"), this);
+    }
     m_createButton->setAlignment(Qt::AlignCenter);
     m_createButton->setStyleSheet(LABEL_BUTTON_STYLE);
     m_saveButton->setAlignment(Qt::AlignCenter);
     m_saveButton->setStyleSheet(LABEL_BUTTON_STYLE);
 
-    QObject::connect(m_createButton, &Button::clicked, this, [this]() {
+    QObject::connect(m_createButton, &Button::clicked, this, [this]()
+                     {
         PluginItem *newItem = PluginItem::create(*this->icon(), this->name(), this->tip(), this->script(), (QWidget*) this->m_pointer);
         emit this->created(newItem);
-        this->close();
-    });
-    QObject::connect(m_saveButton, &Button::clicked, this, [this]() {
+        this->close(); });
+    QObject::connect(m_saveButton, &Button::clicked, this, [this]()
+                     {
         PluginItem *plugin = (PluginItem*) this->m_pointer;
         plugin->m_icon = this->icon();
         plugin->m_name->setText(this->name());
         plugin->m_tip->setText(this->tip());
         plugin->m_script = this->script();
         emit this->edited(plugin);
-        this->close();
-    });
+        this->close(); });
 
     m_icon = new QPixmap; /* Todo: 改成默认图标 */
-    if (!m_nameEdit)    { m_nameEdit = new QLineEdit(this); }
-    if (!m_tipEdit)     { m_tipEdit = new QLineEdit(this); }
-    if (!m_scriptEdit)  { m_scriptEdit = new QLineEdit(this); }
+    if (!m_nameEdit)
+    {
+        m_nameEdit = new QLineEdit(this);
+    }
+    if (!m_tipEdit)
+    {
+        m_tipEdit = new QLineEdit(this);
+    }
+    if (!m_scriptEdit)
+    {
+        m_scriptEdit = new QLineEdit(this);
+    }
 
-    if (!m_layout)      { m_layout = new QVBoxLayout(this); }
+    if (!m_layout)
+    {
+        m_layout = new QVBoxLayout(this);
+    }
     m_layout->addWidget(m_iconLabel);
     m_layout->addWidget(m_nameLabel);
     m_layout->addWidget(m_nameEdit);
@@ -550,7 +623,7 @@ void PluginEditor::editPlugin(PluginItem *plugin)
     show();
 }
 
-QPixmap* PluginEditor::icon()
+QPixmap *PluginEditor::icon()
 {
     STARRY_DEBUGER
     return m_icon;
