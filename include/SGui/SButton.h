@@ -13,6 +13,10 @@
 
 #include <QLabel>
 
+#ifndef S_BUTTON_STYLE
+    #define S_BUTTON_STYLE "border-style: outset; border-width: 1px; border-radius:8px;"
+#endif
+
 class SButton : public QLabel
 {
     Q_OBJECT
@@ -26,6 +30,5 @@ private:
     void mouseReleaseEvent(QMouseEvent *ev);
 
 private:
-    QWidget *m_parent;
     QString m_text;
 };

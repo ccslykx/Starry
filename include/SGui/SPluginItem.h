@@ -16,6 +16,8 @@
 #include "SSwitcher.h"
 #include "SButton.h"
 
+class SPluginInfo;
+
 class SPluginItem : public QWidget
 {
     Q_OBJECT

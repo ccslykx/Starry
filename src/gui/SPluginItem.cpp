@@ -6,6 +6,8 @@
 #include "SButton.h"
 #include "SSwitcher.h"
 
+#define SDEBUG qDebug() << "[FILE:" << __FILE__ << ", LINE:" << __LINE__ << ", FUNC:" << Q_FUNC_INFO << "]";
+
 SPluginItem* SPluginItem::create(SPluginInfo *pluginInfo, QWidget *parent)
 {
     return new SPluginItem(pluginInfo, parent);
@@ -24,7 +26,8 @@ SPluginItem* SPluginItem::create(const QString &name, const QString &script,
 
 void SPluginItem::refresh()
 {
-    if (!m_info)
+    SDEBUG
+    if (m_info)
     {
         m_iconLabel->setPixmap(m_info->icon);
         m_nameLabel->setText(m_info->name);
@@ -34,7 +37,20 @@ void SPluginItem::refresh()
 
 SPluginInfo* SPluginItem::pluginInfo()
 {
+    SDEBUG
     return this->m_info;
+}
+
+SButton* SPluginItem::deleteButton()
+{
+    SDEBUG
+    return this->m_deleteButton;
+}
+
+SButton* SPluginItem::editButton()
+{
+    SDEBUG
+    return this->m_editButton;
 }
 
 /* private functions */
@@ -42,6 +58,7 @@ SPluginInfo* SPluginItem::pluginInfo()
 SPluginItem::SPluginItem(SPluginInfo *pluginInfo, QWidget *parent)
     : m_info(pluginInfo) 
 {
+    SDEBUG
     this->setParent(parent);
     init();
 }
@@ -49,19 +66,22 @@ SPluginItem::SPluginItem(SPluginInfo *pluginInfo, QWidget *parent)
 SPluginItem::SPluginItem(const QString &name, const QString &script,
     const QPixmap &icon, const QString &tip, bool enable, QWidget *parent)
 {
-    SPluginInfo *info = new SPluginInfo(name, script, icon, 0, tip, enable, this);
+    SDEBUG
+    SPluginInfo *info = new SPluginInfo(name, script, icon, 0, tip, enable);
     SPluginItem(std::move(info), parent); /* Need Test */
 }
 
 SPluginItem::SPluginItem(const QString &name, const QString &script,
     const QString &iconPath, const QString &tip, bool enable, QWidget *parent)
 {
-    SPluginInfo *info = new SPluginInfo(name, script, iconPath, 0, tip, enable, this);
+    SDEBUG
+    SPluginInfo *info = new SPluginInfo(name, script, iconPath, 0, tip, enable);
     SPluginItem(std::move(info), parent); /* Need Test */
 }
 
 SPluginItem::~SPluginItem()
 {
+    SDEBUG
     /* TODO:
         delete m_info ?
      */
@@ -69,6 +89,7 @@ SPluginItem::~SPluginItem()
 
 void SPluginItem::init()
 {
+    SDEBUG
     m_deleteButton = new SButton("", this);
     m_iconLabel = new QLabel(this); /* memory leaks alert !!! */
     m_iconLabel->setWindowIcon(m_info->icon);
@@ -107,5 +128,5 @@ void SPluginItem::init()
     layout->addWidget(m_editButton);
 
     this->setLayout(layout);
-    this->setFixedHeight(32);
+    this->setFixedHeight(48);
 }

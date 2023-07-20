@@ -7,15 +7,15 @@ SPluginInfo::SPluginInfo(
     const QString &_iconPath, // 插件图标路径
     const int _index,         // 插件排序
     const QString &_tip,      // 插件说明
-    const bool _enabled,      // 是否启用
-    SPluginItem *_pluginItem)
+    const bool _enabled)      // 是否启用
+    // SPluginItem *_pluginItem)
     : name(_name)
     , tip(_tip)
     , script(_script)
     , iconPath(_iconPath)
     , index(_index)
     , enabled(_enabled)
-    , pluginItem(_pluginItem) 
+    // , pluginItem(_pluginItem) 
 {
     this->setIcon(iconPath);
 }
@@ -26,15 +26,15 @@ SPluginInfo::SPluginInfo(
     const QPixmap &_icon,   // 插件图标
     const int _index,       // 插件排序
     const QString &_tip,    // 插件说明
-    const bool _enabled,    // 是否启用
-    SPluginItem *_pluginItem)
+    const bool _enabled)    // 是否启用
+    // SPluginItem *_pluginItem)
     : name(_name)
     , tip(_tip)
     , script(_script)
     , icon(_icon)
     , index(_index)
     , enabled(_enabled)
-    , pluginItem(_pluginItem) 
+    // , pluginItem(_pluginItem) 
 {
     this->iconPath = ""; // TODO: Save icon to file and set iconPath.
 }
@@ -87,10 +87,10 @@ void SPluginInfo::saveIcon(const QPixmap &icon)
     */
 }
 
-void SPluginInfo::refreshItem()
-{
-    if (this->pluginItem)
-    {
-        pluginItem->refresh();
-    }
-}
+// void SPluginInfo::refreshItem()
+// {
+//     if (this->pluginItem)
+//     {
+//         pluginItem->refresh();
+//     }
+// }

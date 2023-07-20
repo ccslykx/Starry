@@ -3,6 +3,10 @@
 #include <QDir>
 #include "SConfig.h"
 
+SConfig* SConfig::m_instance = nullptr;
+
+SConfig *config = SConfig::config();
+
 SConfig* SConfig::config(const QString &path)
 {
     if (!m_instance)
@@ -187,6 +191,21 @@ void SConfig::deletePlugin(SPluginInfo *info)
         return;
     }
     pInfoMap.remove(info->name);
+}
+
+SPluginInfo* SConfig::getSPluginInfo(const QString &name)
+{
+    return pInfoMap.value(name, nullptr);
+}
+
+QVector<SPluginInfo*> SConfig::getSPluginInfos()
+{
+    QVector<SPluginInfo*> plugins(pInfoMap.count());
+    for (SPluginInfo* info : pInfoMap.values())
+    {
+        plugins[info->index] = info;
+    }
+    return plugins;
 }
 
 QString SConfig::version()

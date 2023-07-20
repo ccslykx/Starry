@@ -16,6 +16,8 @@
 #include <QString>
 #include "SPluginItem.h"
 
+class SPluginItem;
+
 class SPluginInfo : public QObject
 {
     Q_OBJECT
@@ -26,24 +28,24 @@ public:
         const QString &_iconPath = "",  // 插件图标路径
         const int _index = 0,           // 插件排序
         const QString &_tip = "",       // 插件说明
-        const bool _enabled = false,    // 是否启用
-        SPluginItem *pluginItem = nullptr);
+        const bool _enabled = false);    // 是否启用
+        // SPluginItem *pluginItem = nullptr);
     SPluginInfo(
         const QString &_name,           // 插件名称
         const QString &_script,         // 插件执行的命令
         const QPixmap &_icon,           // 插件图标
         const int _index = 0,           // 插件排序
         const QString &_tip = "",       // 插件说明
-        const bool _enabled = false,    // 是否启用
-        SPluginItem *_pluginItem = nullptr);
-    ~SPluginInfo();
+        const bool _enabled = false);    // 是否启用
+        // SPluginItem *_pluginItem = nullptr);
+    // ~SPluginInfo();
 
     void setIndex(int);
     void setIcon(const QString &path);
     void setIcon(const QPixmap &icon);
 
-public slots:
-    void refreshItem();
+// public slots:
+//     void refreshItem();
 
 private:
     void saveIcon(const QString &path);
@@ -58,5 +60,5 @@ public:
     int     index;      // 插件排序
     bool    enabled;    // 是否启用
 
-    SPluginItem *pluginItem = nullptr;
+    // SPluginItem *pluginItem = nullptr;
 };

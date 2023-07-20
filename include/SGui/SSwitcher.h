@@ -13,6 +13,10 @@
 
 #include <QLabel>
 
+#ifndef S_SWITCHER_STYLE
+    #define S_SWITCHER_STYLE "border-style: outset; border-width: 1px; border-radius:8px;"
+#endif
+
 class SSwitcher : public QLabel
 {
     Q_OBJECT
@@ -31,7 +35,6 @@ private:
     void mouseReleaseEvent(QMouseEvent *ev);
 
 private:
-    QWidget *m_parent;
     bool    m_isOn;
     QString m_on;
     QString m_off;

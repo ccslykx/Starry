@@ -13,6 +13,9 @@
 
 #include <QSettings>
 #include <QHash>
+
+#include <memory>
+
 #include "SPluginInfo.h"
 #include "SPluginItem.h"
 
@@ -48,6 +51,8 @@ public:
     void addPlugin(SPluginInfo*);     // 添加插件配置信息
     void addPlugin(SPluginItem*);     // 添加插件配置信息
     void deletePlugin(SPluginInfo*);  // 删除插件配置信息
+    SPluginInfo* getSPluginInfo(const QString &name);
+    QVector<SPluginInfo*> getSPluginInfos(); // 返回为有序向量
 
     QString version();
     int major();

@@ -12,11 +12,12 @@
 #include <QMouseEvent>
 #include "SSwitcher.h"
 
-#define S_SWITCHER_STYLE "border-style: outset; border-width: 1px; border-radius:8px;"
+#define SDEBUG qDebug() << "[FILE:" << __FILE__ << ", LINE:" << __LINE__ << ", FUNC:" << Q_FUNC_INFO << "]";
 
 SSwitcher::SSwitcher(const QString &on, const QString &off, bool status, QWidget *parent)
     : m_on(on), m_off(off), m_isOn(status)
 {
+    SDEBUG
     this->setParent(parent);
     this->setAlignment(Qt::AlignCenter);
     this->setStatus(status);
@@ -24,11 +25,13 @@ SSwitcher::SSwitcher(const QString &on, const QString &off, bool status, QWidget
 
 bool SSwitcher::isOn()
 {
+    SDEBUG
     return m_isOn;
 }
 
 void SSwitcher::setStatus(bool status)
 {
+    SDEBUG
     m_isOn = status;
     if (m_isOn)
     {
@@ -44,11 +47,13 @@ void SSwitcher::setStatus(bool status)
 
 void SSwitcher::switchStatus()
 {
+    SDEBUG
     setStatus(!m_isOn);
 }
 
 void SSwitcher::mouseReleaseEvent(QMouseEvent *ev)
 {
+    SDEBUG
     if (ev != nullptr && ev->button() == Qt::LeftButton)
     {
         switchStatus();
