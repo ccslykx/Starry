@@ -28,6 +28,7 @@ public:
         const QString &tip, bool enable = false, QWidget *parent = (QWidget*)nullptr);
     static SPluginItem* create(const QString &name, const QString &script, const QString &iconPath, 
         const QString &tip, bool enable = false, QWidget *parent = (QWidget*)nullptr);
+    static void remove(SPluginItem*);
 
     void refresh(); // Call this function when m_info changed
     SPluginInfo* pluginInfo(); 

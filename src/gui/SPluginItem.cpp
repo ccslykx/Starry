@@ -24,6 +24,14 @@ SPluginItem* SPluginItem::create(const QString &name, const QString &script,
     return new SPluginItem(name, script, iconPath, tip, enable, parent);
 }
 
+void SPluginItem::remove(SPluginItem *item)
+{
+    if (item)
+    {
+        delete item;
+    }
+}
+
 void SPluginItem::refresh()
 {
     SDEBUG

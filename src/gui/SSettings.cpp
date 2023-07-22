@@ -164,6 +164,7 @@ void SSettings::deletePluginItem(SPluginItem *item)
     int cur = m_pluginListWidget->currentRow();
     m_pluginListWidget->takeItem(cur);
     config->deletePlugin(item->pluginInfo()); /* TODO: confirm */
+    SPluginItem::remove(item);
 }
 
 void SSettings::addMenuItem(QLabel *item)
