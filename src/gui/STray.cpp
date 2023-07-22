@@ -71,7 +71,7 @@ void STray::initGui()
 
     // QObject::connect(enable, &QAction::triggered, ) /* TODO */
     QObject::connect(settings, &QAction::triggered, m_settings, &SSettings::show);
-    QObject::connect(exit, &QAction::triggered, m_parent, &QApplication::quit);
+    QObject::connect(exit, &QAction::triggered, this->parent(), &QApplication::quit);
 
     menu->addAction(enable);
     menu->addAction(settings);

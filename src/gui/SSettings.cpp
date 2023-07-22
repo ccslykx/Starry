@@ -178,7 +178,14 @@ void SSettings::addMenuItem(QLabel *item)
 void SSettings::readPlugins()
 {
     SDEBUG
-    for (SPluginInfo *info : config->getSPluginInfos())
+    QVector<SPluginInfo*> infos = config->getSPluginInfos();
+    if (infos.isEmpty())
+    {
+        qWarning() << "No plugins found in SConfig";
+        return;
+    }
+
+    for (SPluginInfo *info : infos)
     {
         addPluginItem(info);
     }

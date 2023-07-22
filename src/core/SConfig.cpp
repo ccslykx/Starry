@@ -213,11 +213,16 @@ SPluginInfo* SConfig::getSPluginInfo(const QString &name)
 QVector<SPluginInfo*> SConfig::getSPluginInfos()
 {
     SDEBUG
-    QVector<SPluginInfo*> plugins(pInfoMap.count());
-    for (SPluginInfo* info : pInfoMap.values())
-    {
-        plugins[info->index] = info;
-    }
+    const int pCount = pInfoMap.count();
+    QVector<SPluginInfo*> plugins(pCount);
+    if (pCount > 0) // Only when pInfoMap is not empty,
+    { 
+        // read & return SPluginInfo
+        for (SPluginInfo* info : pInfoMap.values())
+        {
+            plugins[info->index] = info;
+        }
+    } // otherwise, return empty vector
     return plugins;
 }
 

@@ -51,7 +51,6 @@ private:
     void waitForB1Release();
 
 private:
-    QApplication        *m_parent;
     static STray        *m_instance;
     static SPopup       *m_popup;
     static SSettings    *m_settings;
