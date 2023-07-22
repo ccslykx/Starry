@@ -86,6 +86,7 @@ void SPluginEditor::edit(SPluginItem *item)
     m_cButton->setVisible(false);
     m_eButton->setVisible(true);
 
+    m_nameEdit->setFocus();
     this->setWindowTitle(tr("Edit") + ' ' + info.name);
     this->show();
 }
@@ -100,6 +101,7 @@ void SPluginEditor::create()
     m_eButton->setVisible(false);
     m_cButton->setVisible(true);
 
+    m_nameEdit->setFocus();
     this->setWindowTitle(tr("Create New Plugin"));
     this->show();
 }
