@@ -7,31 +7,14 @@ set(CMAKE_CXX_STANDARD 17)
 project(Starry VERSION 0.1.0)
 
 file(GLOB HEADERS CMAKE_CONFIGURE_DEPENDS
-    # include/*.h
-    # include/Core/*.h
-    # include/SGui/*.h
-    include/Core/SConfig.h
-    include/Core/SPluginInfo.h
-    include/SGui/SButton.h
-    include/SGui/SPluginEditor.h
-    include/SGui/SPluginItem.h
-    include/SGui/SSettings.h
-    include/SGui/SSwitcher.h
-    include/SGui/STray.h
+    include/*.h
+    include/Core/*.h
+    include/SGui/*.h
 )
 file(GLOB SOURCES CMAKE_CONFIGURE_DEPENDS
-    # src/*.cpp
-    # src/core/*.cpp
-    # src/gui/*.cpp
-    src/core/SConfig.cpp
-    src/core/SPluginInfo.cpp
-    src/gui/SButton.cpp
-    src/gui/SPluginEditor.cpp
-    src/gui/SPluginItem.cpp
-    src/gui/SSettings.cpp
-    src/gui/SSwitcher.cpp
-    src/gui/STray.cpp
-    src/main.cpp
+    src/*.cpp
+    src/core/*.cpp
+    src/gui/*.cpp
 )
 file(GLOB RESOURCES CMAKE_CONFIGURE_DEPENDS
     src/resources/*.qrc

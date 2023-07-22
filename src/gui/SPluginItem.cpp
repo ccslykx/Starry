@@ -35,6 +35,12 @@ void SPluginItem::remove(SPluginItem *item)
     }
 }
 
+void SPluginItem::setIndexToInfo(size_t index)
+{
+    SDEBUG
+    m_info->index = index;
+}
+
 void SPluginItem::refresh()
 {
     SDEBUG
@@ -71,7 +77,7 @@ SPluginItem::SPluginItem(SPluginInfo *pluginInfo, QWidget *parent)
 {
     SDEBUG
     this->setParent(parent);
-    init();
+    initGui();
 }
 
 SPluginItem::SPluginItem(const QString &name, const QString &script,
@@ -98,7 +104,7 @@ SPluginItem::~SPluginItem()
      */
 }
 
-void SPluginItem::init()
+void SPluginItem::initGui()
 {
     SDEBUG
     m_deleteButton = new SButton("", this);
@@ -115,8 +121,9 @@ void SPluginItem::init()
     m_deleteButton->setPixmap(delPixmap.scaled(24, 24));
     m_deleteButton->setAlignment(Qt::AlignCenter);
     m_deleteButton->setFixedSize(24, 24);
+    m_deleteButton->setStyleSheet("border-width: 0px");
     // Icon
-    m_iconLabel->setStyleSheet(S_BUTTON_STYLE);
+    m_iconLabel->setPixmap(m_info->icon);
     m_iconLabel->setFixedSize(32, 32);
     // Name
     m_nameLabel->setStyleSheet(S_BUTTON_STYLE);

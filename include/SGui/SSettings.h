@@ -15,10 +15,9 @@
 #include <QListWidget>
 #include <QStackedWidget>
 
-#include <memory>
-
 #include "SPluginEditor.h"
 #include "SPluginItem.h"
+#include "SConfig.h"
 
 class SSettings : public QWidget
 {
@@ -49,10 +48,12 @@ private:
     ~SSettings();
 
     void closeEvent(QCloseEvent *ev);
-    void refreashPluginIndex();
+    void refreshPluginIndex();
 
 private:
     static SSettings        *m_instance;
+
+    SConfig                 *m_config;
 
     QListWidget             *m_menuListWidget = nullptr; // 菜单页
     QStackedWidget          *m_contentWidget = nullptr; // 内容页

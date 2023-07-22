@@ -111,9 +111,8 @@ void SConfig::readFromFile(const QString &path)
         if (iconPath.isEmpty())
         {
             qWarning() << pName + "'s icon file not found, use default icon";
-            // iconPath = ":/default_icon.png" /* TODO */
+            iconPath = ":/default_icon.png";
         }
-        QPixmap pixmap(iconPath);
         SPluginInfo *info = new SPluginInfo(pName, script, iconPath, index, tip, enabled);
         addPlugin(std::move(info)); /* Need Test */
     }
@@ -256,9 +255,11 @@ SConfig::SConfig(const QString &path)
     SDEBUG
     if (this->m_configPath == "")
     {
-        m_configPath = QDir::homePath() + "/.config/Starry/starry.conf";
+        m_configPath = QDir::homePath() + "/.config/Starry/";
         /* TODO: Windows & macOS */
     }
+    settingMap = QHash<QString, QVariant>();
+    pInfoMap = QHash<QString, SPluginInfo*>();
     readFromFile(m_configPath);
 }
 

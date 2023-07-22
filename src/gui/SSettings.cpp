@@ -8,8 +8,6 @@
 
 SSettings* SSettings::m_instance = nullptr;
 
-static SConfig *config = SConfig::config();
-
 SSettings* SSettings::instance(QWidget *parent)
 {
     SDEBUG
@@ -83,7 +81,7 @@ void SSettings::initGui()
     {
         m_aboutWidget = new QWidget(m_contentWidget);
     }
-    QPixmap aboutPixmap;// TODO: (STARRY_ICON(256));
+    QPixmap aboutPixmap(SUtils::STARRY_ICON(256));
     QLabel *aboutIcon = new QLabel("Starry");
     aboutIcon->setPixmap(aboutPixmap.scaled(256, 256, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
     aboutIcon->setFixedSize(256, 256);
@@ -125,7 +123,7 @@ void SSettings::initGui()
     readPlugins();
 
     // 主界面
-    QIcon windowIcon; // TODO: (STARRY_ICON(64));
+    QIcon windowIcon(SUtils::STARRY_ICON(64));
     this->setLayout(mainLayout);
     this->setMinimumSize(800, 600);
     this->setWindowTitle(tr("Starry 设置"));
@@ -140,7 +138,7 @@ void SSettings::addPluginItem(SPluginItem *item)
     listWidgetItem->setSizeHint(size);
     m_pluginListWidget->addItem(listWidgetItem);
     m_pluginListWidget->setItemWidget(listWidgetItem, item);
-    config->addPlugin(item);
+    m_config->addPlugin(item);
     QObject::connect(item->deleteButton(), &SButton::clicked, this, [this, item]() {
         this->onDeletePluginClicked(item);
     }); /* TODO */
@@ -161,7 +159,7 @@ void SSettings::deletePluginItem(SPluginItem *item)
     SDEBUG
     int cur = m_pluginListWidget->currentRow();
     m_pluginListWidget->takeItem(cur);
-    config->deletePlugin(item->pluginInfo()); /* TODO: confirm */
+    m_config->deletePlugin(item->pluginInfo()); /* TODO: confirm */
     SPluginItem::remove(item);
 }
 
@@ -178,7 +176,7 @@ void SSettings::addMenuItem(QLabel *item)
 void SSettings::readPlugins()
 {
     SDEBUG
-    QVector<SPluginInfo*> infos = config->getSPluginInfos();
+    QVector<SPluginInfo*> infos = m_config->getSPluginInfos();
     if (infos.isEmpty())
     {
         qWarning() << "No plugins found in SConfig";
@@ -247,6 +245,7 @@ SSettings::SSettings(QWidget *parent)
 {
     SDEBUG
     this->setParent(parent);
+    m_config = SConfig::config();
     initGui();
 }
 
@@ -263,14 +262,19 @@ SSettings::~SSettings()
 void SSettings::closeEvent(QCloseEvent *ev)
 {
     SDEBUG
-    refreashPluginIndex();
+    refreshPluginIndex();
     emit saveOnClose();
-    config->saveToFile();
+    m_config->saveToFile();
     ev->accept();
 }
 
-void SSettings::refreashPluginIndex()
+void SSettings::refreshPluginIndex() /* Need to be optmized */
 {
     SDEBUG
-    /* TODO: or Delete */
+    for (size_t i = 0; i < m_pluginListWidget->count(); ++i)
+    {
+        QListWidgetItem *item = m_pluginListWidget->item(i);
+        SPluginItem *pluginItem = (SPluginItem *) m_pluginListWidget->itemWidget(item);
+        pluginItem->setIndexToInfo(i);
+    }
 }

@@ -19,8 +19,8 @@
 #include "SPluginInfo.h"
 #include "SPluginItem.h"
 
-#define STARRY_VERSION_MAJOR 1
-#define STARRY_VERSION_MINOR 0
+#define STARRY_VERSION_MAJOR 0
+#define STARRY_VERSION_MINOR 2
 #define STARRY_VERSION_PATCH 0
 #define STARRY_VERSION       QString::number(STARRY_VERSION_MAJOR) + '.' + QString::number(STARRY_VERSION_MINOR) + '.' + QString::number(STARRY_VERSION_PATCH)
 

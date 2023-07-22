@@ -31,6 +31,7 @@ public:
     static void remove(SPluginItem*);
 
     void refresh(); // Call this function when m_info changed
+    void setIndexToInfo(size_t index);
     SPluginInfo* pluginInfo(); 
     SButton*     deleteButton();
     SButton*     editButton();
@@ -43,7 +44,7 @@ private:
         const QString &tip, bool enable = false,QWidget *parent = (QWidget*)nullptr);
     ~SPluginItem();
 
-    void init(); // init GUI
+    void initGui(); 
 
 private:
     SPluginInfo     *m_info = nullptr;

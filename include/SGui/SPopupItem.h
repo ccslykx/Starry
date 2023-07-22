@@ -17,7 +17,7 @@
 
 #include "SPluginInfo.h"
 
-class SPopupItem : QLabel
+class SPopupItem : public QLabel
 {
     Q_OBJECT
 public:

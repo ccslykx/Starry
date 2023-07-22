@@ -8,14 +8,12 @@ SPluginInfo::SPluginInfo(
     const int _index,         // 插件排序
     const QString &_tip,      // 插件说明
     const bool _enabled)      // 是否启用
-    // SPluginItem *_pluginItem)
     : name(_name)
     , tip(_tip)
     , script(_script)
     , iconPath(_iconPath)
     , index(_index)
     , enabled(_enabled)
-    // , pluginItem(_pluginItem) 
 {
     SDEBUG
     this->setIcon(iconPath);
@@ -28,14 +26,12 @@ SPluginInfo::SPluginInfo(
     const int _index,       // 插件排序
     const QString &_tip,    // 插件说明
     const bool _enabled)    // 是否启用
-    // SPluginItem *_pluginItem)
     : name(_name)
     , tip(_tip)
     , script(_script)
     , icon(_icon)
     , index(_index)
     , enabled(_enabled)
-    // , pluginItem(_pluginItem) 
 {
     SDEBUG
     this->iconPath = ""; // TODO: Save icon to file and set iconPath.
@@ -67,7 +63,7 @@ void SPluginInfo::setIcon(const QPixmap &icon)
     /* TODO: 
         1. detect icon file exist
         2. create icon file or replace it
-        3. refreash this->iconPath
+        3. refresh this->iconPath
     */
 }
 
@@ -93,11 +89,3 @@ void SPluginInfo::saveIcon(const QPixmap &icon)
         3. set iconPath as private icon path.
     */
 }
-
-// void SPluginInfo::refreshItem()
-// {
-//     if (this->pluginItem)
-//     {
-//         pluginItem->refresh();
-//     }
-// }

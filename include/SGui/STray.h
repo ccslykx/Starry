@@ -14,7 +14,7 @@
 #include <QApplication>
 #include <QMenu>
 #include <QSystemTrayIcon>
-#include "SInvoker.h"
+// #include "SInvoker.h"
 #include "SPopup.h"
 #include "SSettings.h"
 
@@ -35,8 +35,9 @@ private:
     ~STray();
 
     void initGui(); // Initialize the gui.
+    void initServices();
     void initSettings(); // Initialize the settings.
-    void connectInvokers(); // Connect to backend of mouse events, different between OS and window managers.
+    void connectMouseListener(); // Connect to backend of mouse events, different between OS and window managers.
 
     /**
      * @brief 在鼠标划词松开后，等待`selectionChange`信号。如果未发出该信号，
@@ -55,7 +56,7 @@ private:
     static SPopup       *m_popup;
     static SSettings    *m_settings;
     static QClipboard   *m_clipboard;
-    static SInvoker     *m_invoker;
+    // static SInvoker     *m_invoker;
 
     QPoint              m_pressPos;
     QPoint              m_releasePos;
