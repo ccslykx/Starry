@@ -2,7 +2,7 @@
 #include <QDebug>
 
 #include "STray.h"
-#define SDEBUG qDebug() << "[FILE:" << __FILE__ << ", LINE:" << __LINE__ << ", FUNC:" << Q_FUNC_INFO << "]";
+#include "utils.h"
 
 STray*      STray::m_instance = nullptr;
 SPopup*     STray::m_popup = nullptr;

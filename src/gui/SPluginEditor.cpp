@@ -1,17 +1,17 @@
 #include <QLineEdit>
 #include <QVBoxLayout>
-#include <QDebug>
+
 #include "SConfig.h"
 #include "SSettings.h"
 #include "SPluginEditor.h"
 #include "SButton.h"
-
-#define SDEBUG qDebug() << "[FILE:" << __FILE__ << ", LINE:" << __LINE__ << ", FUNC:" << Q_FUNC_INFO << "]";
+#include "utils.h"
 
 SPluginEditor* SPluginEditor::m_instance = nullptr;
 
 SPluginEditor* SPluginEditor::editor(QWidget *parent)
 {
+    SDEBUG
     if (!m_instance)
     {
         m_instance = new SPluginEditor(parent);
@@ -28,6 +28,7 @@ SPluginEditor::SPluginEditor(QWidget *parent)
 
 void SPluginEditor::initGui()
 {
+    SDEBUG
     if (!m_iconLabel)   m_iconLabel = new QLabel(tr("Icon"), this);
     if (!m_nameLabel)   m_nameLabel = new QLabel(tr("Name"), this);
     if (!m_tipLabel)    m_tipLabel = new QLabel(tr("Tip"), this);
@@ -74,6 +75,7 @@ void SPluginEditor::initGui()
 
 void SPluginEditor::edit(SPluginItem *item)
 {
+    SDEBUG
     m_editingItem = item;
 
     SPluginInfo &info = *item->pluginInfo();
@@ -90,6 +92,7 @@ void SPluginEditor::edit(SPluginItem *item)
 
 void SPluginEditor::create()
 {
+    SDEBUG
     // m_iconContainor->setPixmap(defaultPixmap);
     m_nameEdit->setText("");
     m_tipEdit->setText("");

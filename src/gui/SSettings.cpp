@@ -1,16 +1,14 @@
-#include <QDebug>
 #include <QVBoxLayout>
 #include <QCloseEvent>
 #include <QMessageBox>
 
 #include "SSettings.h"
 #include "SConfig.h"
-
-#define SDEBUG qDebug() << "[FILE:" << __FILE__ << ", LINE:" << __LINE__ << ", FUNC:" << Q_FUNC_INFO << "]";
+#include "utils.h"
 
 SSettings* SSettings::m_instance = nullptr;
 
-extern SConfig *config;
+static SConfig *config = SConfig::config();
 
 SSettings* SSettings::instance(QWidget *parent)
 {

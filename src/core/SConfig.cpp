@@ -1,14 +1,14 @@
 #include <QSettings>
-#include <QDebug>
 #include <QDir>
+
 #include "SConfig.h"
+#include "utils.h"
 
 SConfig* SConfig::m_instance = nullptr;
 
-SConfig *config = SConfig::config();
-
 SConfig* SConfig::config(const QString &path)
 {
+    SDEBUG
     if (!m_instance)
     {
         m_instance = new SConfig(path);
@@ -18,6 +18,7 @@ SConfig* SConfig::config(const QString &path)
 
 bool SConfig::detectConfigPath(const QString &path, bool makepath)
 {
+    SDEBUG
     const QString &_path = path.isEmpty() ? m_configPath : path;
     
     // Detect config dir exists
@@ -40,6 +41,7 @@ bool SConfig::detectConfigPath(const QString &path, bool makepath)
 
 void SConfig::saveToFile(const QString &path)
 {
+    SDEBUG
     // If config dir not exist, make it and set to m_configpath.
     if (!detectConfigPath(path, true)) 
     {
@@ -75,6 +77,7 @@ void SConfig::saveToFile(const QString &path)
 
 void SConfig::readFromFile(const QString &path)
 {
+    SDEBUG
     // If config dir not exist, return.
     if (!detectConfigPath(path))
     {
@@ -127,11 +130,13 @@ void SConfig::readFromFile(const QString &path)
 
 void SConfig::setConfigFilePath(const QString &path)
 {
+    SDEBUG
     m_configPath = path;
 }
 
 void SConfig::addSetting(const QString &key, QVariant value)
 {
+    SDEBUG
     if (this->settingMap.contains(key)) 
     {
         qWarning() << key << "has already exist!";
@@ -142,6 +147,7 @@ void SConfig::addSetting(const QString &key, QVariant value)
 
 void SConfig::editSetting(const QString &key, QVariant newValue)
 {
+    SDEBUG
     if (!this->settingMap.contains(key))
     {
         qWarning() << key << "doesn't exist!";
@@ -152,6 +158,7 @@ void SConfig::editSetting(const QString &key, QVariant newValue)
 
 QVariant SConfig::getSetting(const QString &key)
 {
+    SDEBUG
     if (!this->settingMap.contains(key))
     {
         qWarning() << key << "doesn't exist!";
@@ -162,6 +169,7 @@ QVariant SConfig::getSetting(const QString &key)
 
 void SConfig::deleteSetting(const QString &key)
 {
+    SDEBUG
     if (this->settingMap.contains(key))
     {
         settingMap.remove(key);
@@ -170,6 +178,7 @@ void SConfig::deleteSetting(const QString &key)
 
 void SConfig::addPlugin(SPluginInfo *info)
 {
+    SDEBUG
     if (pInfoMap.contains(info->name))
     {
         qWarning() << info->name << "has already exist!";
@@ -180,11 +189,13 @@ void SConfig::addPlugin(SPluginInfo *info)
 
 void SConfig::addPlugin(SPluginItem *item)
 {
+    SDEBUG
     addPlugin(item->pluginInfo()); /* Need Test */
 }
 
 void SConfig::deletePlugin(SPluginInfo *info)
 {
+    SDEBUG
      if (!pInfoMap.contains(info->name))
     {
         qWarning() << info->name << "doesn't exist!";
@@ -195,11 +206,13 @@ void SConfig::deletePlugin(SPluginInfo *info)
 
 SPluginInfo* SConfig::getSPluginInfo(const QString &name)
 {
+    SDEBUG
     return pInfoMap.value(name, nullptr);
 }
 
 QVector<SPluginInfo*> SConfig::getSPluginInfos()
 {
+    SDEBUG
     QVector<SPluginInfo*> plugins(pInfoMap.count());
     for (SPluginInfo* info : pInfoMap.values())
     {
@@ -210,27 +223,32 @@ QVector<SPluginInfo*> SConfig::getSPluginInfos()
 
 QString SConfig::version()
 {
+    SDEBUG
     return STARRY_VERSION;
 }
 
 int SConfig::major()
 {
+    SDEBUG
     return STARRY_VERSION_MAJOR;
 }
 
 int SConfig::minor()
 {
+    SDEBUG
     return STARRY_VERSION_MINOR;
 }
 
 int SConfig::patch()
 {
+    SDEBUG
     return STARRY_VERSION_PATCH;
 }
 
 SConfig::SConfig(const QString &path) 
     : m_configPath(path)
 {
+    SDEBUG
     if (this->m_configPath == "")
     {
         m_configPath = QDir::homePath() + "/.config/Starry/starry.conf";

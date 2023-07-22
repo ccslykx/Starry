@@ -10,9 +10,9 @@
  */
 
 #include <QMouseEvent>
-#include "SButton.h"
 
-#define SDEBUG qDebug() << "[FILE:" << __FILE__ << ", LINE:" << __LINE__ << ", FUNC:" << Q_FUNC_INFO << "]";
+#include "SButton.h"
+#include "utils.h"
 
 SButton::SButton(const QString &text, QWidget *parent)
 {

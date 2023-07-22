@@ -10,9 +10,9 @@
  */
 
 #include <QMouseEvent>
-#include "SSwitcher.h"
 
-#define SDEBUG qDebug() << "[FILE:" << __FILE__ << ", LINE:" << __LINE__ << ", FUNC:" << Q_FUNC_INFO << "]";
+#include "SSwitcher.h"
+#include "utils.h"
 
 SSwitcher::SSwitcher(const QString &on, const QString &off, bool status, QWidget *parent)
     : m_on(on), m_off(off), m_isOn(status)

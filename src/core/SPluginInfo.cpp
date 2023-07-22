@@ -1,5 +1,5 @@
-#include <QDebug>
 #include "SPluginInfo.h"
+#include "utils.h"
 
 SPluginInfo::SPluginInfo(
     const QString &_name,     // 插件名称
@@ -17,6 +17,7 @@ SPluginInfo::SPluginInfo(
     , enabled(_enabled)
     // , pluginItem(_pluginItem) 
 {
+    SDEBUG
     this->setIcon(iconPath);
 }
 
@@ -36,11 +37,13 @@ SPluginInfo::SPluginInfo(
     , enabled(_enabled)
     // , pluginItem(_pluginItem) 
 {
+    SDEBUG
     this->iconPath = ""; // TODO: Save icon to file and set iconPath.
 }
 
 void SPluginInfo::setIndex(int i)
 {
+    SDEBUG
     if (i < 0 /* i > max */)
     {
         qWarning() << "Setting index with invalid value";
@@ -51,12 +54,14 @@ void SPluginInfo::setIndex(int i)
 
 void SPluginInfo::setIcon(const QString &path)
 {
+    SDEBUG
     this->saveIcon(path);
     this->icon = QPixmap(path); // TODO: change path to iconPath
 }
 
 void SPluginInfo::setIcon(const QPixmap &icon)
 {
+    SDEBUG
     this->saveIcon(icon);
     this->icon = icon;
     /* TODO: 
@@ -70,6 +75,7 @@ void SPluginInfo::setIcon(const QPixmap &icon)
 
 void SPluginInfo::saveIcon(const QString &path) 
 {
+    SDEBUG
     /* TODO:
         1. detect path exist
         2. detect private path exist, if not exist, create it.
@@ -80,6 +86,7 @@ void SPluginInfo::saveIcon(const QString &path)
 
 void SPluginInfo::saveIcon(const QPixmap &icon)
 {
+    SDEBUG
     /* TODO:
         1. detect private path exist, if not exist, create it.
         2. save icon to private path

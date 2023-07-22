@@ -5,27 +5,30 @@
 #include "SPluginInfo.h"
 #include "SButton.h"
 #include "SSwitcher.h"
-
-#define SDEBUG qDebug() << "[FILE:" << __FILE__ << ", LINE:" << __LINE__ << ", FUNC:" << Q_FUNC_INFO << "]";
+#include "utils.h"
 
 SPluginItem* SPluginItem::create(SPluginInfo *pluginInfo, QWidget *parent)
 {
+    SDEBUG
     return new SPluginItem(pluginInfo, parent);
 }
 SPluginItem* SPluginItem::create(const QString &name, const QString &script,
     const QPixmap &icon, const QString &tip, bool enable, QWidget *parent)
 {
+    SDEBUG
     return new SPluginItem(name, script, icon, tip, enable, parent);
 }
 
 SPluginItem* SPluginItem::create(const QString &name, const QString &script,
     const QString &iconPath, const QString &tip, bool enable, QWidget *parent)
 {
+    SDEBUG
     return new SPluginItem(name, script, iconPath, tip, enable, parent);
 }
 
 void SPluginItem::remove(SPluginItem *item)
 {
+    SDEBUG
     if (item)
     {
         delete item;
