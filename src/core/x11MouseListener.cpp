@@ -5,6 +5,7 @@
 #include <X11/Xproto.h>
 
 #include "x11MouseListener.h"
+#include "utils.h"
 
 static void callback(XPointer ptr, XRecordInterceptData *data)
 {
@@ -33,11 +34,13 @@ X11MouseListener* X11MouseListener::instance()
 
 void X11MouseListener::startListen()
 {
+    SDEBUG
     QtConcurrent::run(enableContext);
 }
 
 void X11MouseListener::stopListen()
 {
+    SDEBUG
     if (m_context == 0)
     {
         return;
@@ -143,6 +146,7 @@ void X11MouseListener::handleRecordEvent(XRecordInterceptData *data)
 
 X11MouseListener::X11MouseListener()
 {
+    SDEBUG
     init();
     
     if (!m_doubleClickTimer)
@@ -154,6 +158,7 @@ X11MouseListener::X11MouseListener()
 
 X11MouseListener::~X11MouseListener()
 {
+    SDEBUG
     if (m_instance)
     {
         delete m_instance;
@@ -163,6 +168,7 @@ X11MouseListener::~X11MouseListener()
 
 void X11MouseListener::init()
 {
+    SDEBUG
     m_display = XOpenDisplay(NULL);
     if (!m_display) 
     {
@@ -209,6 +215,7 @@ void X11MouseListener::init()
 
 void X11MouseListener::enableContext()
 {
+    SDEBUG
     Status ret = XRecordEnableContext(m_display, m_context,  callback, nullptr);
     XCloseDisplay(m_display);
     m_display = nullptr;   

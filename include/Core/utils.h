@@ -17,7 +17,9 @@
 #define ENABLE_DEBUG
 
 #ifdef ENABLE_DEBUG
-    #define SDEBUG qDebug() << "[FILE:" << __FILE__ << ", LINE:" << __LINE__ << ", FUNC:" << Q_FUNC_INFO << "]";
+#   define SDEBUG qDebug() << "[FILE:" << __FILE__ + QString(":") + QString::number(__LINE__) << "\t" << Q_FUNC_INFO << "]";
+#else
+#   define SDEBUG
 #endif
 
 class SUtils

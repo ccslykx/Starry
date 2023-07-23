@@ -1,10 +1,31 @@
 #pragma once
 
-#include <QObject> // 要最先引入
 #include <QElapsedTimer>
-#include <X11/extensions/record.h>
-
 #include "AbstractMouseListener.h"
+
+#include <X11/extensions/record.h>
+/* 给X11的宏定义污染擦PP */
+#ifdef None
+#   undef None
+#endif
+#ifdef KeyPress
+#   undef KeyPress
+#endif
+#ifdef KeyRelease
+#   undef KeyRelease
+#endif
+#ifdef FocusIn
+#   undef FocusIn
+#endif
+#ifdef FocusOut
+#   undef FocusOut
+#endif
+#ifdef FontChange
+#   undef FontChange
+#endif
+#ifdef Expose
+#   undef Expose
+#endif
 
 class X11MouseListener : public AbstractMouseListener
 {
