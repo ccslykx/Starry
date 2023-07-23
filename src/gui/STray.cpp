@@ -2,6 +2,8 @@
 #include "utils.h"
 
 STray*          STray::m_instance = nullptr;
+SPluginEditor*  STray::m_editor = nullptr;
+SConfig*        STray::m_config = nullptr;
 SPopup*         STray::m_popup = nullptr;
 SSettings*      STray::m_settings = nullptr;
 SMouseListener* STray::m_mouseListener = nullptr;
@@ -34,6 +36,10 @@ void STray::exitTray()
     if (m_mouseListener)
     {
         m_mouseListener->stopListen();
+    }
+    if (m_config)
+    {
+        m_config->saveToFile();
     }
     QApplication *parent = (QApplication*) this->parent();
     parent->quit();
@@ -84,6 +90,14 @@ void STray::initGui()
 void STray::initServices()
 {
     SDEBUG
+    if (!m_editor)
+    {
+        m_editor = SPluginEditor::editor();
+    }
+    if (!m_config)
+    {
+        m_config = SConfig::config();
+    }
     if (!m_settings)
     {
         m_settings = SSettings::instance();
@@ -91,7 +105,6 @@ void STray::initServices()
     if (!m_popup)
     {
         m_popup = SPopup::instance();
-        m_popup->update();
     }
     if (!m_mouseListener)
     {
@@ -99,11 +112,20 @@ void STray::initServices()
         m_mouseListener->startListen();
     }
 
-    QObject::connect(m_settings, &SSettings::saveOnClose, m_popup, &SPopup::update);
+    QObject::connect(m_editor, &SPluginEditor::created, [this] (SPluginInfo *info) {
+        this->m_config->addPlugin(info);
+        this->m_settings->addPluginItem(info);
+        this->m_popup->addItem(info);
+    });
+    QObject::connect(m_config, &SConfig::readPlugin, [this] (SPluginInfo *info) {
+        this->m_settings->addPluginItem(info);
+        this->m_popup->addItem(info);
+    });
     QObject::connect(m_mouseListener, &SMouseListener::canShow, m_popup, &SPopup::showPopup);
 }
 
 void STray::initSettings()
 {
     SDEBUG
+    m_config->readFromFile();
 }

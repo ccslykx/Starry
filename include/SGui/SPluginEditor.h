@@ -29,7 +29,7 @@ public:
     void create();
 
 signals:
-    void edited(SPluginItem*);
+    // void edited(SPluginItem*);
     void created(SPluginInfo*);
 
 private:

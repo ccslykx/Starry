@@ -69,6 +69,11 @@ void SPluginInfo::setIcon(const QPixmap &icon)
 
 /* Private Functions */
 
+SPluginInfo::~SPluginInfo()
+{
+    
+}
+
 void SPluginInfo::saveIcon(const QString &path) 
 {
     SDEBUG
@@ -88,9 +93,4 @@ void SPluginInfo::saveIcon(const QPixmap &icon)
         2. save icon to private path
         3. set iconPath as private icon path.
     */
-}
-
-void SPluginInfo::emitModified()
-{
-    emit modified();
 }

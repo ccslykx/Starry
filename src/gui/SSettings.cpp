@@ -62,7 +62,6 @@ void SSettings::initGui()
     {
         m_pluginEditor = SPluginEditor::editor();
     }
-    QObject::connect(m_pluginEditor, &SPluginEditor::created, this, &SSettings::onPluginCreated);
 
     // 内容页-快捷键
     if (!m_shortcutWidget)
@@ -118,8 +117,8 @@ void SSettings::initGui()
     addMenuItem(shortcuts);
     addMenuItem(about);
 
-    // 添加 内容页-插件 项目
-    readPlugins();
+    // // 添加 内容页-插件 项目
+    // readPlugins();
 
     // 主界面
     QIcon windowIcon(SUtils::STARRY_ICON(64));
@@ -132,32 +131,41 @@ void SSettings::initGui()
 void SSettings::addPluginItem(SPluginItem *item)
 {
     SDEBUG
+    if (!item)
+    {
+        return;
+    }
     QListWidgetItem *listWidgetItem = new QListWidgetItem(m_pluginListWidget);
     QSize size(m_pluginListWidget->size().width() - 14, 48);
     listWidgetItem->setSizeHint(size);
     m_pluginListWidget->addItem(listWidgetItem);
     m_pluginListWidget->setItemWidget(listWidgetItem, item);
-    m_config->addPlugin(item);
-    QObject::connect(item, &SPluginItem::needDelete, this, &SSettings::onPluginItemDelete);
 }
 
 void SSettings::addPluginItem(SPluginInfo *info)
 {
     SDEBUG
+    if (!info)
+    {
+        return;
+    }
     SPluginItem *item = SPluginItem::create(info, this->m_pluginListWidget);
     addPluginItem(item);
+    QObject::connect(info, &SPluginInfo::needDelete, [this, info] () {
+        this->deletePluginItem(info->pluginItem);
+    });
 }
 
 void SSettings::deletePluginItem(SPluginItem *item)
 {
     SDEBUG
+    if (!item)
+    {
+        return;
+    }
     int cur = m_pluginListWidget->currentRow();
-    
     QListWidgetItem *listWidgetItem = m_pluginListWidget->takeItem(cur);
     delete listWidgetItem;
-    qDebug("delete listWidgetItem;");
-    m_config->deletePlugin(item->pluginInfo()); /* TODO: confirm */
-    SPluginItem::remove(item);
 }
 
 void SSettings::addMenuItem(QLabel *item)
@@ -170,21 +178,21 @@ void SSettings::addMenuItem(QLabel *item)
     m_menuListWidget->setItemWidget(listWidgetItem, item);
 }
 
-void SSettings::readPlugins()
-{
-    SDEBUG
-    QVector<SPluginInfo*> infos = m_config->getSPluginInfos();
-    if (infos.isEmpty())
-    {
-        qWarning() << "No plugins found in SConfig";
-        return;
-    }
+// void SSettings::readPlugins()
+// {
+//     SDEBUG
+//     QVector<SPluginInfo*> infos = m_config->getSPluginInfos();
+//     if (infos.isEmpty())
+//     {
+//         qWarning() << "No plugins found in SConfig";
+//         return;
+//     }
 
-    for (SPluginInfo *info : infos)
-    {
-        addPluginItem(info);
-    }
-}
+//     for (SPluginInfo *info : infos)
+//     {
+//         addPluginItem(info);
+//     }
+// }
 
 void SSettings::showContent(int index)
 {
@@ -204,18 +212,6 @@ void SSettings::onCreatePluginClicked()
     SDEBUG
     m_pluginEditor->create();
     /* TODO: 当编辑窗口未关闭时，设置窗口不可点击 */
-}
-
-void SSettings::onPluginCreated(SPluginInfo *info)
-{
-    SDEBUG
-    addPluginItem(info);
-}
-
-void SSettings::onPluginItemDelete(SPluginItem *item)
-{
-    deletePluginItem(item);
-    qDebug("onPluginItemDelete end");
 }
 
 /* private functions */
@@ -242,7 +238,7 @@ void SSettings::closeEvent(QCloseEvent *ev)
 {
     SDEBUG
     refreshPluginIndex();
-    emit saveOnClose();
+    emit windowClose();
     m_config->saveToFile();
     ev->accept();
 }

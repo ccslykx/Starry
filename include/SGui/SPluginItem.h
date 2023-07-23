@@ -34,9 +34,6 @@ public:
     void setIndexToInfo(size_t index);
     SPluginInfo* pluginInfo(); 
 
-signals:
-    void needDelete(SPluginItem*);
-
 private:
     explicit SPluginItem(SPluginInfo *pluginInfo, QWidget *parent = (QWidget*)nullptr);
     explicit SPluginItem(const QString &name, const QString &script, const QPixmap &icon, 

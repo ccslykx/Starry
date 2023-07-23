@@ -24,6 +24,9 @@
 #define STARRY_VERSION_PATCH 0
 #define STARRY_VERSION       QString::number(STARRY_VERSION_MAJOR) + '.' + QString::number(STARRY_VERSION_MINOR) + '.' + QString::number(STARRY_VERSION_PATCH)
 
+class SPluginInfo;
+class SPluginItem;
+
 class SConfig : public QObject
 {
     Q_OBJECT
@@ -58,6 +61,9 @@ public:
     int major();
     int minor();
     int patch();
+
+signals:
+    void readPlugin(SPluginInfo*);
 
 private:
     explicit SConfig(const QString &path = "");

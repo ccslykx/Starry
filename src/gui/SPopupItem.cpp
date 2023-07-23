@@ -19,6 +19,16 @@ void SPopupItem::remove(SPopupItem *item)
     }
 }
 
+SPluginInfo* SPopupItem::pluginInfo()
+{
+    return m_info;
+}
+
+void SPopupItem::refresh()
+{
+    setText(m_info->name); /* TODO: icon support */
+}
+
 void SPopupItem::exec()
 {
     SDEBUG
@@ -78,7 +88,8 @@ SPopupItem::SPopupItem(SPluginInfo *info, QWidget *parent)
     : m_info(info)
 {
     this->setParent(parent);
-        if (!m_process)
+    m_info->popupItem = this;
+    if (!m_process)
     {
         m_process = new QProcess;
     }
@@ -93,11 +104,23 @@ SPopupItem::SPopupItem(SPluginInfo *info, QWidget *parent)
     /* TODO: read from SConfig */
     this->setMinimumSize(32, 32);
     this->adjustSize();
+    this->setVisible(info->enabled);
     QObject::connect(this, &SPopupItem::clicked, this, &SPopupItem::exec);
+    QObject::connect(m_info, &SPluginInfo::edited, this, &SPopupItem::refresh);
+    QObject::connect(m_info, &SPluginInfo::switchOn, [this] (SPluginInfo *info) {
+        this->setVisible(info->enabled);
+    });
+    QObject::connect(m_info, &SPluginInfo::switchOff, [this] (SPluginInfo *info) {
+        this->setVisible(info->enabled);
+    });
+    QObject::connect(m_info, &SPluginInfo::needDelete, [this] (SPluginInfo *info) {
+        this->setVisible(false);
+    });
 }
 
 SPopupItem::~SPopupItem()
 {
+    SDEBUG
     stop();
     m_process = nullptr;
 }

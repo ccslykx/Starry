@@ -23,6 +23,8 @@ class SPopupItem : public QLabel
 public:
     static SPopupItem* create(SPluginInfo*, QWidget *parent = (QWidget*)nullptr);
     static void remove(SPopupItem*);
+    SPluginInfo* pluginInfo();
+    void refresh();
     void exec();
     void stop();
 

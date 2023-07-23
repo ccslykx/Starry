@@ -56,20 +56,19 @@ void SPluginEditor::initGui()
     this->setLayout(layout);
 
     QObject::connect(m_eButton, &SButton::clicked, this, [this]() {
-        SPluginInfo &info = *this->m_editingItem->pluginInfo();
-        info.name = this->m_nameEdit->text();
-        info.script = this->m_scriptEdit->text();
-        info.tip = this->m_tipEdit->text();
-        info.icon = this->m_icon;
-        info.emitModified();
+        SPluginInfo *info = this->m_editingItem->pluginInfo();
+        info->name = this->m_nameEdit->text();
+        info->script = this->m_scriptEdit->text();
+        info->tip = this->m_tipEdit->text();
+        info->icon = this->m_icon;
         
-        emit this->edited(this->m_editingItem);
+        emit info->edited(info);
         this->close();
     });
     QObject::connect(m_cButton, &SButton::clicked, this, [this]() {
         SPluginInfo *info = new SPluginInfo(this->m_nameEdit->text(), 
             this->m_scriptEdit->text(), m_icon, 0, this->m_tipEdit->text(), true);
-        emit this->created(info);
+        emit created(info);
         this->close();
     });
 }
@@ -77,6 +76,10 @@ void SPluginEditor::initGui()
 void SPluginEditor::edit(SPluginItem *item)
 {
     SDEBUG
+    if (!item)
+    {
+        return;
+    }
     m_editingItem = item;
 
     SPluginInfo &info = *item->pluginInfo();

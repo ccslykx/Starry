@@ -35,11 +35,9 @@ public:
 public slots:
     void showContent(int index = -1); // 根据左侧菜单显示对应的右侧内容
     void onCreatePluginClicked(); // 新建插件
-    void onPluginCreated(SPluginInfo*);
-    void onPluginItemDelete(SPluginItem*);
 
 signals:
-    void saveOnClose();
+    void windowClose();
 
 private:
     explicit SSettings(QWidget *parent = (QWidget*)nullptr);
@@ -51,7 +49,8 @@ private:
 private:
     static SSettings        *m_instance;
 
-    SConfig                 *m_config;
+    SConfig                 *m_config = nullptr;
+    SPluginEditor           *m_pluginEditor = nullptr;
 
     QListWidget             *m_menuListWidget = nullptr; // 菜单页
     QStackedWidget          *m_contentWidget = nullptr; // 内容页
@@ -59,6 +58,4 @@ private:
     QListWidget             *m_pluginListWidget = nullptr; // 内容页-插件-已有插件列表
     QListWidget             *m_shortcutWidget = nullptr; // 内容页-快捷键
     QWidget                 *m_aboutWidget = nullptr; // 内容页-关于
-
-    SPluginEditor           *m_pluginEditor = nullptr;
 };

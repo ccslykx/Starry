@@ -15,6 +15,8 @@
 #include <QSystemTrayIcon>
 #include <QMenu>
 
+#include "SPluginEditor.h"
+#include "SConfig.h"
 #include "SPopup.h"
 #include "SSettings.h"
 #include "SMouseListener.h"
@@ -41,7 +43,9 @@ private:
 
 private:
     static STray            *m_instance;
-    static SPopup           *m_popup;
+    static SPluginEditor    *m_editor;
+    static SConfig          *m_config;
     static SSettings        *m_settings;
+    static SPopup           *m_popup;
     static SMouseListener   *m_mouseListener;
 };

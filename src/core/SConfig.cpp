@@ -42,6 +42,11 @@ bool SConfig::detectConfigPath(const QString &path, bool makepath)
 void SConfig::saveToFile(const QString &path)
 {
     SDEBUG
+    if (path.isEmpty())
+    {
+        saveToFile(m_configPath);
+        return;
+    }
     // If config dir not exist, make it and set to m_configpath.
     if (!detectConfigPath(path, true)) 
     {
@@ -78,6 +83,11 @@ void SConfig::saveToFile(const QString &path)
 void SConfig::readFromFile(const QString &path)
 {
     SDEBUG
+    if (path.isEmpty())
+    {
+        readFromFile(m_configPath);
+        return;
+    }
     // If config dir not exist, return.
     if (!detectConfigPath(path))
     {
@@ -115,6 +125,7 @@ void SConfig::readFromFile(const QString &path)
         }
         SPluginInfo *info = new SPluginInfo(pName, script, iconPath, index, tip, enabled);
         addPlugin(std::move(info)); /* Need Test */
+        emit readPlugin(info);
     }
     s.endGroup();
     
@@ -178,29 +189,43 @@ void SConfig::deleteSetting(const QString &key)
 void SConfig::addPlugin(SPluginInfo *info)
 {
     SDEBUG
+    if (!info)
+    {
+        return;
+    }
     if (pInfoMap.contains(info->name))
     {
         qWarning() << info->name << "has already exist!";
         return;
     }
     pInfoMap.insert(info->name, info);
+    QObject::connect(info, &SPluginInfo::needDelete, this, &SConfig::deletePlugin);
 }
 
 void SConfig::addPlugin(SPluginItem *item)
 {
     SDEBUG
+    if (!item)
+    {
+        return;
+    }
     addPlugin(item->pluginInfo()); /* Need Test */
 }
 
 void SConfig::deletePlugin(SPluginInfo *info)
 {
     SDEBUG
-     if (!pInfoMap.contains(info->name))
+    if (!info)
+    {
+        return;
+    }
+    if (!pInfoMap.contains(info->name))
     {
         qWarning() << info->name << "doesn't exist!";
         return;
     }
     pInfoMap.remove(info->name);
+    info->deleteLater();
 }
 
 SPluginInfo* SConfig::getSPluginInfo(const QString &name)
@@ -260,7 +285,6 @@ SConfig::SConfig(const QString &path)
     }
     settingMap = QHash<QString, QVariant>();
     pInfoMap = QHash<QString, SPluginInfo*>();
-    readFromFile(m_configPath);
 }
 
 // SConfig::~SConfig()

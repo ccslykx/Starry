@@ -17,37 +17,28 @@ SPopup* SPopup::instance()
     return m_instance;
 }
 
-void SPopup::update()
-{
-    SDEBUG
-    clearItems();
-
-    QVector<SPluginInfo*> infos = m_config->getSPluginInfos();
-    int count = infos.count();
-    if (count <= 0)
-    {
-        return;
-    }
-
-    for (SPluginInfo *info : infos)
-    {
-        if (info->enabled)
-        {
-            addItem(info);
-        }
-    }
-}
-
 void SPopup::addItem(SPluginInfo *info)
 {
     SDEBUG
+    if (!info)
+    {
+        return;
+    }
     SPopupItem *item = SPopupItem::create(info, this);
     addItem(item);
+
+    QObject::connect(info, &SPluginInfo::needDelete, [this] (SPluginInfo *info) {
+        deleteItem(info->popupItem);
+    });
 }
 
 void SPopup::addItem(SPopupItem *item)
 {   
     SDEBUG
+    if (!item)
+    {
+        return;
+    }
     m_items.push_back(item);
     m_layout->addWidget(item);
 
@@ -57,24 +48,13 @@ void SPopup::addItem(SPopupItem *item)
 void SPopup::deleteItem(SPopupItem *item)
 {
     SDEBUG
+    if (!item)
+    {
+        return;
+    }
     m_layout->removeWidget(item);
     m_items.removeOne(item);
     SPopupItem::remove(item);
-}
-
-void SPopup::clearItems()
-{
-    SDEBUG
-    if (m_layout)
-    {
-        delete m_layout;
-        m_layout = new QHBoxLayout(this);
-    }
-    for (SPopupItem *item : m_items)
-    {
-        SPopupItem::remove(item);
-    }
-    m_items.clear();
 }
 
 void SPopup::showPopup()
