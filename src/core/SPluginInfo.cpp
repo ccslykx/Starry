@@ -89,3 +89,8 @@ void SPluginInfo::saveIcon(const QPixmap &icon)
         3. set iconPath as private icon path.
     */
 }
+
+void SPluginInfo::emitModified()
+{
+    emit modified();
+}

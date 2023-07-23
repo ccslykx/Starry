@@ -62,7 +62,6 @@ void SSettings::initGui()
     {
         m_pluginEditor = SPluginEditor::editor();
     }
-    QObject::connect(m_pluginEditor, &SPluginEditor::edited, this, &SSettings::onPluginEdited);
     QObject::connect(m_pluginEditor, &SPluginEditor::created, this, &SSettings::onPluginCreated);
 
     // 内容页-快捷键
@@ -139,12 +138,7 @@ void SSettings::addPluginItem(SPluginItem *item)
     m_pluginListWidget->addItem(listWidgetItem);
     m_pluginListWidget->setItemWidget(listWidgetItem, item);
     m_config->addPlugin(item);
-    QObject::connect(item->deleteButton(), &SButton::clicked, this, [this, item]() {
-        this->onDeletePluginClicked(item);
-    }); /* TODO */
-    QObject::connect(item->editButton(), &SButton::clicked, this, [this, item]() {
-        this->onEditPluginClicked(item);
-    });
+    QObject::connect(item, &SPluginItem::needDelete, this, &SSettings::onPluginItemDelete);
 }
 
 void SSettings::addPluginItem(SPluginInfo *info)
@@ -158,7 +152,10 @@ void SSettings::deletePluginItem(SPluginItem *item)
 {
     SDEBUG
     int cur = m_pluginListWidget->currentRow();
-    m_pluginListWidget->takeItem(cur);
+    
+    QListWidgetItem *listWidgetItem = m_pluginListWidget->takeItem(cur);
+    delete listWidgetItem;
+    qDebug("delete listWidgetItem;");
     m_config->deletePlugin(item->pluginInfo()); /* TODO: confirm */
     SPluginItem::remove(item);
 }
@@ -209,34 +206,16 @@ void SSettings::onCreatePluginClicked()
     /* TODO: 当编辑窗口未关闭时，设置窗口不可点击 */
 }
 
-void SSettings::onDeletePluginClicked(SPluginItem *item)
-{
-    SDEBUG
-    QMessageBox *box = new QMessageBox(QMessageBox::Icon::Question,  "提示", "确实要删除插件 " + item->pluginInfo()->name + " 吗？", QMessageBox::Yes | QMessageBox::Cancel, this);
-    QObject::connect(box, &QMessageBox::accepted, this, [this, item, box] {
-        this->deletePluginItem(item);
-        delete box;
-    });
-    box->show(); 
-}
-
-void SSettings::onEditPluginClicked(SPluginItem *item)
-{
-    SDEBUG
-    m_pluginEditor->edit(item);
-    /* TODO: 当编辑窗口未关闭时，设置窗口不可点击 */
-}
-
-void SSettings::onPluginEdited(SPluginItem *item)
-{
-    SDEBUG
-    item->refresh();
-}
-
 void SSettings::onPluginCreated(SPluginInfo *info)
 {
     SDEBUG
     addPluginItem(info);
+}
+
+void SSettings::onPluginItemDelete(SPluginItem *item)
+{
+    deletePluginItem(item);
+    qDebug("onPluginItemDelete end");
 }
 
 /* private functions */

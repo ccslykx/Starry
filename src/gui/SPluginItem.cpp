@@ -1,8 +1,10 @@
 #include <QHBoxLayout>
 #include <QIcon>
+#include <QMessageBox>
 
 #include "SPluginItem.h"
 #include "SPluginInfo.h"
+#include "SPluginEditor.h"
 #include "SButton.h"
 #include "SSwitcher.h"
 #include "utils.h"
@@ -35,7 +37,7 @@ void SPluginItem::remove(SPluginItem *item)
     }
 }
 
-void SPluginItem::setIndexToInfo(size_t index)
+void SPluginItem::setIndexToInfo(size_t index) /* Todo */
 {
     SDEBUG
     m_info->index = index;
@@ -58,18 +60,6 @@ SPluginInfo* SPluginItem::pluginInfo()
     return this->m_info;
 }
 
-SButton* SPluginItem::deleteButton()
-{
-    SDEBUG
-    return this->m_deleteButton;
-}
-
-SButton* SPluginItem::editButton()
-{
-    SDEBUG
-    return this->m_editButton;
-}
-
 /* private functions */
 
 SPluginItem::SPluginItem(SPluginInfo *pluginInfo, QWidget *parent)
@@ -77,6 +67,7 @@ SPluginItem::SPluginItem(SPluginInfo *pluginInfo, QWidget *parent)
 {
     SDEBUG
     this->setParent(parent);
+    QObject::connect(m_info, &SPluginInfo::modified, this, &SPluginItem::refresh);
     initGui();
 }
 
@@ -147,4 +138,24 @@ void SPluginItem::initGui()
 
     this->setLayout(layout);
     this->setFixedHeight(48);
+
+    QObject::connect(m_deleteButton, &SButton::clicked, [this] () {
+        QMessageBox *box = new QMessageBox(QMessageBox::Icon::Question,  "提示", "确实要删除插件 " + this->m_info->name + " 吗？", QMessageBox::Yes | QMessageBox::Cancel, this);
+        QObject::connect(box, &QMessageBox::accepted, this, [this, box] {
+            emit this->needDelete(this);
+        });
+        box->show(); 
+    });
+    QObject::connect(m_editButton, &SButton::clicked, [this] () {
+        SPluginEditor *editor = SPluginEditor::editor();
+        editor->edit(this);
+    });
+    QObject::connect(m_switcher, &SSwitcher::switchOn, [this] () {
+        this->m_info->enabled = true;
+        this->refresh();
+    });
+    QObject::connect(m_switcher, &SSwitcher::switchOff, [this] () {
+        this->m_info->enabled = false;
+        this->refresh();
+    });
 }

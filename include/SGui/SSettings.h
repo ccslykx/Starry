@@ -35,10 +35,8 @@ public:
 public slots:
     void showContent(int index = -1); // 根据左侧菜单显示对应的右侧内容
     void onCreatePluginClicked(); // 新建插件
-    void onDeletePluginClicked(SPluginItem*);
-    void onEditPluginClicked(SPluginItem*);
-    void onPluginEdited(SPluginItem*);
     void onPluginCreated(SPluginInfo*);
+    void onPluginItemDelete(SPluginItem*);
 
 signals:
     void saveOnClose();

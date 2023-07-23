@@ -33,8 +33,9 @@ public:
     void refresh(); // Call this function when m_info changed
     void setIndexToInfo(size_t index);
     SPluginInfo* pluginInfo(); 
-    SButton*     deleteButton();
-    SButton*     editButton();
+
+signals:
+    void needDelete(SPluginItem*);
 
 private:
     explicit SPluginItem(SPluginInfo *pluginInfo, QWidget *parent = (QWidget*)nullptr);

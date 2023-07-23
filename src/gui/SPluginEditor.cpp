@@ -61,7 +61,8 @@ void SPluginEditor::initGui()
         info.script = this->m_scriptEdit->text();
         info.tip = this->m_tipEdit->text();
         info.icon = this->m_icon;
-
+        info.emitModified();
+        
         emit this->edited(this->m_editingItem);
         this->close();
     });
@@ -94,7 +95,7 @@ void SPluginEditor::edit(SPluginItem *item)
 void SPluginEditor::create()
 {
     SDEBUG
-    // m_iconContainor->setPixmap(defaultPixmap);
+    // m_iconContainor->setPixmap();
     m_nameEdit->setText("");
     m_tipEdit->setText("");
     m_scriptEdit->setText("");

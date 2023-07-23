@@ -40,7 +40,11 @@ public:
     void setIndex(int);
     void setIcon(const QString &path);
     void setIcon(const QPixmap &icon);
+    
+    void emitModified();
 
+signals:
+    void modified();
 
 private:
     void saveIcon(const QString &path);
