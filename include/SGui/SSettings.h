@@ -30,7 +30,6 @@ public:
     void addPluginItem(SPluginInfo*); // 添加到 m_pluginListWidget
     void deletePluginItem(SPluginItem*);
     void addMenuItem(QLabel*);
-    void readPlugins(); // 从SConfig读取插件设置
 
 public slots:
     void showContent(int index = -1); // 根据左侧菜单显示对应的右侧内容

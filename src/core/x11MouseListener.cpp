@@ -63,9 +63,6 @@ void X11MouseListener::stopListen()
 
 void X11MouseListener::handleRecordEvent(XRecordInterceptData *data)
 {
-// 虽然`m_doubleClickTimer`的初始化写在这里不太合适，但是避免了初始化和start、stop调用出现在不同线程的问题
-
-
     if (data->category == XRecordFromServer)
     {
         xEvent *event = (xEvent*)data->data;

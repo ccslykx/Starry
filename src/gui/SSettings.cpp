@@ -117,9 +117,6 @@ void SSettings::initGui()
     addMenuItem(shortcuts);
     addMenuItem(about);
 
-    // // 添加 内容页-插件 项目
-    // readPlugins();
-
     // 主界面
     QIcon windowIcon(SUtils::STARRY_ICON(64));
     this->setLayout(mainLayout);
@@ -177,22 +174,6 @@ void SSettings::addMenuItem(QLabel *item)
     m_menuListWidget->addItem(listWidgetItem);
     m_menuListWidget->setItemWidget(listWidgetItem, item);
 }
-
-// void SSettings::readPlugins()
-// {
-//     SDEBUG
-//     QVector<SPluginInfo*> infos = m_config->getSPluginInfos();
-//     if (infos.isEmpty())
-//     {
-//         qWarning() << "No plugins found in SConfig";
-//         return;
-//     }
-
-//     for (SPluginInfo *info : infos)
-//     {
-//         addPluginItem(info);
-//     }
-// }
 
 void SSettings::showContent(int index)
 {
