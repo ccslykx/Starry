@@ -3,6 +3,7 @@
 #include <QElapsedTimer>
 #include "AbstractMouseListener.h"
 
+#include <X11/Xlib.h>
 #include <X11/extensions/record.h>
 /* 给X11的宏定义污染擦PP */
 #ifdef None
