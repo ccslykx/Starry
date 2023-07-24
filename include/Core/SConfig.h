@@ -45,6 +45,7 @@ public:
     void saveToFile(const QString &path = ""); // save configs to file
     void readFromFile(const QString &path = ""); // read configs from file
     void setConfigFilePath(const QString &path);
+    QString configPath();
     
     void addSetting(const QString &key, QVariant value);      // 添加设置项
     void editSetting(const QString &key, QVariant newValue);  // 编辑设置项

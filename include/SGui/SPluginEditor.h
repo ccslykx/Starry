@@ -29,12 +29,12 @@ public:
     void create();
 
 signals:
-    // void edited(SPluginItem*);
     void created(SPluginInfo*);
 
 private:
     explicit SPluginEditor(QWidget *parent = (QWidget*)nullptr);
     void initGui();
+    void closeEvent(QCloseEvent*);
 
 private:
     static SPluginEditor *m_instance;
@@ -46,7 +46,8 @@ private:
     SButton     *m_eButton = nullptr; // edit button
     SButton     *m_cButton = nullptr; // create button
 
-    QLabel      *m_iconContainor = nullptr;
+    SButton     *m_iconContainor = nullptr;
+    QString     m_iconPath = "";
     QPixmap     m_icon;
     QLineEdit   *m_nameEdit = nullptr;
     QLineEdit   *m_tipEdit = nullptr;

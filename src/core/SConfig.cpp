@@ -118,12 +118,12 @@ void SConfig::readFromFile(const QString &path)
         bool enabled = s.value(QString("enabled")).toBool();
         s.endGroup();
 
-        if (iconPath.isEmpty())
+        if (iconPath.isEmpty() || !QFileInfo::exists(iconPath))
         {
             qWarning() << pName + "'s icon file not found, use default icon";
             iconPath = ":/default_icon.png";
         }
-        SPluginInfo *info = new SPluginInfo(pName, script, iconPath, index, tip, enabled);
+        SPluginInfo *info = new SPluginInfo(pName, script, iconPath, index, tip, enabled, ConstructMode::ReadFromFile);
         addPlugin(std::move(info)); /* Need Test */
         emit readPlugin(info);
     }
@@ -142,6 +142,11 @@ void SConfig::setConfigFilePath(const QString &path)
 {
     SDEBUG
     m_configPath = path;
+}
+
+QString SConfig::configPath()
+{
+    return m_configPath;
 }
 
 void SConfig::addSetting(const QString &key, QVariant value)
