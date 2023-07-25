@@ -35,13 +35,6 @@ SPluginInfo::SPluginInfo(
     , enabled(_enabled)
 {
     SDEBUG
-        // SConfig *config = SConfig::config();
-        // iconPath = config->configPath() + "/icons/" + name + ".png";
-        // qDebug() << name << ":" << iconPath;
-        // if (!icon.save(iconPath, "png", 100))
-        // {
-        //     qWarning() << "Icon save failed";
-        // }
 }
 
 /* Private Functions */

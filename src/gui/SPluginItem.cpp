@@ -150,7 +150,7 @@ void SPluginItem::initGui()
     });
     QObject::connect(m_editButton, &SButton::clicked, [this] () {
         SPluginEditor *editor = SPluginEditor::editor();
-        editor->edit(this);
+        editor->edit(m_info);
     });
     QObject::connect(m_switcher, &SSwitcher::switchOn, [this] () {
         this->m_info->enabled = true;

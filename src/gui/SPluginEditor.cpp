@@ -21,40 +21,30 @@ SPluginEditor* SPluginEditor::editor(QWidget *parent)
     return m_instance;
 }
 
-void SPluginEditor::edit(SPluginItem *item)
+void SPluginEditor::edit(SPluginInfo *info)
 {
     SDEBUG
-    if (!item)
+    if (!info)
     {
         return;
     }
-    m_editingItem = item;
+    m_editingInfo = info;
 
-    SPluginInfo &info = *item->pluginInfo();
-    m_iconContainor->setPixmap(info.icon);
-    m_nameEdit->setText(info.name);
-    m_tipEdit->setText(info.tip);
-    m_scriptEdit->setText(info.script);
+    m_iconContainor->setPixmap(info->icon);
+    m_nameEdit->setText(info->name);
+    m_tipEdit->setText(info->tip);
+    m_scriptEdit->setText(info->script);
     m_cButton->setVisible(false);
     m_eButton->setVisible(true);
 
-    m_nameEdit->setFocus();
-    this->setWindowTitle(tr("Edit") + ' ' + info.name);
+    this->setWindowTitle(tr("Edit") + ' ' + info->name);
     this->show();
 }
 
 void SPluginEditor::create()
 {
     SDEBUG
-    QPixmap defaultIcon(":/default_icon.png");
-    m_iconContainor->setPixmap(std::move(defaultIcon));
-    m_nameEdit->setText("");
-    m_tipEdit->setText("");
-    m_scriptEdit->setText("");
-    m_eButton->setVisible(false);
-    m_cButton->setVisible(true);
-
-    m_nameEdit->setFocus();
+    initialize();
     this->setWindowTitle(tr("Create New Plugin"));
     this->show();
 }
@@ -108,11 +98,20 @@ void SPluginEditor::initGui()
         this->m_iconContainor->setPixmap(m_icon);
     });
     QObject::connect(m_eButton, &SButton::clicked, this, [this]() {
-        SPluginInfo *info = this->m_editingItem->pluginInfo();
-        info->name = this->m_nameEdit->text();
+        SPluginInfo *info = this->m_editingInfo;
+        if (info->name != this->m_nameEdit->text())
+        {
+            info->name = this->m_nameEdit->text();
+            emit info->nameChanged(info);
+        }
+        if (!m_iconPath.isEmpty())
+        {
+            info->icon = this->m_icon;
+            emit info->iconChanged(info);
+        }
+
         info->script = this->m_scriptEdit->text();
         info->tip = this->m_tipEdit->text();
-        info->icon = this->m_icon;
         
         emit info->edited(info);
         this->close();
@@ -125,10 +124,23 @@ void SPluginEditor::initGui()
     });
 }
 
+void SPluginEditor::initialize()
+{
+    QPixmap defaultIcon(":/default_icon.png");
+    m_iconContainor->setPixmap(std::move(defaultIcon));
+    m_nameEdit->setText("");
+    m_tipEdit->setText("");
+    m_scriptEdit->setText("");
+    m_iconPath = QString();
+
+    m_eButton->setVisible(false);
+    m_cButton->setVisible(true);
+
+    m_nameEdit->setFocus();
+}
+
 void SPluginEditor::closeEvent(QCloseEvent *ev)
 {
-    m_iconPath = "";
-    m_icon = QPixmap();
-    m_iconContainor->setPixmap(m_icon);
+    initialize();
     ev->accept();
 }

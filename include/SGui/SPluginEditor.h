@@ -15,9 +15,10 @@
 #include <QLineEdit>
 #include <QLabel>
 
-#include "SPluginItem.h"
 #include "SButton.h"
 #include "SPluginInfo.h"
+
+
 
 class SPluginEditor : public QWidget
 {
@@ -25,7 +26,7 @@ class SPluginEditor : public QWidget
 
 public:
     static SPluginEditor* editor(QWidget *parent = (QWidget*)nullptr);
-    void edit(SPluginItem*);
+    void edit(SPluginInfo*);
     void create();
 
 signals:
@@ -34,6 +35,7 @@ signals:
 private:
     explicit SPluginEditor(QWidget *parent = (QWidget*)nullptr);
     void initGui();
+    void initialize();
     void closeEvent(QCloseEvent*);
 
 private:
@@ -53,5 +55,5 @@ private:
     QLineEdit   *m_tipEdit = nullptr;
     QLineEdit   *m_scriptEdit = nullptr;
 
-    SPluginItem *m_editingItem = nullptr;
+    SPluginInfo *m_editingInfo = nullptr;
 };

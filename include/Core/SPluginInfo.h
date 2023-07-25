@@ -51,6 +51,7 @@ public:
 
 signals:
     void edited(SPluginInfo *_ = nullptr); // name, script, tip
+    void nameChanged(SPluginInfo *_ = nullptr);
     void indexChanged(SPluginInfo *_ = nullptr);
     void iconChanged(SPluginInfo *_ = nullptr);
     void switchOn(SPluginInfo *_ = nullptr);

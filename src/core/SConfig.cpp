@@ -210,6 +210,15 @@ void SConfig::addPlugin(SPluginInfo *info, AddMode mode)
     }
     pInfoMap.insert(info->name, info);
     QObject::connect(info, &SPluginInfo::needDelete, this, &SConfig::deletePlugin);
+    QObject::connect(info, &SPluginInfo::nameChanged, [this] (SPluginInfo *info) {
+        if (QFileInfo::exists(info->iconPath)) // Remove previous icon file.
+        {
+            QFile::remove(info->iconPath);
+        }
+        info->iconPath = m_configPath + "/icons/" + info->name + ".png";
+        this->savePluginIcon(info);
+    });
+    QObject::connect(info, &SPluginInfo::iconChanged, this, &SConfig::savePluginIcon);
 }
 
 void SConfig::deletePlugin(SPluginInfo *info)
@@ -233,6 +242,7 @@ void SConfig::savePluginIcon(SPluginInfo *info)
     if (QFileInfo::exists(info->iconPath))
     {
         qWarning() << "Icon file already exists, replace it.";
+        QFile::remove(info->iconPath);
     }
     if (!info->icon.save(info->iconPath, "png", 100))
     {
