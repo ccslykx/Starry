@@ -123,8 +123,8 @@ void SConfig::readFromFile(const QString &path)
             qWarning() << pName + "'s icon file not found, use default icon";
             iconPath = ":/default_icon.png";
         }
-        SPluginInfo *info = new SPluginInfo(pName, script, iconPath, index, tip, enabled, ConstructMode::ReadFromFile);
-        addPlugin(std::move(info)); /* Need Test */
+        SPluginInfo *info = new SPluginInfo(pName, script, iconPath, index, tip, enabled);
+        addPlugin(std::move(info), ReadFromFile); /* Need Test */
         emit readPlugin(info);
     }
     s.endGroup();
@@ -191,7 +191,7 @@ void SConfig::deleteSetting(const QString &key)
     }
 }
 
-void SConfig::addPlugin(SPluginInfo *info)
+void SConfig::addPlugin(SPluginInfo *info, AddMode mode)
 {
     SDEBUG
     if (!info)
@@ -203,18 +203,13 @@ void SConfig::addPlugin(SPluginInfo *info)
         qWarning() << info->name << "has already exist!";
         return;
     }
+    if (mode == AddMode::NewCreate)
+    {
+        info->iconPath = m_configPath + "/icons/" + info->name + ".png";
+        savePluginIcon(info);
+    }
     pInfoMap.insert(info->name, info);
     QObject::connect(info, &SPluginInfo::needDelete, this, &SConfig::deletePlugin);
-}
-
-void SConfig::addPlugin(SPluginItem *item)
-{
-    SDEBUG
-    if (!item)
-    {
-        return;
-    }
-    addPlugin(item->pluginInfo()); /* Need Test */
 }
 
 void SConfig::deletePlugin(SPluginInfo *info)
@@ -231,6 +226,18 @@ void SConfig::deletePlugin(SPluginInfo *info)
     }
     pInfoMap.remove(info->name);
     info->deleteLater();
+}
+
+void SConfig::savePluginIcon(SPluginInfo *info)
+{
+    if (QFileInfo::exists(info->iconPath))
+    {
+        qWarning() << "Icon file already exists, replace it.";
+    }
+    if (!info->icon.save(info->iconPath, "png", 100))
+    {
+        qWarning() << "Icon save failed";
+    }
 }
 
 SPluginInfo* SConfig::getSPluginInfo(const QString &name)

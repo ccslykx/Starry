@@ -113,7 +113,7 @@ void STray::initServices()
     }
 
     QObject::connect(m_editor, &SPluginEditor::created, [this] (SPluginInfo *info) {
-        this->m_config->addPlugin(info);
+        this->m_config->addPlugin(info, AddMode::NewCreate);
         this->m_settings->addPluginItem(info);
         this->m_popup->addItem(info);
     });

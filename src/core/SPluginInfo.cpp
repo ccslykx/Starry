@@ -8,8 +8,7 @@ SPluginInfo::SPluginInfo(
     const QString &_iconPath, // 插件图标路径
     const int _index,         // 插件排序
     const QString &_tip,      // 插件说明
-    const bool _enabled,      // 是否启用
-    ConstructMode _mode)
+    const bool _enabled)      // 是否启用
     : name(_name)
     , tip(_tip)
     , script(_script)
@@ -18,10 +17,7 @@ SPluginInfo::SPluginInfo(
     , enabled(_enabled)
 {
     SDEBUG
-    if (_mode == ConstructMode::ReadFromFile)
-    {
-        icon = QPixmap(iconPath);
-    }
+    icon = QPixmap(iconPath);
 }
 
 SPluginInfo::SPluginInfo(
@@ -30,8 +26,7 @@ SPluginInfo::SPluginInfo(
     const QPixmap &_icon,   // 插件图标
     const int _index,       // 插件排序
     const QString &_tip,    // 插件说明
-    const bool _enabled,    // 是否启用
-    ConstructMode _mode)
+    const bool _enabled)    // 是否启用
     : name(_name)
     , tip(_tip)
     , script(_script)
@@ -40,16 +35,13 @@ SPluginInfo::SPluginInfo(
     , enabled(_enabled)
 {
     SDEBUG
-    if (_mode == ConstructMode::NewCreate)
-    {
-        SConfig *config = SConfig::config();
-        iconPath = config->configPath() + "/icons/" + name + ".png";
-        qDebug() << name << ":" << iconPath;
-        if (!icon.save(iconPath, "png", 100))
-        {
-            qWarning() << "Icon save failed";
-        }
-    }
+        // SConfig *config = SConfig::config();
+        // iconPath = config->configPath() + "/icons/" + name + ".png";
+        // qDebug() << name << ":" << iconPath;
+        // if (!icon.save(iconPath, "png", 100))
+        // {
+        //     qWarning() << "Icon save failed";
+        // }
 }
 
 /* Private Functions */

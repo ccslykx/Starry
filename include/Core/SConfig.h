@@ -14,8 +14,6 @@
 #include <QSettings>
 #include <QHash>
 
-#include <memory>
-
 #include "SPluginInfo.h"
 #include "SPluginItem.h"
 
@@ -25,7 +23,12 @@
 #define STARRY_VERSION       QString::number(STARRY_VERSION_MAJOR) + '.' + QString::number(STARRY_VERSION_MINOR) + '.' + QString::number(STARRY_VERSION_PATCH)
 
 class SPluginInfo;
-class SPluginItem;
+
+enum AddMode
+{
+    NewCreate = 0,
+    ReadFromFile = 1
+};
 
 class SConfig : public QObject
 {
@@ -52,9 +55,9 @@ public:
     QVariant getSetting(const QString &key);  // 获取设置项
     void deleteSetting(const QString &key);   // 删除设置项
 
-    void addPlugin(SPluginInfo*);     // 添加插件配置信息
-    void addPlugin(SPluginItem*);     // 添加插件配置信息
+    void addPlugin(SPluginInfo*, AddMode);     // 添加插件配置信息
     void deletePlugin(SPluginInfo*);  // 删除插件配置信息
+    void savePluginIcon(SPluginInfo*); // 保存图标到 ${m_configPath}/icons 下
     SPluginInfo* getSPluginInfo(const QString &name);
     QVector<SPluginInfo*> getSPluginInfos(); // 返回为有序向量
 

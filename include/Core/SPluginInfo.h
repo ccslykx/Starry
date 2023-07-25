@@ -29,12 +29,6 @@
 class SPluginItem;
 class SPopupItem;
 
-enum ConstructMode
-{
-    NewCreate = 0,
-    ReadFromFile = 1
-};
-
 class SPluginInfo : public QObject
 {
     Q_OBJECT
@@ -45,8 +39,7 @@ public:
         const QString &_iconPath = "",  // 插件图标路径
         const int _index = 0,           // 插件排序
         const QString &_tip = "",       // 插件说明
-        const bool _enabled = false,    // 是否启用
-        ConstructMode _mode = NewCreate);
+        const bool _enabled = false);   // 是否启用
 
     SPluginInfo(
         const QString &_name,           // 插件名称
@@ -54,8 +47,7 @@ public:
         const QPixmap &_icon,           // 插件图标
         const int _index = 0,           // 插件排序
         const QString &_tip = "",       // 插件说明
-        const bool _enabled = false,    // 是否启用
-        ConstructMode _mode = NewCreate);
+        const bool _enabled = false);   // 是否启用
 
 signals:
     void edited(SPluginInfo *_ = nullptr); // name, script, tip
