@@ -21,10 +21,14 @@ class SSwitcher : public QLabel
 {
     Q_OBJECT
 public:
-    SSwitcher(const QString &on, const QString &off, bool status, 
-        QWidget *parent = (QWidget*)nullptr);
+    SSwitcher(const QString &on = "On", const QString &off = "Off", 
+        bool status = true, QWidget *parent = (QWidget*)nullptr);
     bool isOn();
     void setStatus(bool);
+    void setOnText(const QString&);
+    void setOffText(const QString&);
+    void setOnStyleSheet(const QString&);
+    void setOffStyleSheet(const QString&);
 
 signals:
     void switchOn();
@@ -38,4 +42,6 @@ private:
     bool    m_isOn;
     QString m_on;
     QString m_off;
+    QString m_onStyleSheet = S_SWITCHER_STYLE + QString("background-color: #59C837");
+    QString m_offStyleSheet = S_SWITCHER_STYLE + QString("background-color: gray");
 };

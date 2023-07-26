@@ -36,14 +36,36 @@ void SSwitcher::setStatus(bool status)
     if (m_isOn)
     {
         this->setText(m_on);
-        this->setStyleSheet(S_SWITCHER_STYLE + QString("background-color: #59C837"));
+        this->setStyleSheet(m_onStyleSheet);
     }
     else
     {
         this->setText(m_off);
-        this->setStyleSheet(S_SWITCHER_STYLE + QString("background-color: gray"));
+        this->setStyleSheet(m_offStyleSheet);
     }
 }
+
+void SSwitcher::setOnText(const QString &text)
+{
+    m_on = text;
+}
+
+void SSwitcher::setOffText(const QString &text)
+{
+    m_off = text;
+}
+
+void SSwitcher::setOnStyleSheet(const QString &styleSheet)
+{
+    m_onStyleSheet = styleSheet;
+}
+
+void SSwitcher::setOffStyleSheet(const QString &styleSheet)
+{
+    m_offStyleSheet = styleSheet;
+}
+
+/* private functions */
 
 void SSwitcher::switchStatus()
 {
