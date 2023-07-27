@@ -14,19 +14,6 @@ SPluginItem* SPluginItem::create(SPluginInfo *pluginInfo, QWidget *parent)
     SDEBUG
     return new SPluginItem(pluginInfo, parent);
 }
-SPluginItem* SPluginItem::create(const QString &name, const QString &script,
-    const QPixmap &icon, const QString &tip, bool enable, QWidget *parent)
-{
-    SDEBUG
-    return new SPluginItem(name, script, icon, tip, enable, parent);
-}
-
-SPluginItem* SPluginItem::create(const QString &name, const QString &script,
-    const QString &iconPath, const QString &tip, bool enable, QWidget *parent)
-{
-    SDEBUG
-    return new SPluginItem(name, script, iconPath, tip, enable, parent);
-}
 
 void SPluginItem::remove(SPluginItem *item)
 {
@@ -49,8 +36,8 @@ void SPluginItem::refresh()
     SDEBUG
     if (m_info)
     {
-        m_iconLabel->setPixmap(m_info->icon);
-        m_nameLabel->setText(m_info->name);
+        m_iconSwitcher->setPixmap(m_info->icon.scaled(28, 28, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        m_nameSwitcher->setText(m_info->name);
         m_tipLabel->setText(m_info->tip);
     }
 }
@@ -73,22 +60,6 @@ SPluginItem::SPluginItem(SPluginInfo *pluginInfo, QWidget *parent)
     initGui();
 }
 
-SPluginItem::SPluginItem(const QString &name, const QString &script,
-    const QPixmap &icon, const QString &tip, bool enable, QWidget *parent)
-{
-    SDEBUG
-    SPluginInfo *info = new SPluginInfo(name, script, icon, 0, tip, enable);
-    SPluginItem(std::move(info), parent); /* Need Test */
-}
-
-SPluginItem::SPluginItem(const QString &name, const QString &script,
-    const QString &iconPath, const QString &tip, bool enable, QWidget *parent)
-{
-    SDEBUG
-    SPluginInfo *info = new SPluginInfo(name, script, iconPath, 0, tip, enable);
-    SPluginItem(std::move(info), parent); /* Need Test */
-}
-
 SPluginItem::~SPluginItem()
 {
     SDEBUG
@@ -101,41 +72,67 @@ void SPluginItem::initGui()
 {
     SDEBUG
     m_deleteButton = new SButton("", this);
-    m_iconLabel = new QLabel(this); /* memory leaks alert !!! */
-    m_iconLabel->setWindowIcon(m_info->icon);
-    m_nameLabel = new QLabel(m_info->name, this);
+    m_iconSwitcher = new SSwitcher("", "", m_info->iconEnabled, this);
+    m_nameSwitcher = new SSwitcher(m_info->name, m_info->name, m_info->nameEnabled, this);
     m_tipLabel = new QLabel(m_info->tip, this);
-    m_switcher = new SSwitcher(tr("On"), tr("Off"), m_info->enabled, this);
     m_editButton = new SButton(tr("Edit"), this);
 
     // Delete Button
     QString delImgPath = ":/PluginItem_Delete.png";
     QPixmap delPixmap(delImgPath);
-    m_deleteButton->setPixmap(delPixmap.scaled(24, 24));
+    m_deleteButton->setPixmap(delPixmap.scaled(24, 24, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     m_deleteButton->setAlignment(Qt::AlignCenter);
-    m_deleteButton->setFixedSize(24, 24);
-    m_deleteButton->setStyleSheet("border-width: 0px");
+    m_deleteButton->setFixedSize(28, 28);
+    m_deleteButton->setStyleSheet(
+        "background-color: #E9524A;"
+        "border-style: outset;"
+        "border-width: 2px;"
+        "border-radius: 14;"
+        "border-color: #E9524A");
     // Icon
-    m_iconLabel->setPixmap(m_info->icon);
-    m_iconLabel->setFixedSize(32, 32);
+    m_iconSwitcher->setPixmap(m_info->icon.scaled(28, 28, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    m_iconSwitcher->setFixedSize(32, 32);
+    m_iconSwitcher->setOnStyleSheet(
+        "background-color: #59C837;"
+        "border-style: outset;"
+        "border-width: 2px;"
+        "border-radius: 8px;"
+        "border-color: #59C837");
+    m_iconSwitcher->setOffStyleSheet(
+        "background-color: gray;"
+        "border-style: outset;"
+        "border-width: 2px;"
+        "border-radius: 8px;"
+        "border-color: gray");
+    m_iconSwitcher->setStatus(m_info->iconEnabled);
     // Name
-    m_nameLabel->setStyleSheet(S_BUTTON_STYLE);
-    m_nameLabel->setMinimumSize(32 * 2, 32);
-    m_nameLabel->setMaximumSize(32 * 3, 32);
+    m_nameSwitcher->setStyleSheet(S_BUTTON_STYLE);
+    m_nameSwitcher->setMinimumSize(32 * 2, 32);
+    m_nameSwitcher->setMaximumSize(32 * 3, 32);
+    m_nameSwitcher->setOnStyleSheet(
+        "background-color: #59C837;"
+        "border-style: outset;"
+        "border-width: 2px;"
+        "border-radius: 8px;"
+        "border-color: #59C837");
+    m_nameSwitcher->setOffStyleSheet(
+        "background-color: gray;"
+        "border-style: outset;"
+        "border-width: 2px;"
+        "border-radius: 8px;"
+        "border-color: gray");
+    m_nameSwitcher->setStatus(m_info->nameEnabled);
     // Tip
     m_tipLabel->setStyleSheet(S_BUTTON_STYLE);
     m_tipLabel->setMinimumSize(32 * 5, 32);
-    // On/Off Switcher
-    m_switcher->setFixedSize(32 * 2, 32);
     // Edit Button
     m_editButton->setFixedSize(32, 32);
 
     QHBoxLayout *layout = new QHBoxLayout(this);
     layout->addWidget(m_deleteButton);
-    layout->addWidget(m_iconLabel);
-    layout->addWidget(m_nameLabel);
+    layout->addWidget(m_iconSwitcher);
+    layout->addWidget(m_nameSwitcher);
     layout->addWidget(m_tipLabel);
-    layout->addWidget(m_switcher);
     layout->addWidget(m_editButton);
 
     this->setLayout(layout);
@@ -152,14 +149,24 @@ void SPluginItem::initGui()
         SPluginEditor *editor = SPluginEditor::editor();
         editor->edit(m_info);
     });
-    QObject::connect(m_switcher, &SSwitcher::switchOn, [this] () {
-        this->m_info->enabled = true;
-        emit m_info->switchOn(m_info);
+    QObject::connect(m_iconSwitcher, &SSwitcher::switchOn, [this] () {
+        this->m_info->iconEnabled = true;
+        emit m_info->switchIconOn(m_info);
         this->refresh();
     });
-    QObject::connect(m_switcher, &SSwitcher::switchOff, [this] () {
-        this->m_info->enabled = false;
-        emit m_info->switchOff(m_info);
+    QObject::connect(m_iconSwitcher, &SSwitcher::switchOff, [this] () {
+        this->m_info->iconEnabled = false;
+        emit m_info->switchIconOff(m_info);
+        this->refresh();
+    });
+    QObject::connect(m_nameSwitcher, &SSwitcher::switchOn, [this] () {
+        this->m_info->nameEnabled = true;
+        emit m_info->switchNameOn(m_info);
+        this->refresh();
+    });
+    QObject::connect(m_nameSwitcher, &SSwitcher::switchOff, [this] () {
+        this->m_info->nameEnabled = false;
+        emit m_info->switchNameOff(m_info);
         this->refresh();
     });
 }

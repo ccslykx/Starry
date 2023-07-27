@@ -81,7 +81,7 @@ void SSettings::initGui()
     }
     QPixmap aboutPixmap(SUtils::STARRY_ICON(256));
     QLabel *aboutIcon = new QLabel("Starry");
-    aboutIcon->setPixmap(aboutPixmap.scaled(256, 256, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+    aboutIcon->setPixmap(aboutPixmap.scaled(256, 256, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     aboutIcon->setFixedSize(256, 256);
     aboutIcon->setAlignment(Qt::AlignCenter);
     QLabel *aboutContent = new QLabel("版本：" + STARRY_VERSION + "\n作者：Ccslykx\n联系方式：ccslykx@outlook.com", m_aboutWidget);

@@ -1,5 +1,6 @@
 #include <QGuiApplication>
 #include <QClipboard>
+#include <QHBoxLayout>
 
 #include "SPopupItem.h"
 #include "utils.h"
@@ -24,9 +25,9 @@ SPluginInfo* SPopupItem::pluginInfo()
     return m_info;
 }
 
-void SPopupItem::refresh()
+bool SPopupItem::enabled()
 {
-    setText(m_info->name); /* TODO: icon support */
+    return !(!m_info->iconEnabled && !m_info->nameEnabled);
 }
 
 void SPopupItem::exec()
@@ -94,28 +95,7 @@ SPopupItem::SPopupItem(SPluginInfo *info, QWidget *parent)
         m_process = new QProcess;
     }
 
-    this->setText(m_info->name);
-    this->setAlignment(Qt::AlignCenter);
-    this->setStyleSheet("border-style: outset;"
-                        "border-width: 1px;"
-                        "border-radius: 8px;"
-                        "background-color: #CCCCCC;"
-                        "color: #000000");
-    /* TODO: read from SConfig */
-    this->setMinimumSize(32, 32);
-    this->adjustSize();
-    this->setVisible(info->enabled);
-    QObject::connect(this, &SPopupItem::clicked, this, &SPopupItem::exec);
-    QObject::connect(m_info, &SPluginInfo::edited, this, &SPopupItem::refresh);
-    QObject::connect(m_info, &SPluginInfo::switchOn, [this] (SPluginInfo *info) {
-        this->setVisible(info->enabled);
-    });
-    QObject::connect(m_info, &SPluginInfo::switchOff, [this] (SPluginInfo *info) {
-        this->setVisible(info->enabled);
-    });
-    QObject::connect(m_info, &SPluginInfo::needDelete, [this] (SPluginInfo *info) {
-        this->setVisible(false);
-    });
+    initGui();
 }
 
 SPopupItem::~SPopupItem()
@@ -123,6 +103,68 @@ SPopupItem::~SPopupItem()
     SDEBUG
     stop();
     m_process = nullptr;
+}
+
+void SPopupItem::initGui()
+{
+
+    m_iconLabel = new QLabel(this);
+    m_iconLabel->setPixmap(m_info->icon.scaled(24, 24, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    m_iconLabel->setMinimumSize(24, 24);
+    
+    QFont nameFont;
+    nameFont.setPointSize(12);
+    m_nameLabel = new QLabel(m_info->name, this);
+    m_nameLabel->setAlignment(Qt::AlignCenter);
+    m_nameLabel->setMinimumSize(24, 24);
+    m_nameLabel->setFont(nameFont);
+
+    QHBoxLayout *layout = new QHBoxLayout(this);
+    layout->addWidget(m_iconLabel);
+    layout->addWidget(m_nameLabel);
+
+    this->setLayout(layout);
+    this->setMinimumSize(24 + 8 * 2, 24 + 8 * 2); /* TODO: read from SConfig */
+    this->setAttribute(Qt::WA_StyledBackground, true);
+    this->setContentsMargins(0, 0, 0, 0);
+    this->setStyleSheet("background-color: #CCCCCC;"
+                        "border-radius: 8px;"
+                        "color: #000000");
+    
+    m_iconLabel->setVisible(m_info->iconEnabled);
+    m_nameLabel->setVisible(m_info->nameEnabled);
+    this->adjustSize();
+
+    QObject::connect(this, &SPopupItem::clicked, this, &SPopupItem::exec);
+    QObject::connect(m_info, &SPluginInfo::iconChanged, [this] (SPluginInfo *info) {
+        this->m_iconLabel->setPixmap(info->icon.scaled(32, 32, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    });
+    QObject::connect(m_info, &SPluginInfo::nameChanged, [this] (SPluginInfo *info) {
+        this->m_nameLabel->setText(info->name);
+    });
+    QObject::connect(m_info, &SPluginInfo::switchIconOn, [this] (SPluginInfo *info) {
+        this->m_iconLabel->setVisible(info->iconEnabled);
+        this->setVisible(this->enabled());
+        this->adjustSize();
+    });
+    QObject::connect(m_info, &SPluginInfo::switchIconOff, [this] (SPluginInfo *info) {
+        this->m_iconLabel->setVisible(info->iconEnabled);
+        this->setVisible(this->enabled());
+        this->adjustSize();
+    });
+    QObject::connect(m_info, &SPluginInfo::switchNameOn, [this] (SPluginInfo *info) {
+        this->m_nameLabel->setVisible(info->nameEnabled);
+        this->setVisible(this->enabled());
+        this->adjustSize();
+    });
+    QObject::connect(m_info, &SPluginInfo::switchNameOff, [this] (SPluginInfo *info) {
+        this->m_nameLabel->setVisible(info->nameEnabled);
+        this->setVisible(this->enabled());
+        this->adjustSize();
+    });
+    QObject::connect(m_info, &SPluginInfo::needDelete, [this] (SPluginInfo *info) {
+        this->setVisible(false);
+    });
 }
 
 void SPopupItem::mouseReleaseEvent(QMouseEvent *ev)

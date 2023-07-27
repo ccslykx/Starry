@@ -17,14 +17,14 @@
 
 #include "SPluginInfo.h"
 
-class SPopupItem : public QLabel
+class SPopupItem : public QWidget
 {
     Q_OBJECT
 public:
     static SPopupItem* create(SPluginInfo*, QWidget *parent = (QWidget*)nullptr);
     static void remove(SPopupItem*);
     SPluginInfo* pluginInfo();
-    void refresh();
+    bool enabled();
     void exec();
     void stop();
 
@@ -34,9 +34,12 @@ signals:
 private:
     explicit SPopupItem(SPluginInfo*, QWidget *parent = (QWidget*)nullptr);
     ~SPopupItem();
+    void initGui();
     void mouseReleaseEvent(QMouseEvent*);
 
 private:
     SPluginInfo *m_info = nullptr;
+    QLabel      *m_iconLabel = nullptr;
+    QLabel      *m_nameLabel = nullptr;
     QProcess    *m_process = nullptr;
 };

@@ -34,28 +34,32 @@ class SPluginInfo : public QObject
     Q_OBJECT
 public:
     SPluginInfo(
-        const QString &_name,           // 插件名称
-        const QString &_script,         // 插件执行的命令
-        const QString &_iconPath = "",  // 插件图标路径
-        const int _index = 0,           // 插件排序
-        const QString &_tip = "",       // 插件说明
-        const bool _enabled = false);   // 是否启用
+        const QString &_name,           
+        const QString &_script,         
+        const QString &_iconPath = "",  
+        const int _index = 0,           
+        const QString &_tip = "",       
+        const bool _iconEnabled = false,
+        const bool _nameEnabled = true);
 
     SPluginInfo(
-        const QString &_name,           // 插件名称
-        const QString &_script,         // 插件执行的命令
-        const QPixmap &_icon,           // 插件图标
-        const int _index = 0,           // 插件排序
-        const QString &_tip = "",       // 插件说明
-        const bool _enabled = false);   // 是否启用
+        const QString &_name,           
+        const QString &_script,         
+        const QPixmap &_icon,           
+        const int _index = 0,           
+        const QString &_tip = "",       
+        const bool _iconEnabled = false,
+        const bool _nameEnabled = true);   
 
 signals:
     void edited(SPluginInfo *_ = nullptr); // name, script, tip
     void nameChanged(SPluginInfo *_ = nullptr);
     void indexChanged(SPluginInfo *_ = nullptr);
     void iconChanged(SPluginInfo *_ = nullptr);
-    void switchOn(SPluginInfo *_ = nullptr);
-    void switchOff(SPluginInfo *_ = nullptr);
+    void switchIconOn(SPluginInfo *_ = nullptr);
+    void switchIconOff(SPluginInfo *_ = nullptr);
+    void switchNameOn(SPluginInfo *_ = nullptr);
+    void switchNameOff(SPluginInfo *_ = nullptr);
     void needDelete(SPluginInfo *_ = nullptr);
 
 private:
@@ -69,7 +73,8 @@ public:
     QString iconPath;   // 插件图标路径
     QPixmap icon;       // 插件图标
     int     index;      // 插件排序
-    bool    enabled;    // 是否启用
+    bool    iconEnabled;    // 是否启用图标显示
+    bool    nameEnabled;    // 是否启用名称显示
 
     SPluginItem *pluginItem = nullptr;
     SPopupItem  *popupItem = nullptr;

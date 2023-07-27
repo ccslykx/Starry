@@ -30,7 +30,7 @@ void SPluginEditor::edit(SPluginInfo *info)
     }
     m_editingInfo = info;
 
-    m_iconContainor->setPixmap(info->icon);
+    m_iconContainor->setPixmap(info->icon.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     m_nameEdit->setText(info->name);
     m_tipEdit->setText(info->tip);
     m_scriptEdit->setText(info->script);
@@ -73,6 +73,9 @@ void SPluginEditor::initGui()
     if (!m_tipEdit)         m_tipEdit = new QLineEdit(this);
     if (!m_scriptEdit)      m_scriptEdit = new QLineEdit(this);
 
+    m_iconContainor->setFixedSize(64, 64);
+    m_iconContainor->setStyleSheet("border-width: 0px");
+
     QVBoxLayout *layout = new QVBoxLayout(this);
     layout->addWidget(m_iconLabel);
     layout->addWidget(m_iconContainor);
@@ -95,7 +98,7 @@ void SPluginEditor::initGui()
         }
         this->m_iconPath = tmp;
         this->m_icon = QPixmap(this->m_iconPath);
-        this->m_iconContainor->setPixmap(m_icon);
+        this->m_iconContainor->setPixmap(m_icon.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     });
     QObject::connect(m_eButton, &SButton::clicked, this, [this]() {
         SPluginInfo *info = this->m_editingInfo;
@@ -127,7 +130,7 @@ void SPluginEditor::initGui()
 void SPluginEditor::initialize()
 {
     QPixmap defaultIcon(":/default_icon.png");
-    m_iconContainor->setPixmap(std::move(defaultIcon));
+    m_iconContainor->setPixmap(std::move(defaultIcon).scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     m_nameEdit->setText("");
     m_tipEdit->setText("");
     m_scriptEdit->setText("");

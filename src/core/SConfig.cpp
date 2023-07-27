@@ -66,7 +66,8 @@ void SConfig::saveToFile(const QString &path)
         s.setValue(QString("script"), info->script);
         s.setValue(QString("iconPath"), info->iconPath);
         s.setValue(QString("index"), info->index);
-        s.setValue(QString("enabled"), info->enabled);
+        s.setValue(QString("iconEnabled"), info->iconEnabled);
+        s.setValue(QString("nameEnabled"), info->nameEnabled);
         s.endGroup();
     }
     s.endGroup();
@@ -115,7 +116,8 @@ void SConfig::readFromFile(const QString &path)
         QString script = s.value(QString("script")).toString();
         QString iconPath = s.value(QString("iconPath")).toString();
         int index = s.value(QString("index")).toInt();
-        bool enabled = s.value(QString("enabled")).toBool();
+        bool iconEnabled = s.value(QString("iconEnabled")).toBool();
+        bool nameEnabled = s.value(QString("nameEnabled")).toBool();
         s.endGroup();
 
         if (iconPath.isEmpty() || !QFileInfo::exists(iconPath))
@@ -123,7 +125,7 @@ void SConfig::readFromFile(const QString &path)
             qWarning() << pName + "'s icon file not found, use default icon";
             iconPath = ":/default_icon.png";
         }
-        SPluginInfo *info = new SPluginInfo(pName, script, iconPath, index, tip, enabled);
+        SPluginInfo *info = new SPluginInfo(pName, script, iconPath, index, tip, iconEnabled, nameEnabled);
         addPlugin(std::move(info), ReadFromFile); /* Need Test */
         emit readPlugin(info);
     }

@@ -3,36 +3,40 @@
 #include "utils.h"
 
 SPluginInfo::SPluginInfo(
-    const QString &_name,     // 插件名称
-    const QString &_script,   // 插件执行的命令
-    const QString &_iconPath, // 插件图标路径
-    const int _index,         // 插件排序
-    const QString &_tip,      // 插件说明
-    const bool _enabled)      // 是否启用
+    const QString &_name,     
+    const QString &_script,   
+    const QString &_iconPath, 
+    const int _index,         
+    const QString &_tip,      
+    const bool _iconEnabled,
+    const bool _nameEnabled)  
     : name(_name)
     , tip(_tip)
     , script(_script)
     , iconPath(_iconPath)
     , index(_index)
-    , enabled(_enabled)
+    , iconEnabled(_iconEnabled)
+    , nameEnabled(_nameEnabled)
 {
     SDEBUG
     icon = QPixmap(iconPath);
 }
 
 SPluginInfo::SPluginInfo(
-    const QString &_name,   // 插件名称
-    const QString &_script, // 插件执行的命令
-    const QPixmap &_icon,   // 插件图标
-    const int _index,       // 插件排序
-    const QString &_tip,    // 插件说明
-    const bool _enabled)    // 是否启用
+    const QString &_name,   
+    const QString &_script, 
+    const QPixmap &_icon,   
+    const int _index,       
+    const QString &_tip,    
+    const bool _iconEnabled,
+    const bool _nameEnabled)
     : name(_name)
     , tip(_tip)
     , script(_script)
     , icon(_icon)
     , index(_index)
-    , enabled(_enabled)
+    , iconEnabled(_iconEnabled)
+    , nameEnabled(_nameEnabled)
 {
     SDEBUG
 }

@@ -120,7 +120,6 @@ void SPopup::initGui()
     this->setWindowFlags(Qt::Tool | Qt::FramelessWindowHint); // Qt::Tool is important flag to make it work. I mean not stealing focus. 但对x11下Gnome44 无效
     this->setWindowFlags(Qt::Popup | Qt::Window); // 不在任务栏显示
     this->setWindowFlags(Qt::X11BypassWindowManagerHint); // 在x11上不占用focus
-    this->setStyleSheet("border-style: outset; border-width: 1px; border-radius:8px;");
 }
 
 void SPopup::adjustGeometry(QPoint loc)

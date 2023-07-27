@@ -4,7 +4,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 
-project(Starry VERSION 0.1.0)
+project(Starry VERSION 0.2.0)
 
 file(GLOB HEADERS CMAKE_CONFIGURE_DEPENDS
     include/*.h

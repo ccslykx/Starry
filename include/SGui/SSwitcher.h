@@ -17,12 +17,18 @@
     #define S_SWITCHER_STYLE "border-style: outset; border-width: 1px; border-radius:8px;"
 #endif
 
+enum SwitcherStatus
+{
+    On = true,
+    Off = false
+};
+
 class SSwitcher : public QLabel
 {
     Q_OBJECT
 public:
     SSwitcher(const QString &on = "On", const QString &off = "Off", 
-        bool status = true, QWidget *parent = (QWidget*)nullptr);
+        bool status = On, QWidget *parent = (QWidget*)nullptr);
     bool isOn();
     void setStatus(bool);
     void setOnText(const QString&);
