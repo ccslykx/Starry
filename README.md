@@ -9,6 +9,7 @@
 
 ![Email](https://img.shields.io/badge/Outlook-ccslykx@outlook.com-0078D4?logo=microsoftoutlook&logoColor=0078D4&style=for-the-badge)
 
+![PREVIEW](.assets/Starry_icon_preview.gif)
 
 ## 最新重要更新
 
