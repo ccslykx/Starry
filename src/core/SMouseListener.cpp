@@ -8,7 +8,14 @@
 
 #include "SMouseListener.h"
 #include "utils.h"
-#include "x11MouseListener.h"
+
+#ifdef __linux__
+    #include "X11MouseListener.h"
+#endif
+
+#ifdef _WIN32
+    #include "WinMouseListener.h"
+#endif 
 
 SMouseListener* SMouseListener::m_instance = nullptr;
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef __linux__
+
 #include <QElapsedTimer>
 #include "AbstractMouseListener.h"
 
@@ -57,3 +59,5 @@ private:
 
     static QElapsedTimer    *m_doubleClickTimer;
 };
+
+#endif

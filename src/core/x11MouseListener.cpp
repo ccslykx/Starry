@@ -1,10 +1,12 @@
+#ifdef __linux__
+
 #include <QtConcurrent>
 
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xproto.h>
 
-#include "x11MouseListener.h"
+#include "X11MouseListener.h"
 #include "utils.h"
 
 static void callback(XPointer ptr, XRecordInterceptData *data)
@@ -217,3 +219,5 @@ void X11MouseListener::enableContext()
     XCloseDisplay(m_display);
     m_display = nullptr;   
 }
+
+#endif
