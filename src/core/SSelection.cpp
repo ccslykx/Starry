@@ -1,4 +1,5 @@
 #include "SSelection.h"
+#include "utils.h"
 
 #include <QGuiApplication>
 #include <QProcessEnvironment>
@@ -15,9 +16,35 @@ SSelection* SSelection::instance()
     return m_instance;
 }
 
+void SSelection::refresh()
+{
+    SDEBUG
+    QString tmp;
+#ifdef __linux__
+    QString dpEnv = QProcessEnvironment::systemEnvironment().value("XDG_SESSION_TYPE");
+    if (dpEnv.toUpper() == "X11")
+    {
+        tmp = m_clipboard->text(QClipboard::Mode::Selection);
+    } else if (dpEnv.toUpper() == "WAYLAND")
+    {
+        tmp = simulateCopy_linux();
+    }
+#elif __APPLE__ && TARGET_OS_MAC /* Need Test */
+        /* Any better method? */
+        tmp = simulateCopy_mac();
+#elif _WIN32
+    tmp = simulateCopy_win();
+#endif
+    /*TEST*/m_selection = "SELECTION";
+    if (m_selection != tmp)
+    {
+        m_selection = tmp;
+        emit selectionChanged();
+    }
+}
+
 QString SSelection::selection()
 {
-    execute();
     return m_selection;
 }
 
@@ -31,36 +58,21 @@ SSelection::SSelection()
     }
 }
 
-void SSelection::execute()
+QString SSelection::simulateCopy_win()
 {
-#ifdef __linux__
-    QString dpEnv = QProcessEnvironment::systemEnvironment().value("XDG_SESSION_TYPE");
-    if (dpEnv.toUpper() == "X11")
-    {
-        m_selection = m_clipboard->text(QClipboard::Mode::Selection);
-    } else if (dpEnv.toUpper() == "WAYLAND")
-    {
-        simulateCopy_linux();
-    }
-#elif __APPLE__ && TARGET_OS_MAC /* Need Test */
-        /* Any better method? */
-        simulateCopy_mac();
-#elif _WIN32
-    simulateCopy_win();
-#endif
+    SDEBUG
+    QString tmp = "TEST";
+    return std::move(tmp); /*TODO*/
 }
 
-bool SSelection::simulateCopy_win()
+QString SSelection::simulateCopy_linux()
 {
-    
+    SDEBUG
+    return "TEST";   
 }
 
-bool SSelection::simulateCopy_linux()
+QString SSelection::simulateCopy_mac()
 {
-    return false;   
-}
-
-bool SSelection::simulateCopy_mac()
-{
-    return false;
+    SDEBUG
+    return "TEST";
 }

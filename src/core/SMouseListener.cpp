@@ -13,7 +13,7 @@
     #include "X11MouseListener.h"
 #endif
 
-#ifdef _WIN32
+#ifdef Q_OS_WIN
     #include "WinMouseListener.h"
 #endif 
 
@@ -74,28 +74,31 @@ void SMouseListener::init()
 {
     SDEBUG
 #ifdef __linux__
+qDebug() << "Defined __linux__";
     QString dpEnv = QProcessEnvironment::systemEnvironment().value("XDG_SESSION_TYPE");
     if (dpEnv.toUpper() == "X11")
     {
+qDebug() << "X11";
         m_listener = X11MouseListener::instance();
     } else if (dpEnv.toUpper() == "WAYLAND")
     {
+qDebug() << "Wayland";
         // m_listener = WaylandMouseListener::instance();
     }
 #elif __APPLE__ && TARGET_OS_MAC /* Need Test */
     // m_listener = MacMouseListener::instance();
 #elif _WIN32
-    // m_listener = WinMouseListener::instance();
+qDebug() << "Defined _WIN32";
+    m_listener = WinMouseListener::instance();
 #endif
-
     // Signals
     QObject::connect(m_listener, &AbstractMouseListener::B1Pressed, this, &SMouseListener::onB1Pressed);
     QObject::connect(m_listener, &AbstractMouseListener::B1Released, this, &SMouseListener::onB1Released);
     QObject::connect(m_listener, &AbstractMouseListener::B1DoubleClicked, this, &SMouseListener::onB1DoubleClicked);
 
-    if (!m_clipboard)
+    if (!m_selection)
     {
-        m_clipboard = QGuiApplication::clipboard();
+        m_selection = SSelection::instance();
     }
 
     // Setup Timers
@@ -125,9 +128,10 @@ void SMouseListener::init()
         }
         this->m_waitB1ReleaseTimer->stop();
     });
-    QObject::connect(m_clipboard, &QClipboard::selectionChanged, this, [this](){
+    QObject::connect(m_selection, &SSelection::selectionChanged, this, [this](){
         qDebug() << "selectionChanged";
         this->m_selectionChanged = true;
+
         if (!this->m_B1Released) // if B1 is pressed
         {
             this->waitForB1Release();
@@ -166,6 +170,7 @@ void SMouseListener::onB1Released(MouseStatus status)
     emit B1Released(status);
     m_releasePos = QPoint(status.x, status.y);
     m_B1Released = true;
+    m_selection->refresh(); // Detect SelectionChanged
 
     double offset = sqrt(pow((double) m_releasePos.x() - (double) m_pressPos.x(), 2) + pow((double) m_releasePos.y() - (double) m_pressPos.y(), 2));
     if (offset >= 5.0) // 鼠标位移量足够，认为是划词动作

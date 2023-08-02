@@ -1,12 +1,13 @@
 #pragma once
 
-// #ifdef __win32
+//#ifdef _WIN32
 
 #include "AbstractMouseListener.h"
 
 #include <QObject>
+#include <QElapsedTimer>
 
-#include "Windows"
+#include <Windows.h>
 
 class WinMouseListener : public AbstractMouseListener
 {
@@ -19,12 +20,16 @@ public:
 
 private:
     WinMouseListener();
-    ~WinMouseListener();
-    void init();
+    static LRESULT CALLBACK LowLevelMouseProc (int nCode, WPARAM wParam, LPARAM lParam);
 
 private:
-    static HHOOK    *m_hook;
+    static WinMouseListener *m_instance;
+    static HHOOK            m_hook;
 
+    static MouseStatus      lastMouseStatus;
+    static MouseStatus      currMouseStatus;
+
+    static QElapsedTimer    *m_doubleClickTimer;
 };
 
-// #endif
+//#endif

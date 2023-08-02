@@ -42,20 +42,24 @@ bool SConfig::detectConfigPath(const QString &path, bool makepath)
 void SConfig::saveToFile(const QString &path)
 {
     SDEBUG
+qDebug() << "m_configPath:" << m_configPath;
     if (path.isEmpty())
     {
+qDebug("1");
         saveToFile(m_configPath);
         return;
     }
+qDebug("2");
     // If config dir not exist, make it and set to m_configpath.
     if (!detectConfigPath(path, true)) 
     {
+qDebug("3");
         setConfigFilePath(path);
     }
 
     // Save configs
     QSettings s(m_configPath + "/starry.conf", QSettings::NativeFormat);
-    
+qDebug("4");
     // Save plugins
     s.remove(QString("STARRY_PLUGINS"));
     s.beginGroup(QString("STARRY_PLUGINS"));

@@ -2,8 +2,10 @@
 
 #include <QPoint>
 #include <QTimer>
+#include <QClipboard>
 
 #include "AbstractMouseListener.h"
+#include "SSelection.h"
 
 class SMouseListener : public AbstractMouseListener
 {
@@ -40,7 +42,7 @@ private:
 private:
     static SMouseListener   *m_instance;
     AbstractMouseListener   *m_listener = nullptr;
-    QClipboard              *m_clipboard = nullptr;
+    SSelection              *m_selection = nullptr;
 
     QPoint  m_pressPos;
     QPoint  m_releasePos;

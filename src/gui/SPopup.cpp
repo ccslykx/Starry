@@ -117,9 +117,14 @@ void SPopup::initGui()
 
     this->setAttribute(Qt::WA_TranslucentBackground);
     // https://stackoverflow.com/questions/966688/show-window-in-qt-without-stealing-focus
-    this->setWindowFlags(Qt::Tool | Qt::FramelessWindowHint); // Qt::Tool is important flag to make it work. I mean not stealing focus. 但对x11下Gnome44 无效
-    this->setWindowFlags(Qt::Popup | Qt::Window); // 不在任务栏显示
-    this->setWindowFlags(Qt::X11BypassWindowManagerHint); // 在x11上不占用focus
+    this->setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::Popup | Qt::Window | Qt::WindowStaysOnTopHint); // Qt::Tool is important flag to make it work. I mean not stealing focus. 但对x11下Gnome44 无效
+#ifdef __linux__
+    QString dpEnv = QProcessEnvironment::systemEnvironment().value("XDG_SESSION_TYPE");
+    if (dpEnv.toUpper() == "X11")
+    {
+        this->setWindowFlag(Qt::X11BypassWindowManagerHint); // 在x11上不占用focus
+    }
+#endif
 }
 
 void SPopup::adjustGeometry(QPoint loc)

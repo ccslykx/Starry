@@ -39,6 +39,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     Qt6::Widgets
     Qt6::Concurrent
     Qt6::Gui
-    -lX11 
-    -lXtst # https://stackoverflow.com/questions/66906557/linking-target-failed-for-lib-with-x11-c
 )
+
+if (CMAKE_HOST_LINUX)
+    target_link_libraries(${PROJECT_NAME} PUBLIC -lX11 -lXtst) # https://stackoverflow.com/questions/66906557/linking-target-failed-for-lib-with-x11-c
+# elseif (CMAKE_HOST_WIN32)
+#     target_link_libraries(${PROJECT_NAME} PUBLIC User32)
+endif()

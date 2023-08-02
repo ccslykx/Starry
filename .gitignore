@@ -32,8 +32,8 @@
 *.app
 
 # Build
-build
-release
+build*
+release*
 
 # IDE
 .vscode

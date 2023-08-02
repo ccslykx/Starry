@@ -3,6 +3,7 @@
 #include <QHBoxLayout>
 
 #include "SPopupItem.h"
+#include "SSelection.h"
 #include "utils.h"
 
 SPopupItem* SPopupItem::create(SPluginInfo *info, QWidget *parent)
@@ -33,6 +34,7 @@ bool SPopupItem::enabled()
 void SPopupItem::exec()
 {
     SDEBUG
+    SSelection *s = SSelection::instance();
     QStringList args = m_info->script.split(" ");
 
     if (args.at(0) == "") // m_script为空时，args为只含有一个元素""的QList
@@ -41,8 +43,7 @@ void SPopupItem::exec()
         return;
     } else if (args.at(0) == "starry" && args.size() >= 2 && args.at(1) == "copy2clipboard") // TODO: 写成函数调用的形式
     {
-        QString selection = QGuiApplication::clipboard()->text(QClipboard::Mode::Selection);
-        QGuiApplication::clipboard()->setText(selection);
+        QGuiApplication::clipboard()->setText(s->selection());
         return;
     }
 
@@ -55,7 +56,7 @@ void SPopupItem::exec()
     {
         if (arg == "$PLAINTEXT")
         {
-            arg = QGuiApplication::clipboard()->text(QClipboard::Mode::Selection);
+            arg = s->selection();
         }
     }
 
@@ -66,7 +67,10 @@ void SPopupItem::exec()
     }
 
     try {
-        m_process->start(cmd, args);
+        qDebug() << "m_process start";
+        qDebug() << cmd << args;
+        m_process->startDetached(cmd, args);
+        qDebug() << "m_process started";
     }
     catch (...) { // TODO：异常捕获
         qWarning() << "插件调用出错，请检查指令是否有误"; 
