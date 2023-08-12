@@ -74,5 +74,6 @@ QString SSelection::simulateCopy_linux()
 QString SSelection::simulateCopy_mac()
 {
     SDEBUG
-    return "TEST";
+    QString tmp = "TEST";
+    return std::move(tmp);
 }
