@@ -1,5 +1,3 @@
-#ifdef __linux__
-
 #include <QtConcurrent>
 
 #include <X11/Xlib.h>
@@ -220,4 +218,3 @@ void X11MouseListener::enableContext()
     m_display = nullptr;   
 }
 
-#endif

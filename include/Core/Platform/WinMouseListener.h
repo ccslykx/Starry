@@ -1,7 +1,5 @@
 #pragma once
 
-#ifdef _WIN32
-
 #include "AbstractMouseListener.h"
 
 #include <QObject>
@@ -32,4 +30,3 @@ private:
     static QElapsedTimer    *m_doubleClickTimer;
 };
 
-#endif

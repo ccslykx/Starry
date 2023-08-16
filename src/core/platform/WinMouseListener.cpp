@@ -1,7 +1,5 @@
 /* https://github.com/mahuifa/QtGlobalEvent/blob/master/GlobalMouseKey/globalmouseevent_win.cpp */
 
-#ifdef _WIN32
-
 #include "WinMouseListener.h"
 #include "utils.h"
 
@@ -121,4 +119,3 @@ LRESULT CALLBACK WinMouseListener::LowLevelMouseProc (int nCode, WPARAM wParam, 
     return CallNextHookEx(nullptr, nCode, wParam, lParam);
 }
 
-#endif
