@@ -124,6 +124,8 @@ void SPopup::initGui()
     {
         this->setWindowFlag(Qt::X11BypassWindowManagerHint); // 在x11上不占用focus
     }
+#elif __APPLE__ && TARGET_OS_MAC/* Need Test */
+	this->setAttribute(Qt::WA_MacAlwaysShowToolWindow);
 #endif
 }
 
