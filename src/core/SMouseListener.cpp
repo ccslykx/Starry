@@ -10,12 +10,12 @@
 #include "utils.h"
 
 #ifdef __linux__
-    #include "X11MouseListener.h"
+    #include "X11MouseListener.h"    
+#elif __APPLE__ && TARGET_OS_MAC /* Need Test */
+    #include "MacMouseListener.h"
+#elif _WIN32
+    #include "WinMouseListener.cpp.o"
 #endif
-
-#ifdef Q_OS_WIN
-    #include "WinMouseListener.h"
-#endif 
 
 SMouseListener* SMouseListener::m_instance = nullptr;
 
@@ -86,7 +86,7 @@ qDebug() << "Wayland";
         // m_listener = WaylandMouseListener::instance();
     }
 #elif __APPLE__ && TARGET_OS_MAC /* Need Test */
-    // m_listener = MacMouseListener::instance();
+    m_listener = MacMouseListener::instance();
 #elif _WIN32
 qDebug() << "Defined _WIN32";
     m_listener = WinMouseListener::instance();
