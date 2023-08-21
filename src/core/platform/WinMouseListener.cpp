@@ -3,16 +3,25 @@
 #include "WinMouseListener.h"
 #include "utils.h"
 
+#include <Windows.h>
+
 #include <QCursor>
 #include <QDebug>
 
 WinMouseListener* WinMouseListener::m_instance = nullptr;
-HHOOK WinMouseListener::m_hook = nullptr;
 
-MouseStatus         WinMouseListener::lastMouseStatus = {-1, -1, false};
-MouseStatus         WinMouseListener::currMouseStatus = {-1, -1, false};
+MouseStatus WinMouseListener::lastMouseStatus = {-1, -1, false};
+MouseStatus WinMouseListener::currMouseStatus = {-1, -1, false};
 
 QElapsedTimer* WinMouseListener::m_doubleClickTimer = nullptr;
+
+static HHOOK m_hook = nullptr;
+
+static LRESULT CALLBACK LowLevelMouseProc (int nCode, WPARAM wParam, LPARAM lParam)
+{
+    WinMouseListener::instance()->handleLowLevelMouseProc(wParam);
+    return CallNextHookEx(nullptr, nCode, wParam, lParam);
+}
 
 WinMouseListener* WinMouseListener::instance()
 {
@@ -59,7 +68,7 @@ WinMouseListener::WinMouseListener()
     }
 }
 
-LRESULT CALLBACK WinMouseListener::LowLevelMouseProc (int nCode, WPARAM wParam, LPARAM lParam)
+void WinMouseListener::handleLowLevelMouseProc(unsigned long long wParam)
 {
     QPoint point = QCursor::pos();
 
@@ -115,7 +124,4 @@ LRESULT CALLBACK WinMouseListener::LowLevelMouseProc (int nCode, WPARAM wParam, 
     default:
         break;
     }
-
-    return CallNextHookEx(nullptr, nCode, wParam, lParam);
 }
-

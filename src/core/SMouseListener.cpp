@@ -14,7 +14,7 @@
 #elif __APPLE__ && TARGET_OS_MAC /* Need Test */
     #include "MacMouseListener.h"
 #elif _WIN32
-    #include "WinMouseListener.cpp.o"
+    #include "WinMouseListener.h"
 #endif
 
 SMouseListener* SMouseListener::m_instance = nullptr;
