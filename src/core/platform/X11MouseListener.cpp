@@ -3,6 +3,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xproto.h>
+#include <X11/extensions/record.h>
 
 #include "X11MouseListener.h"
 #include "utils.h"
@@ -11,12 +12,12 @@ static void callback(XPointer ptr, XRecordInterceptData *data)
 {
     Q_UNUSED(ptr)
     X11MouseListener* instance = X11MouseListener::instance();
-    instance->handleRecordEvent(data);
+    instance->handleRecordEvent(static_cast<void*>(data));
 }
 
 X11MouseListener*   X11MouseListener::m_instance = nullptr;
-XRecordContext      X11MouseListener::m_context = 0;
-Display*            X11MouseListener::m_display = nullptr;
+XRecordContext      context = 0;
+Display*            display = nullptr;
 
 MouseStatus         X11MouseListener::lastMouseStatus = {-1, -1, False};
 MouseStatus         X11MouseListener::currMouseStatus = {-1, -1, False};
@@ -41,7 +42,7 @@ void X11MouseListener::startListen()
 void X11MouseListener::stopListen()
 {
     SDEBUG
-    if (m_context == 0)
+    if (context == 0)
     {
         return;
     }
@@ -53,16 +54,17 @@ void X11MouseListener::stopListen()
         return;
     }
 
-    XRecordDisableContext(display, m_context);
+    XRecordDisableContext(display, context);
     XFlush(display);
     XSync(display, false);
-    XRecordFreeContext(display, m_context);
-    m_context = 0;
+    XRecordFreeContext(display, context);
+    context = 0;
     XCloseDisplay(display);
 }
 
-void X11MouseListener::handleRecordEvent(XRecordInterceptData *data)
+void X11MouseListener::handleRecordEvent(void *_data)
 {
+    XRecordInterceptData *data = static_cast<XRecordInterceptData*>(_data);
     if (data->category == XRecordFromServer)
     {
         xEvent *event = (xEvent*)data->data;
@@ -166,8 +168,8 @@ X11MouseListener::~X11MouseListener()
 void X11MouseListener::init()
 {
     SDEBUG
-    m_display = XOpenDisplay(NULL);
-    if (!m_display) 
+    display = XOpenDisplay(NULL);
+    if (!display) 
     {
         fprintf(stderr, "Could not open display\n");
         return;
@@ -199,22 +201,22 @@ void X11MouseListener::init()
 
     /*  XRecordCreateContext returns zero if the request failed. 
         XRecordCreateContext can generate BadIDChoice BadMatch and BadValue errors. */
-    m_context = XRecordCreateContext(m_display, 0, &clients, 1, &range, 1);
-    if (m_context == 0)
+    context = XRecordCreateContext(display, 0, &clients, 1, &range, 1);
+    if (context == 0)
     {
         fprintf(stderr, "XRecordCreateContext failed\n");
         return;
     }
 
     XFree(range);
-    XSync(m_display, True); // 不知道为啥要写True； https://tronche.com/gui/x/xlib/event-handling/XSync.html
+    XSync(display, True); // 不知道为啥要写True； https://tronche.com/gui/x/xlib/event-handling/XSync.html
 }
 
 void X11MouseListener::enableContext()
 {
     SDEBUG
-    Status ret = XRecordEnableContext(m_display, m_context,  callback, nullptr);
-    XCloseDisplay(m_display);
-    m_display = nullptr;   
+    Status ret = XRecordEnableContext(display, context,  callback, nullptr);
+    XCloseDisplay(display);
+    display = nullptr;   
 }
 

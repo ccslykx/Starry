@@ -25,7 +25,6 @@ if (CMAKE_HOST_LINUX)
 		include/Core/Platform/X11MouseListener.h
 		src/core/platform/X11MouseListener.cpp
 	)
-    target_link_libraries(${PROJECT_NAME} PUBLIC -lX11 -lXtst) # https://stackoverflow.com/questions/66906557/linking-target-failed-for-lib-with-x11-c
 elseif (CMAKE_HOST_WIN32)
 	set(PLATFORM_FILE
 		include/Core/Platform/WinMouseListener.h
@@ -45,18 +44,23 @@ add_executable(${PROJECT_NAME}
 	${PLATFORM_FILE}
 )
 
-find_package(Qt6 COMPONENTS Core Widgets Concurrent Gui REQUIRED)
-
 target_include_directories(${PROJECT_NAME} PUBLIC
-    include
-    include/Core
-    include/SGui
+	include
+	include/Core
+	include/SGui
 	include/Core/Platform
 )
 
-target_link_libraries(${PROJECT_NAME} PUBLIC
-	Qt6::Core
-	Qt6::Widgets
-	Qt6::Concurrent
-	Qt6::Gui
+find_package(Qt6 COMPONENTS Core Widgets Concurrent Gui REQUIRED)
+
+set(LIBRARYS Qt6::Core Qt6::Widgets	Qt6::Concurrent	Qt6::Gui)
+if (CMAKE_HOST_LINUX)
+# https://stackoverflow.com/questions/66906557/linking-target-failed-for-lib-with-x11-c
+set(LIBRARYS
+	${LIBRARYS}
+	-lX11 
+	-lXtst
 )
+endif()
+
+target_link_libraries(${PROJECT_NAME} PUBLIC ${LIBRARYS})
