@@ -101,7 +101,7 @@ void SConfig::readFromFile(const QString &path)
     QFile f(conf);
     if (!f.exists())
     {
-        qWarning() << "Config file not found!";
+        qWarning() << "Config file" << conf << "not found!";
         return;
     }
 
@@ -305,8 +305,8 @@ SConfig::SConfig(const QString &path)
     SDEBUG
     if (this->m_configPath == "")
     {
-        QString appConfigLocation = QStandardPaths::displayName(QStandardPaths::AppConfigLocation);
-        m_configPath = appConfigLocation + "/Starry";
+        m_configPath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+        detectConfigPath(m_configPath, true);
     }
     settingMap = QHash<QString, QVariant>();
     pInfoMap = QHash<QString, SPluginInfo*>();
