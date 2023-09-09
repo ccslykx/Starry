@@ -113,6 +113,7 @@ qDebug() << "Defined _WIN32";
         m_waitB1ReleaseTimer->setInterval(100); // TODO: change with SConfig
     }
     QObject::connect(m_waitSelectionChangeTimer, &QTimer::timeout, this, [this] () {
+        m_selection->refresh();
         if (this->m_selectionChanged)
         {
             emit this->canShow();
@@ -170,7 +171,7 @@ void SMouseListener::onB1Released(MouseStatus status)
     emit B1Released(status);
     m_releasePos = QPoint(status.x, status.y);
     m_B1Released = true;
-    m_selection->refresh(); // Detect SelectionChanged
+    // m_selection->refresh(); // Detect SelectionChanged
 
     double offset = sqrt(pow((double) m_releasePos.x() - (double) m_pressPos.x(), 2) + pow((double) m_releasePos.y() - (double) m_pressPos.y(), 2));
     if (offset >= 5.0) // 鼠标位移量足够，认为是划词动作
