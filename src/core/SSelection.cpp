@@ -6,6 +6,7 @@
 
 #ifdef __linux__
 #elif __APPLE__
+#   include <ApplicationServices/ApplicationServices.h>
 #elif _WIN32
 #   include <Windows.h>
 #   include <WinUser.h>
@@ -28,7 +29,7 @@ SSelection* SSelection::instance()
 void SSelection::refresh()
 {
     SDEBUG
-    QString tmp;
+    QString tmp = QString();
 #ifdef __linux__
     QString dpEnv = QProcessEnvironment::systemEnvironment().value("XDG_SESSION_TYPE");
     if (dpEnv.toUpper() == "X11")
@@ -44,7 +45,7 @@ void SSelection::refresh()
 #elif _WIN32
     tmp = simulateCopy_win();
 #endif
-    if (m_selection != tmp)
+    if (!tmp.isEmpty() && (m_selection != tmp))
     {
         m_selection = tmp;
         emit selectionChanged();
@@ -212,6 +213,29 @@ QString SSelection::simulateCopy_linux()
 QString SSelection::simulateCopy_mac()
 {
     SDEBUG
-    QString tmp = "TEST";
-    return std::move(tmp);
+    QString res = QString();
+    /* Get Selection through accessibility APIs */
+    // Ref: https://stackoverflow.com/questions/76009610/get-selected-text-when-in-any-application-on-macos
+    AXUIElementRef systemWideElement = AXUIElementCreateSystemWide();
+    CFTypeRef *selectedTextValue = new CFTypeRef;
+    AXError errorCode = AXUIElementCopyAttributeValue(systemWideElement, kAXFocusedUIElementAttribute, selectedTextValue);
+    if (errorCode != kAXErrorSuccess)
+    {
+        qDebug() << "errorCode:" << errorCode;
+        delete selectedTextValue;
+        return std::move(res);
+    }
+    AXUIElementRef selectedTextElement = (AXUIElementRef)*selectedTextValue;
+    CFStringRef *selectedTextString = new CFStringRef;
+    AXError textErrorCode = AXUIElementCopyAttributeValue(selectedTextElement, kAXSelectedTextAttribute, (CFTypeRef *)selectedTextString);
+    if (textErrorCode != kAXErrorSuccess)
+    {
+        qDebug() << "textErrorCode:" << textErrorCode;
+        delete selectedTextString;
+    }
+        res = QString::fromCFString(*selectedTextString);
+        qDebug() << "selectedTextString:" << res;
+    delete selectedTextString;
+    delete selectedTextValue;
+    return std::move(res);
 }
