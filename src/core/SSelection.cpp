@@ -213,6 +213,7 @@ QString SSelection::getSelection_mac()
 {
     SDEBUG
     QString res = QString();
+#ifdef __APPLE__
     /* Get Selection through accessibility APIs */
     // Ref: https://stackoverflow.com/questions/76009610/get-selected-text-when-in-any-application-on-macos
     AXUIElementRef systemWideElement = AXUIElementCreateSystemWide();
@@ -236,5 +237,7 @@ QString SSelection::getSelection_mac()
         qDebug() << "selectedTextString:" << res;
     delete selectedTextString;
     delete selectedTextValue;
+#endif
+
     return std::move(res);
 }
