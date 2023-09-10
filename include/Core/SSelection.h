@@ -18,9 +18,9 @@ signals:
 
 private:
     SSelection();
-    QString simulateCopy_win(); /* Simulate pushing Ctrl+C */
-    QString simulateCopy_linux(); /* Simulate pushing Ctrl+C */
-    QString simulateCopy_mac(); /* Simulate pushing Command+C */
+    QString getSelection_win();
+    QString getSelection_linux();
+    QString getSelection_mac();
 
 private:
     static SSelection   *m_instance;

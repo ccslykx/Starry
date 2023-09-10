@@ -37,13 +37,12 @@ void SSelection::refresh()
         tmp = m_clipboard->text(QClipboard::Mode::Selection);
     } else if (dpEnv.toUpper() == "WAYLAND")
     {
-        tmp = simulateCopy_linux();
+        tmp = getSelection_linux();
     }
 #elif __APPLE__ && TARGET_OS_MAC /* Need Test */
-        /* Any better method? */
-        tmp = simulateCopy_mac();
+        tmp = getSelection_mac();
 #elif _WIN32
-    tmp = simulateCopy_win();
+    tmp = getSelection_win();
 #endif
     if (!tmp.isEmpty() && (m_selection != tmp))
     {
@@ -67,7 +66,7 @@ SSelection::SSelection()
     }
 }
 
-QString SSelection::simulateCopy_win()
+QString SSelection::getSelection_win()
 {
     SDEBUG
     QString res = QString();
@@ -204,13 +203,13 @@ QString SSelection::simulateCopy_win()
     return std::move(res);
 }
 
-QString SSelection::simulateCopy_linux()
+QString SSelection::getSelection_linux()
 {
     SDEBUG
     return "TEST";   
 }
 
-QString SSelection::simulateCopy_mac()
+QString SSelection::getSelection_mac()
 {
     SDEBUG
     QString res = QString();
