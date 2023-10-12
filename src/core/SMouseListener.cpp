@@ -67,14 +67,14 @@ void SMouseListener::init()
 {
     SDEBUG
 #ifdef __linux__
-    QString dpEnv = QProcessEnvironment::systemEnvironment().value("XDG_SESSION_TYPE");
-    if (dpEnv.toUpper() == "X11")
-    {
+    // QString dpEnv = QProcessEnvironment::systemEnvironment().value("XDG_SESSION_TYPE");
+    // if (dpEnv.toUpper() == "X11")
+    // {
         m_listener = X11MouseListener::instance();
-    } else if (dpEnv.toUpper() == "WAYLAND")
-    {
-        // m_listener = WaylandMouseListener::instance();
-    }
+    // } else if (dpEnv.toUpper() == "WAYLAND")
+    // {
+    //     // m_listener = WaylandMouseListener::instance();
+    // }
 #elif __APPLE__ && TARGET_OS_MAC /* Need Test */
     // m_listener = MacMouseListener::instance();
 #elif _WIN32
