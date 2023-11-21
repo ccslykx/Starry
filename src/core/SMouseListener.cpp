@@ -11,6 +11,7 @@
 
 #ifdef __linux__
     #include "X11MouseListener.h"    
+    #include "WaylandMouseListener.h"
 #elif __APPLE__ && TARGET_OS_MAC /* Need Test */
     #include "MacMouseListener.h"
 #elif _WIN32
@@ -74,17 +75,17 @@ void SMouseListener::init()
 {
     SDEBUG
 #ifdef __linux__
-qDebug() << "Defined __linux__";
-    QString dpEnv = QProcessEnvironment::systemEnvironment().value("XDG_SESSION_TYPE");
-    if (dpEnv.toUpper() == "X11")
-    {
-qDebug() << "X11";
-        m_listener = X11MouseListener::instance();
-    } else if (dpEnv.toUpper() == "WAYLAND")
-    {
-qDebug() << "Wayland";
-        // m_listener = WaylandMouseListener::instance();
-    }
+ qDebug() << "Defined __linux__";
+     QString dpEnv = QProcessEnvironment::systemEnvironment().value("XDG_SESSION_TYPE");
+     if (dpEnv.toUpper() == "X11")
+     {
+ qDebug() << "X11";
+         m_listener = X11MouseListener::instance();
+     } else /* if (dpEnv.toUpper() == "WAYLAND") */
+     {
+ qDebug() << "Wayland";
+        m_listener = WaylandMouseListener::instance();
+     }
 #elif __APPLE__ && TARGET_OS_MAC /* Need Test */
     m_listener = MacMouseListener::instance();
 #elif _WIN32
