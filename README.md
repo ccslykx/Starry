@@ -11,6 +11,10 @@
 
 ![PREVIEW](.assets/Starry_icon_preview.gif)
 
+## 关于dev分支
+
+dev分支实现了Windows、Mac、Wayland环境下的部分功能，因实现不完美，故一直没有同步到主分支。
+
 ## 最新重要更新
 
 - 2023.7.27 图标功能基本完成
@@ -78,7 +82,7 @@ cmake .. && make
 
 ### 示例-[Pot翻译](https://pot.pylogmon.com/)
 
-在“执行脚本”处填`pot popclip $PLAINTEXT`。
+在“执行脚本”处填`curl "127.0.0.1:60828/selection_translate"`。详见[Pot-外部调用](https://github.com/pot-app/pot-desktop?tab=readme-ov-file#%E5%A4%96%E9%83%A8%E8%B0%83%E7%94%A8)
 
 
 ## 致谢
