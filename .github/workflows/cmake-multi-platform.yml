@@ -50,10 +50,7 @@ jobs:
       with:
         version: '6.5.2'
         target: 'desktop'
-        install-deps: 'true'
-        modules: 'qtbase qtcore qtwidget qtconcurrent qtgui'
         set-env: 'true'
-        tools-only: 'false'
     
     - uses: actions/checkout@v4
 
