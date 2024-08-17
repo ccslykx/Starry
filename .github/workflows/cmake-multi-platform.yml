@@ -51,7 +51,10 @@ jobs:
         version: '6.5.2'
         target: 'desktop'
         set-env: 'true'
-    
+    - name: Install X11
+      if: os == "ubuntu-latest"
+      run: sudo apt install libgl1-mesa-dev libx11-dev libxtst-dev
+      
     - uses: actions/checkout@v4
 
     - name: Set reusable strings
