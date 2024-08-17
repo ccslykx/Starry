@@ -45,10 +45,17 @@ jobs:
             c_compiler: cl
 
     steps:
-    - uses: actions/checkout@v4
-
     - name: Install Qt
       uses: jurplel/install-qt-action@v4
+      with:
+        version: '6.5.2'
+        target: 'desktop'
+        install-deps: 'true'
+        modules: 'qtbase qtcore qtwidget qtconcurrent qtgui'
+        set-env: 'true'
+        tools-only: 'false'
+    
+    - uses: actions/checkout@v4
 
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
