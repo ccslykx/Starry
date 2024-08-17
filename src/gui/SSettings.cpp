@@ -181,10 +181,6 @@ void SSettings::showContent(int index)
     if (index == -1) {
         index = m_menuListWidget->currentRow();
     }
-    if (0 < index || m_contentWidget->count() <= index)
-    {
-        qWarning() <<"invalid index";
-    }
     m_contentWidget->setCurrentIndex(index);
 }
 
@@ -220,7 +216,7 @@ void SSettings::closeEvent(QCloseEvent *ev)
     SDEBUG
     refreshPluginIndex();
     emit windowClose();
-    m_config->saveToFile();
+    m_config->saveToFile(m_config->configPath());
     ev->accept();
 }
 

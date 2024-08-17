@@ -39,7 +39,7 @@ void STray::exitTray()
     }
     if (m_config)
     {
-        m_config->saveToFile();
+        m_config->saveToFile(m_config->configPath());
     }
     QApplication *parent = (QApplication*) this->parent();
     parent->quit();
@@ -127,5 +127,5 @@ void STray::initServices()
 void STray::initSettings()
 {
     SDEBUG
-    m_config->readFromFile();
+    m_config->readFromFile(m_config->configPath());
 }

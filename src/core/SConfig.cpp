@@ -46,17 +46,21 @@ void SConfig::saveToFile(const QString &path)
     
     if (path.isEmpty())
     {
+        qWarning() << "SConfig::saveToFile: path is empty, saving to m_configPath: " << m_configPath;
         saveToFile(m_configPath);
         return;
     }
     // If config dir not exist, make it and set to m_configpath.
     if (!detectConfigPath(path, true)) 
     {
+        qWarning() << "SConfig::saveToFile: path is not a config file, setting config file path to " << path;
         setConfigFilePath(path);
     }
 
     // Save configs
-    QSettings s(m_configPath + "/starry.conf", QSettings::NativeFormat);
+    QString settingPath = QDir::cleanPath(m_configPath + "/starry.conf");
+    qDebug() << "SConfig::saveToFile: settingPath:" << settingPath;
+    QSettings s(settingPath, QSettings::NativeFormat);
     // Save plugins
     s.remove(QString("STARRY_PLUGINS"));
     s.beginGroup(QString("STARRY_PLUGINS"));
@@ -97,19 +101,22 @@ void SConfig::readFromFile(const QString &path)
         return;
     }
 
-    QString conf = path + "/starry.conf";
-    QFile f(conf);
-    if (!f.exists())
-    {
-        qWarning() << "Config file" << conf << "not found!";
-        return;
-    }
+    QString conf = QDir::cleanPath(path + "/starry.conf");
+    // QFile f(conf);
+    // if (!f.exists())
+    // {
+    //     qWarning() << "Config file" << conf << "not found!";
+    //     return;
+    // }
+    // f.close();
 
-    QSettings s(conf, QSettings::NativeFormat);
+    QSettings s(conf, QSettings::Format::NativeFormat);
     
     // Plugins
     s.beginGroup(QString("STARRY_PLUGINS"));
     QStringList plugins = s.childGroups();
+    qDebug() << "plugins.count: " << plugins.count();
+    for (auto p : plugins) qDebug() << p << '\n';
     for (QString pName : plugins)
     {
         s.beginGroup(pName);
@@ -127,7 +134,7 @@ void SConfig::readFromFile(const QString &path)
             iconPath = ":/default_icon.png";
         }
         SPluginInfo *info = new SPluginInfo(pName, script, iconPath, index, tip, iconEnabled, nameEnabled);
-        addPlugin(std::move(info), ReadFromFile); /* Need Test */
+        addPlugin(info, ReadFromFile); /* Need Test */
         emit readPlugin(info);
     }
     s.endGroup();
@@ -139,6 +146,7 @@ void SConfig::readFromFile(const QString &path)
     {
         addSetting(key, s.value(key));
     }
+    s.endGroup();
 }
 
 void SConfig::setConfigFilePath(const QString &path)
@@ -305,7 +313,8 @@ SConfig::SConfig(const QString &path)
     SDEBUG
     if (this->m_configPath == "")
     {
-        m_configPath = QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+        m_configPath = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+        qDebug() << "m_configPath: " << m_configPath << '\n';
         detectConfigPath(m_configPath, true);
     }
     settingMap = QHash<QString, QVariant>();

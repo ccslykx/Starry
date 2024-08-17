@@ -131,7 +131,7 @@ qDebug() << "Defined _WIN32";
         this->m_waitB1ReleaseTimer->stop();
     });
     QObject::connect(m_selection, &SSelection::selectionChanged, this, [this](){
-        qDebug() << "selectionChanged";
+        // qDebug() << "selectionChanged";
         this->m_selectionChanged = true;
 
         if (!this->m_B1Released) // if B1 is pressed

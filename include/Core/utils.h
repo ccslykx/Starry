@@ -1,4 +1,4 @@
-/**
+ /**
  * @file utils.h
  * @author Ccslykx (ccslykx@outlook.com)
  * @brief 
@@ -14,7 +14,7 @@
 #include <QDebug>
 #include <QString>
 
-#define ENABLE_DEBUG
+// #define ENABLE_DEBUG
 
 #ifdef ENABLE_DEBUG
 #   define SDEBUG qDebug() << "[FILE:" << __FILE__ + QString(":") + QString::number(__LINE__) << "\t" << Q_FUNC_INFO << "]";

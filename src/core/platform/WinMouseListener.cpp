@@ -105,7 +105,7 @@ void WinMouseListener::handleLowLevelMouseProc(unsigned long long wParam)
 
         if (motion == NotMoved)
         {
-            qDebug() << "Not moved";
+            // qDebug() << "Not moved";
             if (!m_doubleClickTimer->isValid())
             {
                 qWarning() << "m_doubleClickTimer is not Valid";
@@ -113,7 +113,7 @@ void WinMouseListener::handleLowLevelMouseProc(unsigned long long wParam)
             }
             if (!m_doubleClickTimer->hasExpired(250)) /* TODO: Set from SConfig */
             {
-                qDebug() << "B1 Double Clicked with elapsed" << m_doubleClickTimer->elapsed();
+                // qDebug() << "B1 Double Clicked with elapsed" << m_doubleClickTimer->elapsed();
                 emit WinMouseListener::instance()->B1DoubleClicked(currMouseStatus);
             }
             m_doubleClickTimer->restart();
