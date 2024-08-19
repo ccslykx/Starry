@@ -53,7 +53,7 @@ jobs:
         set-env: 'true'
     - name: Install X11
       if: ${{ matrix.os }} == "ubuntu-latest"
-      run: apt install -y libgl1-mesa-dev libx11-dev libxtst-dev
+      run: sudo apt install -y libgl1-mesa-dev libx11-dev libxtst-dev
       
     - uses: actions/checkout@v4
 
