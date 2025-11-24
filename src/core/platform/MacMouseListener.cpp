@@ -25,9 +25,7 @@ MacMouseListener* MacMouseListener::instance()
 CGEventRef callback(CGEventTapProxy proxy, CGEventType type, 
     CGEventRef event, void * __nullable userInfo) 
 {
-    CGEventType *ptr;
-    *ptr = type;
-    MacMouseListener::instance()->handleCGEvent(static_cast<void*>(ptr));
+    MacMouseListener::instance()->handleCGEvent(type);
     
     return event; 
 }
@@ -48,11 +46,11 @@ void MacMouseListener::stopListen()
     }
 }
 
-void MacMouseListener::handleCGEvent(void *type)
+void MacMouseListener::handleCGEvent(int type)
 {
     QPoint point = QCursor::pos();
     MouseMotion motion;
-    switch (*static_cast<CGEventType*>(type))
+    switch (static_cast<CGEventType>(type))
     {
     case CGEventType::kCGEventLeftMouseUp:
         if (!lastMouseStatus.isPressed)

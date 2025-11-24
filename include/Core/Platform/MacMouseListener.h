@@ -12,7 +12,7 @@ public:
     static MacMouseListener* instance();
     virtual void startListen() override;
     virtual void stopListen() override;
-    static void handleCGEvent(void*);
+    static void handleCGEvent(int);
 
 private:
     MacMouseListener();
