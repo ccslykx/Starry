@@ -219,26 +219,23 @@ QString SSelection::getSelection_mac()
     /* Get Selection through accessibility APIs */
     // Ref: https://stackoverflow.com/questions/76009610/get-selected-text-when-in-any-application-on-macos
     AXUIElementRef systemWideElement = AXUIElementCreateSystemWide();
-    CFTypeRef *selectedTextValue = new CFTypeRef;
-    AXError errorCode = AXUIElementCopyAttributeValue(systemWideElement, kAXFocusedUIElementAttribute, selectedTextValue);
+    CFTypeRef selectedTextValue = nullptr;
+    AXError errorCode = AXUIElementCopyAttributeValue(systemWideElement, kAXFocusedUIElementAttribute, &selectedTextValue);
     if (errorCode != kAXErrorSuccess)
     {
         qDebug() << "errorCode:" << errorCode;
-        delete selectedTextValue;
         return std::move(res);
     }
-    AXUIElementRef selectedTextElement = (AXUIElementRef)*selectedTextValue;
-    CFStringRef *selectedTextString = new CFStringRef;
-    AXError textErrorCode = AXUIElementCopyAttributeValue(selectedTextElement, kAXSelectedTextAttribute, (CFTypeRef *)selectedTextString);
+    AXUIElementRef selectedTextElement = (AXUIElementRef)selectedTextValue;
+    CFStringRef selectedTextString = nullptr;
+    AXError textErrorCode = AXUIElementCopyAttributeValue(selectedTextElement, kAXSelectedTextAttribute, (CFTypeRef *) &selectedTextString);
     if (textErrorCode != kAXErrorSuccess)
     {
         qDebug() << "textErrorCode:" << textErrorCode;
-        delete selectedTextString;
+        return std::move(res);
     }
-        res = QString::fromCFString(*selectedTextString);
-        qDebug() << "selectedTextString:" << res;
-    delete selectedTextString;
-    delete selectedTextValue;
+    res = QString::fromCFString(selectedTextString);
+    qDebug() << "selectedTextString:" << res;
 #endif
 
     return std::move(res);
