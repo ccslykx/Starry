@@ -21,10 +21,11 @@ bool SConfig::detectConfigPath(const QString &path, bool makepath)
 {
     SDEBUG
     const QString &_path = path.isEmpty() ? m_configPath : path;
+    const QString iconPath = QDir::cleanPath(path + QDir::separator() + "icons");
     
     // Detect config dir exists
-    QDir configDir(_path);
-    if (configDir.exists())
+    QDir configDir(_path), iconDir(iconPath);
+    if (configDir.exists() && iconDir.exists())
     {
         return true; // If exist, return true;
     } 
@@ -35,7 +36,13 @@ bool SConfig::detectConfigPath(const QString &path, bool makepath)
         if (!configDir.mkpath(_path))
         {
             qWarning() << "Create config file path failed:" << path;
+            return false;
         }
+        if (!iconDir.mkpath(iconPath))
+        {
+            qWarning() << "Create icon file path failed:" << path;
+        }
+        return true;
     }
     return false;
 }
@@ -58,7 +65,7 @@ void SConfig::saveToFile(const QString &path)
     }
 
     // Save configs
-    QString settingPath = QDir::cleanPath(m_configPath + "/starry.conf");
+    QString settingPath = QDir::cleanPath(m_configPath + QDir::separator() + "starry.conf");
     qDebug() << "SConfig::saveToFile: settingPath:" << settingPath;
     QSettings s(settingPath, QSettings::NativeFormat);
     // Save plugins
@@ -101,7 +108,7 @@ void SConfig::readFromFile(const QString &path)
         return;
     }
 
-    QString conf = QDir::cleanPath(path + "/starry.conf");
+    QString conf = QDir::cleanPath(path + QDir::separator() + "starry.conf");
     // QFile f(conf);
     // if (!f.exists())
     // {
@@ -117,6 +124,7 @@ void SConfig::readFromFile(const QString &path)
     QStringList plugins = s.childGroups();
     qDebug() << "plugins.count: " << plugins.count();
     for (auto p : plugins) qDebug() << p << '\n';
+    QVector <SPluginInfo*> pluginInfos(plugins.size());
     for (QString pName : plugins)
     {
         s.beginGroup(pName);
@@ -134,11 +142,15 @@ void SConfig::readFromFile(const QString &path)
             iconPath = ":/default_icon.png";
         }
         SPluginInfo *info = new SPluginInfo(pName, script, iconPath, index, tip, iconEnabled, nameEnabled);
+        pluginInfos[index] = info;
+    }
+    s.endGroup();
+    for (SPluginInfo* info : pluginInfos)
+    {
         addPlugin(info, ReadFromFile); /* Need Test */
         emit readPlugin(info);
     }
-    s.endGroup();
-    
+
     // Settings
     s.beginGroup(QString("STARRY_SETTINGS"));
     QStringList settings = s.childGroups();
@@ -216,7 +228,8 @@ void SConfig::addPlugin(SPluginInfo *info, AddMode mode)
     }
     if (mode == AddMode::NewCreate)
     {
-        info->iconPath = m_configPath + "/icons/" + info->name + ".png";
+        info->iconPath = QDir::cleanPath(m_configPath + QDir::separator() + "icons" + QDir::separator() + info->name + ".png");
+        qDebug() << "iconPath:" << info->iconPath;
         savePluginIcon(info);
     }
     pInfoMap.insert(info->name, info);
@@ -226,7 +239,7 @@ void SConfig::addPlugin(SPluginInfo *info, AddMode mode)
         {
             QFile::remove(info->iconPath);
         }
-        info->iconPath = m_configPath + "/icons/" + info->name + ".png";
+        info->iconPath = QDir::cleanPath(m_configPath + QDir::separator() + "icons" + QDir::separator() + info->name + ".png");
         this->savePluginIcon(info);
     });
     QObject::connect(info, &SPluginInfo::iconChanged, this, &SConfig::savePluginIcon);
@@ -257,7 +270,7 @@ void SConfig::savePluginIcon(SPluginInfo *info)
     }
     if (!info->icon.save(info->iconPath, "png", 100))
     {
-        qWarning() << "Icon save failed";
+        qWarning() << "Icon failed save to path: " << info->iconPath;
     }
 }
 
@@ -313,7 +326,7 @@ SConfig::SConfig(const QString &path)
     SDEBUG
     if (this->m_configPath == "")
     {
-        m_configPath = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+        m_configPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
         qDebug() << "m_configPath: " << m_configPath << '\n';
         detectConfigPath(m_configPath, true);
     }

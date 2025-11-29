@@ -37,7 +37,7 @@ public:
     static SConfig* config(const QString &path = "");
 
     /**
-     * @brief Detect existance of config path (Dir).
+     * @brief Detect existence of config path (Dir).
      * 
      * @param path 
      * @param makepath true for making new path when path not exist.
