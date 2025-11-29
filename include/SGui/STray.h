@@ -33,6 +33,9 @@ public:
     void settings();
     void exitTray();
 
+signals:
+    void exiting();
+
 private:
     explicit STray(QApplication*);
     ~STray();

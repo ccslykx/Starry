@@ -54,11 +54,7 @@ void STray::exitTray()
     {
         m_config->saveToFile(m_config->configPath());
     }
-    QApplication *parent = (QApplication*) this->parent();
-    if (parent)
-    {
-        parent->quit();
-    }
+    emit exiting();
 }
 
 STray::STray(QApplication *app)
@@ -104,6 +100,7 @@ void STray::initGui()
 
     menu->addAction(enable);
     menu->addAction(settings);
+    menu->addSeparator();
     menu->addAction(exit);
 
     this->setContextMenu(menu);

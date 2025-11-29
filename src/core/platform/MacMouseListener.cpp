@@ -12,6 +12,7 @@ MouseStatus MacMouseListener::currMouseStatus = {-1, -1, false};
 QElapsedTimer* MacMouseListener::m_doubleClickTimer = nullptr;
 
 void* MacMouseListener::m_eventTap = nullptr;
+CFRunLoopRef MacMouseListener::m_runLoop = nullptr;
 
 MacMouseListener* MacMouseListener::instance()
 {
@@ -33,22 +34,24 @@ CGEventRef callback(CGEventTapProxy proxy, CGEventType type,
 
 void MacMouseListener::startListen()
 {
+    if (!m_runLoop)
+    {
+        m_runLoop = CFRunLoopGetCurrent();
+    }
     m_future = QtConcurrent::run(createEventTap);
 }
 
 void MacMouseListener::stopListen()
 {
-    if (!m_future.isValid())
+    if (m_runLoop)
     {
-        qDebug() << "m_future is invalid";
-        return;
+        CFRunLoopStop(m_runLoop);
+        m_runLoop = nullptr;
+        m_future.waitForFinished();
     }
-    m_future.cancel();
 
     if (m_eventTap)
     {
-        // CFMachPortRef* eventTap = static_cast<CFMachPortRef*>(m_eventTap);
-        // CGEventTapEnable(*eventTap, false);
         CFRelease(m_eventTap);
     }
 }
@@ -130,9 +133,9 @@ void MacMouseListener::createEventTap()
     }
     CGEventMask eventMask = (1 << CGEventType::kCGEventLeftMouseUp) | (1 << CGEventType::kCGEventLeftMouseDown);
     CFMachPortRef eventTap = CGEventTapCreate(
-        CGEventTapLocation::kCGHIDEventTap, 
+        CGEventTapLocation::kCGHIDEventTap,
         CGEventTapPlacement::kCGHeadInsertEventTap,
-        CGEventTapOptions::kCGEventTapOptionDefault, 
+        CGEventTapOptions::kCGEventTapOptionDefault,
         eventMask, callback, nullptr);
 
     if (!eventTap)
@@ -143,8 +146,13 @@ void MacMouseListener::createEventTap()
 
     m_eventTap = static_cast<void*>(eventTap);
 
+    if (!m_runLoop)
+    {
+        qDebug() << "MacMouseListener::createEventTap CFRunLoopRef is nullptr";
+        return;
+    }
     CFRunLoopSourceRef runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, eventTap, 0);
-    CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, kCFRunLoopCommonModes);
+    CFRunLoopAddSource(m_runLoop, runLoopSource, kCFRunLoopCommonModes);
     CGEventTapEnable(eventTap, true);
     CFRunLoopRun();
 }
