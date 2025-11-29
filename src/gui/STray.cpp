@@ -21,13 +21,26 @@ STray* STray::instance(QApplication *app)
 void STray::setEnable(bool enable)
 {
     SDEBUG
-/* TODO */
+    if (!m_mouseListener)
+    {
+        return;
+    }
+    if (m_mouseListener->isListening())
+    {
+        m_mouseListener->stopListen();
+    } else {
+        m_mouseListener->startListen();
+    }
+
 }
 
 void STray::settings()
 {
     SDEBUG
-    m_settings->show();
+    if (m_settings)
+    {
+        m_settings->show();
+    }
 }
 
 void STray::exitTray()
@@ -42,7 +55,10 @@ void STray::exitTray()
         m_config->saveToFile(m_config->configPath());
     }
     QApplication *parent = (QApplication*) this->parent();
-    parent->quit();
+    if (parent)
+    {
+        parent->quit();
+    }
 }
 
 STray::STray(QApplication *app)
@@ -58,7 +74,12 @@ STray::STray(QApplication *app)
 STray::~STray()
 {
     SDEBUG
-/* TODO */
+    if (m_editor) { m_editor->deleteLater(); }
+    if (m_popup) { m_popup->deleteLater(); }
+    if (m_config) { m_config->deleteLater(); }
+    if (m_settings) { m_settings->deleteLater(); }
+    if (m_mouseListener) { m_mouseListener->stopListen(); m_mouseListener->deleteLater(); }
+    if (m_instance) { m_instance->deleteLater(); }
 }
 
 void STray::initGui()
@@ -69,11 +90,15 @@ void STray::initGui()
     QAction *settings = new QAction(menu);
     QAction *exit = new QAction(menu);
 
-    enable->setText(tr("Enable"));
+    enable->setText(tr(m_mouseListener->isListening() ? "Disable" : "Enable"));
     settings->setText(tr("Setting"));
     exit->setText(tr("Exit"));
 
-    QObject::connect(enable, &QAction::triggered, this, &STray::setEnable); /* TODO */
+    QObject::connect(enable, &QAction::triggered, this, [this, enable]()
+    {
+        this->setEnable(!m_mouseListener->isListening());
+        enable->setText(m_mouseListener->isListening() ? "Disable" : "Enable");
+    });
     QObject::connect(settings, &QAction::triggered, this, &STray::settings);
     QObject::connect(exit, &QAction::triggered, this, &STray::exitTray);
 
@@ -108,7 +133,7 @@ void STray::initServices()
     }
     if (!m_mouseListener)
     {
-        m_mouseListener = SMouseListener::instance();   
+        m_mouseListener = SMouseListener::instance();
         m_mouseListener->startListen();
     }
 

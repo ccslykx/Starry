@@ -44,12 +44,19 @@ void SMouseListener::startListen()
 {
     SDEBUG
     m_listener->startListen();
+    m_listening = true;
 }
 
 void SMouseListener::stopListen()
 {
     SDEBUG
     m_listener->stopListen();
+    m_listening = false;
+}
+
+bool SMouseListener::isListening()
+{
+    return m_listening;
 }
 
 /* private functions */
@@ -73,6 +80,11 @@ SMouseListener::~SMouseListener()
 
 void SMouseListener::init()
 {
+    if (m_listener)
+    {
+        m_listener->stopListen();
+        m_listener->deleteLater();
+    }
     SDEBUG
 #ifdef __linux__
  qDebug() << "Defined __linux__";
@@ -143,6 +155,11 @@ qDebug() << "Defined _WIN32";
 
 void SMouseListener::waitForSelectionChange()
 {
+    if (!m_listening)
+    {
+        return;
+    }
+
     if (m_waitSelectionChangeTimer->isActive())
     {
         m_waitSelectionChangeTimer->stop();
@@ -152,6 +169,11 @@ void SMouseListener::waitForSelectionChange()
 
 void SMouseListener::waitForB1Release()
 {
+    if (!m_listening)
+    {
+        return;
+    }
+
     if (m_waitB1ReleaseTimer->isActive())
     {
         m_waitB1ReleaseTimer->stop();
@@ -161,6 +183,10 @@ void SMouseListener::waitForB1Release()
 
 void SMouseListener::onB1Pressed(MouseStatus status)
 {
+    if (!m_listening)
+    {
+        return;
+    }
     emit B1Pressed(status);
     m_pressPos = QPoint(status.x, status.y);
     m_B1Released = false;
@@ -169,6 +195,10 @@ void SMouseListener::onB1Pressed(MouseStatus status)
 
 void SMouseListener::onB1Released(MouseStatus status)
 {
+    if (!m_listening)
+    {
+        return;
+    }
     emit B1Released(status);
     m_releasePos = QPoint(status.x, status.y);
     m_B1Released = true;
@@ -183,6 +213,10 @@ void SMouseListener::onB1Released(MouseStatus status)
 
 void SMouseListener::onB1DoubleClicked(MouseStatus status)
 {
+    if (!m_listening)
+    {
+        return;
+    }
     emit B1DoubleClicked(status);
     waitForSelectionChange();
 }

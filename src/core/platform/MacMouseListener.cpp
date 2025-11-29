@@ -33,16 +33,23 @@ CGEventRef callback(CGEventTapProxy proxy, CGEventType type,
 
 void MacMouseListener::startListen()
 {
-    QtConcurrent::run(createEventTap);
+    m_future = QtConcurrent::run(createEventTap);
 }
 
 void MacMouseListener::stopListen()
 {
+    if (!m_future.isValid())
+    {
+        qDebug() << "m_future is invalid";
+        return;
+    }
+    m_future.cancel();
+
     if (m_eventTap)
     {
-        CFMachPortRef* eventTap = static_cast<CFMachPortRef*>(m_eventTap);
-        CGEventTapEnable(*eventTap, false);
-        CFRelease(*eventTap);
+        // CFMachPortRef* eventTap = static_cast<CFMachPortRef*>(m_eventTap);
+        // CGEventTapEnable(*eventTap, false);
+        CFRelease(m_eventTap);
     }
 }
 

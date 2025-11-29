@@ -3,6 +3,7 @@
 #include "AbstractMouseListener.h"
 #include <QObject>
 #include <QElapsedTimer>
+#include <QFuture>
 
 class MacMouseListener : public AbstractMouseListener
 {
@@ -26,5 +27,7 @@ private:
 
     static QElapsedTimer    *m_doubleClickTimer;
 
-    static void *m_eventTap;
+    static void             *m_eventTap;
+
+    QFuture<void>           m_future;
 };

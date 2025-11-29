@@ -15,6 +15,7 @@ public:
     AbstractMouseListener* listener();
     void startListen() override;
     void stopListen() override;
+    bool isListening();
 
 signals:
     void canShow();
@@ -48,6 +49,7 @@ private:
     QPoint  m_releasePos;
     bool    m_selectionChanged = false;
     bool    m_B1Released = false;
+    bool    m_listening = false;
 
     QTimer  *m_waitSelectionChangeTimer = nullptr; // 在B1Released后等待QClipboard::selectionChanged信号
     QTimer  *m_waitB1ReleaseTimer = nullptr; // 在selectionChanged信号发出后等待B1Released信号
