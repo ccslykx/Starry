@@ -67,10 +67,8 @@ void SPopupItem::exec()
     }
 
     try {
-        qDebug() << "m_process start";
         qDebug() << cmd << args;
         m_process->startDetached(cmd, args);
-        qDebug() << "m_process started";
     }
     catch (...) { // TODO：异常捕获
         qWarning() << "插件调用出错，请检查指令是否有误"; 
@@ -124,14 +122,16 @@ void SPopupItem::initGui()
     m_nameLabel->setFont(nameFont);
 
     QHBoxLayout *layout = new QHBoxLayout(this);
+    layout->setContentsMargins(2, 2, 2, 2);
+    layout->setSpacing(2);
     layout->addWidget(m_iconLabel);
     layout->addWidget(m_nameLabel);
 
     this->setLayout(layout);
-    this->setMinimumSize(24 + 8 * 2, 24 + 8 * 2); /* TODO: read from SConfig */
     this->setAttribute(Qt::WA_StyledBackground, true);
     this->setContentsMargins(0, 0, 0, 0);
-    this->setStyleSheet("background-color: #CCCCCC;"
+    this->setWindowOpacity(0.6);
+    this->setStyleSheet("background-color: rgba(220, 220, 220, 144);"
                         "border-radius: 8px;"
                         "color: #000000");
     

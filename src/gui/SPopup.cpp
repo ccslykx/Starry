@@ -105,6 +105,8 @@ void SPopup::initGui()
     {
         m_layout = new QHBoxLayout(this);
         m_layout->setAlignment(Qt::AlignTop);
+        m_layout->setSpacing(4);
+        m_layout->setContentsMargins(0, 0, 0, 0);
     }
     if (!m_timer)
     {
@@ -115,7 +117,7 @@ void SPopup::initGui()
 
     this->setMinimumSize(ICON_LENGTH, ICON_LENGTH);
 
-    this->setAttribute(Qt::WA_TranslucentBackground);
+    this->setAttribute(Qt::WA_TranslucentBackground, true);
     // https://stackoverflow.com/questions/966688/show-window-in-qt-without-stealing-focus
     this->setWindowFlags(Qt::Tool | Qt::FramelessWindowHint | Qt::Popup | Qt::Window | Qt::WindowStaysOnTopHint); // Qt::Tool is important flag to make it work. I mean not stealing focus. 但对x11下Gnome44 无效
 #ifdef __linux__
