@@ -13,6 +13,7 @@
 #include <QGuiApplication>
 #include <QPalette>
 #include <QSignalBlocker>
+#include <QStyleHints>
 
 #include "SSwitcher.h"
 #include "utils.h"
@@ -25,7 +26,7 @@ QString switcherStyleSheet(bool dark)
     {
         return QStringLiteral(
             "QPushButton {"
-            "  min-height: 36px; padding: 0 12px;"
+            "  padding: 0 12px;"
             "  border: 1px solid #475467; border-radius: 18px;"
             "  background: #344054; color: #D0D5DD; font-weight: 500;"
             "}"
@@ -39,7 +40,7 @@ QString switcherStyleSheet(bool dark)
     }
     return QStringLiteral(
         "QPushButton {"
-        "  min-height: 36px; padding: 0 12px;"
+        "  padding: 0 12px;"
         "  border: 1px solid #D0D5DD; border-radius: 18px;"
         "  background: #F2F4F7; color: #475467; font-weight: 500;"
         "}"
@@ -61,6 +62,14 @@ SSwitcher::SSwitcher(const QString &on, const QString &off, bool status, QWidget
     setCursor(Qt::PointingHandCursor);
     setMinimumHeight(36);
     refreshStyle();
+    if (QStyleHints *styleHints = QGuiApplication::styleHints())
+    {
+        QObject::connect(styleHints, &QStyleHints::colorSchemeChanged, this,
+                         [this] (Qt::ColorScheme scheme) {
+            m_pendingColorScheme = scheme;
+            refreshStyle(true, scheme);
+        });
+    }
     QObject::connect(this, &QPushButton::toggled, this, [this] (bool checked) {
         m_isOn = checked;
         updateAppearance();
@@ -120,10 +129,12 @@ void SSwitcher::setPixmap(const QPixmap &pixmap)
     setIconSize(pixmap.size());
 }
 
-void SSwitcher::refreshStyle()
+void SSwitcher::refreshStyle(bool force, Qt::ColorScheme scheme)
 {
-    const bool dark = QGuiApplication::palette().color(QPalette::Window).lightness() < 128;
-    if (m_styleInitialized && dark == m_darkStyle)
+    const bool dark = scheme == Qt::ColorScheme::Dark
+        || (scheme == Qt::ColorScheme::Unknown
+            && QGuiApplication::palette().color(QPalette::Window).lightness() < 128);
+    if (!force && m_styleInitialized && dark == m_darkStyle)
     {
         return;
     }
@@ -136,8 +147,28 @@ void SSwitcher::changeEvent(QEvent *event)
 {
     QPushButton::changeEvent(event);
     if (event && (event->type() == QEvent::PaletteChange
-        || event->type() == QEvent::ApplicationPaletteChange))
+        || event->type() == QEvent::ApplicationPaletteChange
+        || event->type() == QEvent::ThemeChange))
     {
-        refreshStyle();
+        Qt::ColorScheme scheme = m_pendingColorScheme;
+        if (event->type() == QEvent::ThemeChange)
+        {
+            scheme = QGuiApplication::styleHints()->colorScheme();
+            m_pendingColorScheme = scheme;
+        }
+        refreshStyle(event->type() == QEvent::ThemeChange, scheme);
+
+        if (event->type() != QEvent::ThemeChange
+            && m_pendingColorScheme != Qt::ColorScheme::Unknown)
+        {
+            const bool paletteIsDark =
+                QGuiApplication::palette().color(QPalette::Window).lightness() < 128;
+            const bool pendingIsDark =
+                m_pendingColorScheme == Qt::ColorScheme::Dark;
+            if (paletteIsDark == pendingIsDark)
+            {
+                m_pendingColorScheme = Qt::ColorScheme::Unknown;
+            }
+        }
     }
 }

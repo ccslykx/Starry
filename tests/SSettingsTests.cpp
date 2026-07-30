@@ -1,16 +1,22 @@
 #include <QCoreApplication>
 #include <QAbstractButton>
+#include <QApplication>
 #include <QDir>
 #include <QEvent>
 #include <QFileInfo>
+#include <QFrame>
 #include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMessageBox>
 #include <QPalette>
+#include <QPlainTextEdit>
 #include <QPixmap>
 #include <QPointer>
 #include <QProgressBar>
+#include <QScrollArea>
+#include <QScrollBar>
+#include <QStyleHints>
 #include <QTemporaryDir>
 #include <QTimer>
 #include <QtTest>
@@ -42,6 +48,7 @@ private slots:
     void nativeControlsSupportKeyboard();
     void buttonRolesAndNavigationSelection();
     void darkModeUsesBrighterOrangeBackgrounds();
+    void editorRefreshesDuringRuntimeThemeSwitch();
     void pluginDeleteButtonFollowsEditButton();
     void pluginItemRespondsToThemeChanges();
     void pluginSelectionUsesOrangeBackground();
@@ -248,6 +255,10 @@ void SSettingsTests::darkModeUsesBrighterOrangeBackgrounds()
 
     QPalette darkPalette = restorer.palette;
     darkPalette.setColor(QPalette::Window, QColor("#101828"));
+    darkPalette.setColor(QPalette::Base, QColor("#182230"));
+    darkPalette.setColor(QPalette::Text, QColor("#E4E7EC"));
+    darkPalette.setColor(QPalette::PlaceholderText, QColor("#98A2B3"));
+    darkPalette.setColor(QPalette::Highlight, QColor("#FB923C"));
     QGuiApplication::setPalette(darkPalette);
     QCoreApplication::processEvents();
 
@@ -265,6 +276,95 @@ void SSettingsTests::darkModeUsesBrighterOrangeBackgrounds()
     QListWidget *pluginList = m_settings->findChild<QListWidget *>("pluginList");
     QVERIFY(pluginList);
     QVERIFY(pluginList->styleSheet().contains("background: #9A3412"));
+
+    QFrame *editorCard = m_settings->findChild<QFrame *>("pluginEditorCard");
+    QLineEdit *editorName = m_settings->findChild<QLineEdit *>("pluginNameEdit");
+    QPlainTextEdit *editorCommand =
+        m_settings->findChild<QPlainTextEdit *>("pluginScriptEdit");
+    QVERIFY(editorCard);
+    QVERIFY(editorName);
+    QVERIFY(editorCommand);
+    QVERIFY(editorCard->styleSheet().contains("background: #1D2939"));
+    QVERIFY(editorCard->styleSheet().contains("color: palette(text)"));
+    QCOMPARE(editorName->palette().color(QPalette::Base),
+             darkPalette.color(QPalette::Base));
+    QCOMPARE(editorName->palette().color(QPalette::Text),
+             darkPalette.color(QPalette::Text));
+    QCOMPARE(editorCommand->palette().color(QPalette::Base),
+             darkPalette.color(QPalette::Base));
+    QCOMPARE(editorCommand->palette().color(QPalette::Text),
+             darkPalette.color(QPalette::Text));
+    QCOMPARE(editorCommand->font().pointSizeF(), editorName->font().pointSizeF());
+}
+
+void SSettingsTests::editorRefreshesDuringRuntimeThemeSwitch()
+{
+    QStyleHints *styleHints = QGuiApplication::styleHints();
+    QVERIFY(styleHints);
+    struct PaletteRestorer
+    {
+        QPalette palette;
+        ~PaletteRestorer()
+        {
+            QGuiApplication::setPalette(palette);
+            QCoreApplication::processEvents();
+        }
+    } restorer{QGuiApplication::palette()};
+
+    SPluginEditor *editor = SPluginEditor::editor();
+    QFrame *card = editor->findChild<QFrame *>("pluginEditorCard");
+    SButton *backButton = editor->findChild<SButton *>("cancelPluginButton");
+    QLineEdit *nameEdit = editor->findChild<QLineEdit *>("pluginNameEdit");
+    QPlainTextEdit *commandEdit =
+        editor->findChild<QPlainTextEdit *>("pluginScriptEdit");
+    QScrollArea *scrollArea =
+        editor->findChild<QScrollArea *>("pluginEditorFormScrollArea");
+    QVERIFY(card);
+    QVERIFY(backButton);
+    QVERIFY(nameEdit);
+    QVERIFY(commandEdit);
+    QVERIFY(scrollArea);
+
+    // Emit the same signal delivered by Qt when the operating-system theme
+    // changes. QStyleHints::setColorScheme() is not a reliable OS-theme
+    // simulator on every platform plugin (notably macOS test runners).
+    styleHints->colorSchemeChanged(Qt::ColorScheme::Dark);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        card->styleSheet().contains("background: #1D2939"), 1000);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        backButton->styleSheet().contains("border: 1px solid #475467"), 1000);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        scrollArea->styleSheet().contains("#C2410C"), 1000);
+
+    QPalette darkPalette = restorer.palette;
+    darkPalette.setColor(QPalette::Window, QColor("#101828"));
+    darkPalette.setColor(QPalette::Base, QColor("#182230"));
+    darkPalette.setColor(QPalette::Text, QColor("#E4E7EC"));
+    QGuiApplication::setPalette(darkPalette);
+    QCoreApplication::processEvents();
+    QCOMPARE(nameEdit->palette().color(QPalette::Base),
+             darkPalette.color(QPalette::Base));
+    QCOMPARE(commandEdit->viewport()->palette().color(QPalette::Text),
+             darkPalette.color(QPalette::Text));
+
+    styleHints->colorSchemeChanged(Qt::ColorScheme::Light);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        card->styleSheet().contains("background: #FFFFFF"), 1000);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        backButton->styleSheet().contains("border: 1px solid #D0D5DD"), 1000);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        scrollArea->styleSheet().contains("#FED7AA"), 1000);
+
+    QPalette lightPalette = restorer.palette;
+    lightPalette.setColor(QPalette::Window, Qt::white);
+    lightPalette.setColor(QPalette::Base, QColor("#FFFFFF"));
+    lightPalette.setColor(QPalette::Text, QColor("#101828"));
+    QGuiApplication::setPalette(lightPalette);
+    QCoreApplication::processEvents();
+    QCOMPARE(nameEdit->palette().color(QPalette::Base),
+             lightPalette.color(QPalette::Base));
+    QCOMPARE(commandEdit->viewport()->palette().color(QPalette::Text),
+             lightPalette.color(QPalette::Text));
 }
 
 void SSettingsTests::pluginDeleteButtonFollowsEditButton()
@@ -299,6 +399,10 @@ void SSettingsTests::pluginItemRespondsToThemeChanges()
 
     QPalette lightPalette = restorer.palette;
     lightPalette.setColor(QPalette::Window, Qt::white);
+    lightPalette.setColor(QPalette::Base, QColor("#F8FAFC"));
+    lightPalette.setColor(QPalette::Text, QColor("#172033"));
+    lightPalette.setColor(QPalette::PlaceholderText, QColor("#64748B"));
+    lightPalette.setColor(QPalette::Highlight, QColor("#F97316"));
     QGuiApplication::setPalette(lightPalette);
     QCoreApplication::processEvents();
 
@@ -400,8 +504,24 @@ void SSettingsTests::pluginSelectionUsesOrangeBackground()
 
 void SSettingsTests::editorUsesInlineValidationInsideSettings()
 {
+    struct PaletteRestorer
+    {
+        QPalette palette;
+        ~PaletteRestorer()
+        {
+            QGuiApplication::setPalette(palette);
+            QCoreApplication::processEvents();
+        }
+    } restorer{QGuiApplication::palette()};
+
+    QPalette lightPalette = restorer.palette;
+    lightPalette.setColor(QPalette::Window, Qt::white);
+    QGuiApplication::setPalette(lightPalette);
+    QCoreApplication::processEvents();
+
     SPluginEditor *editor = SPluginEditor::editor();
     editor->create();
+    QCoreApplication::processEvents();
 
     QStackedWidget *content = m_settings->findChild<QStackedWidget *>();
     QVERIFY(content);
@@ -409,24 +529,105 @@ void SSettingsTests::editorUsesInlineValidationInsideSettings()
     QCOMPARE(editor->parentWidget(), content);
 
     QLineEdit *nameEdit = editor->findChild<QLineEdit *>("pluginNameEdit");
-    QLineEdit *scriptEdit = editor->findChild<QLineEdit *>("pluginScriptEdit");
+    QPlainTextEdit *scriptEdit = editor->findChild<QPlainTextEdit *>("pluginScriptEdit");
     QPushButton *createButton = editor->findChild<QPushButton *>("createPluginButton");
     QPushButton *cancelButton = editor->findChild<QPushButton *>("cancelPluginButton");
+    QPushButton *testButton = editor->findChild<QPushButton *>("testPluginButton");
+    QPushButton *insertButton = editor->findChild<QPushButton *>("insertPlaintextButton");
+    QPushButton *iconPicker = editor->findChild<QPushButton *>("pluginIconPicker");
+    QFrame *formCard = editor->findChild<QFrame *>("pluginEditorCard");
+    QFrame *statusWidget = editor->findChild<QFrame *>("pluginEditorStatus");
+    QScrollArea *formScrollArea =
+        editor->findChild<QScrollArea *>("pluginEditorFormScrollArea");
+    QLabel *nameError = editor->findChild<QLabel *>("pluginNameError");
     QVERIFY(nameEdit);
     QVERIFY(scriptEdit);
     QVERIFY(createButton);
     QVERIFY(cancelButton);
+    QVERIFY(testButton);
+    QVERIFY(insertButton);
+    QVERIFY(iconPicker);
+    QVERIFY(formCard);
+    QVERIFY(statusWidget);
+    QVERIFY(formScrollArea);
+    QVERIFY(nameError);
     QVERIFY(!createButton->isEnabled());
+    QVERIFY(nameError->isHidden());
+    QVERIFY(statusWidget->isHidden());
+    QCOMPARE(iconPicker->minimumSize(), QSize(96, 96));
+    QCOMPARE(iconPicker->maximumSize(), QSize(96, 96));
+    QCOMPARE(iconPicker->size(), QSize(96, 96));
+    QVERIFY(formCard->styleSheet().contains("border-radius: 12px"));
+    QVERIFY(formCard->styleSheet().contains("background: #FFFFFF"));
+    QVERIFY(formScrollArea->styleSheet().contains("QScrollBar::handle"));
+    QVERIFY(formScrollArea->horizontalScrollBarPolicy() != Qt::ScrollBarAlwaysOff);
+    QCOMPARE(formScrollArea->horizontalScrollBar()->maximum(), 0);
+    QCOMPARE(nameEdit->palette().color(QPalette::Base),
+             lightPalette.color(QPalette::Base));
+    QCOMPARE(nameEdit->palette().color(QPalette::Text),
+             lightPalette.color(QPalette::Text));
+    QCOMPARE(scriptEdit->font().pointSizeF(), nameEdit->font().pointSizeF());
+    QCOMPARE(scriptEdit->lineWrapMode(), QPlainTextEdit::NoWrap);
+    QVERIFY(scriptEdit->horizontalScrollBarPolicy() != Qt::ScrollBarAlwaysOff);
 
     nameEdit->setText("ValidatedPlugin");
-    scriptEdit->setText("/usr/bin/true");
+    scriptEdit->setPlainText("/usr/bin/true");
     QVERIFY(createButton->isEnabled());
+    insertButton->click();
+    QVERIFY(scriptEdit->toPlainText().contains("$PLAINTEXT"));
+    scriptEdit->setPlainText("starry copy2clipboard");
+    testButton->click();
+    QVERIFY(!statusWidget->isHidden());
+    QCOMPARE(statusWidget->property("statusKind").toString(), QString("success"));
 
     nameEdit->setText("Invalid/Plugin");
     QVERIFY(!createButton->isEnabled());
+    QVERIFY(!nameError->isHidden());
+    QCOMPARE(nameEdit->property("validationError").toBool(), true);
 
+    QTimer::singleShot(0, [] {
+        for (QWidget *widget : QApplication::topLevelWidgets())
+        {
+            if (QMessageBox *box = qobject_cast<QMessageBox *>(widget))
+            {
+                if (QAbstractButton *discardButton = box->button(QMessageBox::Discard))
+                {
+                    discardButton->click();
+                }
+                return;
+            }
+        }
+    });
     cancelButton->click();
     QVERIFY(content->currentWidget() != editor);
+
+    SPluginInfo *info = makePlugin("EditorExisting");
+    editor->edit(info);
+    QPushButton *saveButton = editor->findChild<QPushButton *>("savePluginButton");
+    QLineEdit *tipEdit = editor->findChild<QLineEdit *>("pluginTipEdit");
+    QVERIFY(saveButton);
+    QVERIFY(tipEdit);
+    QCOMPARE(saveButton, createButton);
+    QVERIFY(!saveButton->isEnabled());
+    tipEdit->setText("Updated tip");
+    QVERIFY(saveButton->isEnabled());
+
+    QTimer::singleShot(0, [] {
+        for (QWidget *widget : QApplication::topLevelWidgets())
+        {
+            if (QMessageBox *box = qobject_cast<QMessageBox *>(widget))
+            {
+                if (QAbstractButton *discardButton = box->button(QMessageBox::Discard))
+                {
+                    discardButton->click();
+                }
+                return;
+            }
+        }
+    });
+    cancelButton->click();
+    info->deleteLater();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 }
 
 void SSettingsTests::popupItemsExposeTipsAndElideLongNames()

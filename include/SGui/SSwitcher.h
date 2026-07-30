@@ -38,7 +38,8 @@ signals:
 
 private:
     void updateAppearance();
-    void refreshStyle();
+    void refreshStyle(bool force = false,
+                      Qt::ColorScheme scheme = Qt::ColorScheme::Unknown);
     void changeEvent(QEvent *event) override;
 
 private:
@@ -47,4 +48,5 @@ private:
     QString m_off;
     bool    m_darkStyle = false;
     bool    m_styleInitialized = false;
+    Qt::ColorScheme m_pendingColorScheme = Qt::ColorScheme::Unknown;
 };

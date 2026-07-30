@@ -43,11 +43,13 @@ protected:
     void changeEvent(QEvent *event) override;
 
 private:
-    void refreshStyle();
+    void refreshStyle(bool force = false,
+                      Qt::ColorScheme scheme = Qt::ColorScheme::Unknown);
     void refreshPolish();
 
     Role m_role = Role::Secondary;
     bool m_selected = false;
     bool m_darkStyle = false;
     bool m_styleInitialized = false;
+    Qt::ColorScheme m_pendingColorScheme = Qt::ColorScheme::Unknown;
 };

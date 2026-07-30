@@ -13,6 +13,7 @@
 #include <QGuiApplication>
 #include <QPalette>
 #include <QStyle>
+#include <QStyleHints>
 
 #include "SButton.h"
 #include "utils.h"
@@ -47,7 +48,7 @@ QString buttonStyleSheet(bool dark)
     {
         return QStringLiteral(
             "QPushButton {"
-            "  min-height: 36px; padding: 0 14px;"
+            "  padding: 0 14px;"
             "  border: 1px solid #475467; border-radius: 8px;"
             "  background: #344054; color: #F2F4F7; font-weight: 500;"
             "}"
@@ -88,12 +89,15 @@ QString buttonStyleSheet(bool dark)
             "QPushButton[buttonRole=\"iconPicker\"] {"
             "  padding: 0; background: #1D2939; border: 1px dashed #667085; border-radius: 10px;"
             "}"
-            "QPushButton[buttonRole=\"iconPicker\"]:hover { background: #9A3412; border-color: #FDBA74; }");
+            "QPushButton[buttonRole=\"iconPicker\"]:hover { background: #9A3412; border-color: #FDBA74; }"
+            "QPushButton[buttonRole=\"iconPicker\"][dragActive=\"true\"] {"
+            "  background: #9A3412; border: 2px solid #FDBA74;"
+            "}");
     }
 
     return QStringLiteral(
         "QPushButton {"
-        "  min-height: 36px; padding: 0 14px;"
+        "  padding: 0 14px;"
         "  border: 1px solid #D0D5DD; border-radius: 8px;"
         "  background: #FFFFFF; color: #344054; font-weight: 500;"
         "}"
@@ -134,7 +138,10 @@ QString buttonStyleSheet(bool dark)
         "QPushButton[buttonRole=\"iconPicker\"] {"
         "  padding: 0; background: #F9FAFB; border: 1px dashed #98A2B3; border-radius: 10px;"
         "}"
-        "QPushButton[buttonRole=\"iconPicker\"]:hover { background: #FFF7ED; border-color: #F97316; }");
+        "QPushButton[buttonRole=\"iconPicker\"]:hover { background: #FFF7ED; border-color: #F97316; }"
+        "QPushButton[buttonRole=\"iconPicker\"][dragActive=\"true\"] {"
+        "  background: #FFF7ED; border: 2px solid #F97316;"
+        "}");
 }
 }
 
@@ -148,6 +155,14 @@ SButton::SButton(const QString &text, QWidget *parent)
     this->setMinimumHeight(36);
     this->setCursor(Qt::PointingHandCursor);
     this->setAccessibleName(text);
+    if (QStyleHints *styleHints = QGuiApplication::styleHints())
+    {
+        QObject::connect(styleHints, &QStyleHints::colorSchemeChanged, this,
+                         [this] (Qt::ColorScheme scheme) {
+            m_pendingColorScheme = scheme;
+            refreshStyle(true, scheme);
+        });
+    }
 }
 
 SButton::Role SButton::role() const
@@ -205,16 +220,38 @@ void SButton::changeEvent(QEvent *event)
 {
     QPushButton::changeEvent(event);
     if (event && (event->type() == QEvent::PaletteChange
-        || event->type() == QEvent::ApplicationPaletteChange))
+        || event->type() == QEvent::ApplicationPaletteChange
+        || event->type() == QEvent::ThemeChange))
     {
-        refreshStyle();
+        Qt::ColorScheme scheme = m_pendingColorScheme;
+        if (event->type() == QEvent::ThemeChange)
+        {
+            scheme = QGuiApplication::styleHints()->colorScheme();
+            m_pendingColorScheme = scheme;
+        }
+        refreshStyle(event->type() == QEvent::ThemeChange, scheme);
+
+        if (event->type() != QEvent::ThemeChange
+            && m_pendingColorScheme != Qt::ColorScheme::Unknown)
+        {
+            const bool paletteIsDark =
+                QGuiApplication::palette().color(QPalette::Window).lightness() < 128;
+            const bool pendingIsDark =
+                m_pendingColorScheme == Qt::ColorScheme::Dark;
+            if (paletteIsDark == pendingIsDark)
+            {
+                m_pendingColorScheme = Qt::ColorScheme::Unknown;
+            }
+        }
     }
 }
 
-void SButton::refreshStyle()
+void SButton::refreshStyle(bool force, Qt::ColorScheme scheme)
 {
-    const bool dark = QGuiApplication::palette().color(QPalette::Window).lightness() < 128;
-    if (m_styleInitialized && dark == m_darkStyle)
+    const bool dark = scheme == Qt::ColorScheme::Dark
+        || (scheme == Qt::ColorScheme::Unknown
+            && QGuiApplication::palette().color(QPalette::Window).lightness() < 128);
+    if (!force && m_styleInitialized && dark == m_darkStyle)
     {
         return;
     }
