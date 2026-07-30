@@ -36,7 +36,25 @@ X11MouseListener* X11MouseListener::instance()
 void X11MouseListener::startListen()
 {
     SDEBUG
-    QtConcurrent::run(enableContext);
+    if (m_future.isRunning())
+    {
+        return;
+    }
+    if (!display || context == 0)
+    {
+        init();
+    }
+    if (!display || context == 0)
+    {
+        qWarning() << "X11 mouse listener is not initialized";
+        return;
+    }
+    while (m_workerReady.tryAcquire())
+    {
+    }
+    m_future = QtConcurrent::run([this] {
+        enableContext();
+    });
 }
 
 void X11MouseListener::stopListen()
@@ -47,24 +65,42 @@ void X11MouseListener::stopListen()
         return;
     }
 
-    Display* display = XOpenDisplay(nullptr);
-    if (!display)
+    if (!m_future.isStarted() && display)
+    {
+        XRecordFreeContext(display, context);
+        context = 0;
+        XCloseDisplay(display);
+        display = nullptr;
+        return;
+    }
+
+    Display* controlDisplay = XOpenDisplay(nullptr);
+    if (!controlDisplay)
     {
         qWarning() << "Could not open X display";
         return;
     }
 
-    XRecordDisableContext(display, context);
-    XFlush(display);
-    XSync(display, false);
-    XRecordFreeContext(display, context);
+    if (m_future.isRunning())
+    {
+        m_workerReady.acquire();
+    }
+    XRecordDisableContext(controlDisplay, context);
+    XFlush(controlDisplay);
+    XSync(controlDisplay, false);
+    m_future.waitForFinished();
+    XRecordFreeContext(controlDisplay, context);
     context = 0;
-    XCloseDisplay(display);
+    XCloseDisplay(controlDisplay);
 }
 
 void X11MouseListener::handleRecordEvent(void *_data)
 {
     XRecordInterceptData *data = static_cast<XRecordInterceptData*>(_data);
+    if (!data)
+    {
+        return;
+    }
     if (data->category == XRecordFromServer)
     {
         xEvent *event = (xEvent*)data->data;
@@ -136,11 +172,10 @@ void X11MouseListener::handleRecordEvent(void *_data)
             break;
         }
         fflush(stdout);
-        XRecordFreeData(data);
-
 #undef bEvent
 #undef bPointer
     }
+    XRecordFreeData(data);
 }
 
 X11MouseListener::X11MouseListener()
@@ -158,10 +193,7 @@ X11MouseListener::X11MouseListener()
 X11MouseListener::~X11MouseListener()
 {
     SDEBUG
-    if (m_instance)
-    {
-        delete m_instance;
-    }
+    stopListen();
     m_instance = nullptr;
 }
 
@@ -191,6 +223,8 @@ void X11MouseListener::init()
     if (range == NULL)
     {
         fprintf(stderr, "Could not alloc range\n");
+        XCloseDisplay(display);
+        display = nullptr;
         return;
     }
 
@@ -205,6 +239,9 @@ void X11MouseListener::init()
     if (context == 0)
     {
         fprintf(stderr, "XRecordCreateContext failed\n");
+        XFree(range);
+        XCloseDisplay(display);
+        display = nullptr;
         return;
     }
 
@@ -215,8 +252,22 @@ void X11MouseListener::init()
 void X11MouseListener::enableContext()
 {
     SDEBUG
-    Status ret = XRecordEnableContext(display, context,  callback, nullptr);
-    XCloseDisplay(display);
-    display = nullptr;   
-}
+    Display *recordDisplay = display;
+    const XRecordContext recordContext = context;
+    m_workerReady.release();
+    if (!recordDisplay || recordContext == 0)
+    {
+        return;
+    }
 
+    const Status enabled = XRecordEnableContext(recordDisplay, recordContext, callback, nullptr);
+    if (!enabled)
+    {
+        qWarning() << "XRecordEnableContext failed";
+    }
+    XCloseDisplay(recordDisplay);
+    if (display == recordDisplay)
+    {
+        display = nullptr;
+    }
+}

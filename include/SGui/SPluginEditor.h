@@ -14,6 +14,7 @@
 #include <QWidget>
 #include <QLineEdit>
 #include <QLabel>
+#include <QPointer>
 
 #include "SButton.h"
 #include "SPluginInfo.h"
@@ -55,5 +56,5 @@ private:
     QLineEdit   *m_tipEdit = nullptr;
     QLineEdit   *m_scriptEdit = nullptr;
 
-    SPluginInfo *m_editingInfo = nullptr;
+    QPointer<SPluginInfo> m_editingInfo;
 };

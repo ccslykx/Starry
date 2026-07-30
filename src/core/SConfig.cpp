@@ -1,6 +1,9 @@
 #include <QSettings>
 #include <QDir>
+#include <QSaveFile>
 #include <QStandardPaths>
+
+#include <algorithm>
 
 #include "SConfig.h"
 #include "utils.h"
@@ -71,7 +74,7 @@ void SConfig::saveToFile(const QString &path)
     // Save plugins
     s.remove(QString("STARRY_PLUGINS"));
     s.beginGroup(QString("STARRY_PLUGINS"));
-    for (SPluginInfo *info : pInfoMap.values())
+    for (SPluginInfo *info : getSPluginInfos())
     {
         s.beginGroup(info->name);
         s.setValue(QString("tip"), info->tip);
@@ -124,36 +127,54 @@ void SConfig::readFromFile(const QString &path)
     QStringList plugins = s.childGroups();
     qDebug() << "plugins.count: " << plugins.count();
     for (auto p : plugins) qDebug() << p << '\n';
-    QVector <SPluginInfo*> pluginInfos(plugins.size());
+    QVector<SPluginInfo*> pluginInfos;
+    pluginInfos.reserve(plugins.size());
     for (QString pName : plugins)
     {
         s.beginGroup(pName);
         QString tip = s.value(QString("tip")).toString();
         QString script = s.value(QString("script")).toString();
         QString iconPath = s.value(QString("iconPath")).toString();
-        int index = s.value(QString("index")).toInt();
+        bool validIndex = false;
+        int index = s.value(QString("index")).toInt(&validIndex);
         bool iconEnabled = s.value(QString("iconEnabled")).toBool();
         bool nameEnabled = s.value(QString("nameEnabled")).toBool();
         s.endGroup();
 
+        if (!validIndex || index < 0)
+        {
+            qWarning() << pName << "has an invalid plugin index; it will be reordered";
+            index = static_cast<int>(pluginInfos.size());
+        }
         if (iconPath.isEmpty() || !QFileInfo::exists(iconPath))
         {
             qWarning() << pName + "'s icon file not found, use default icon";
             iconPath = ":/default_icon.png";
         }
         SPluginInfo *info = new SPluginInfo(pName, script, iconPath, index, tip, iconEnabled, nameEnabled);
-        pluginInfos[index] = info;
+        pluginInfos.push_back(info);
     }
     s.endGroup();
-    for (SPluginInfo* info : pluginInfos)
+    std::stable_sort(pluginInfos.begin(), pluginInfos.end(), [] (const SPluginInfo *lhs, const SPluginInfo *rhs) {
+        return lhs->index < rhs->index;
+    });
+    for (qsizetype i = 0; i < pluginInfos.size(); ++i)
     {
-        addPlugin(info, ReadFromFile); /* Need Test */
-        emit readPlugin(info);
+        SPluginInfo *info = pluginInfos.at(i);
+        info->index = static_cast<int>(i);
+        if (addPlugin(info, ReadFromFile))
+        {
+            emit readPlugin(info);
+        }
+        else
+        {
+            delete info;
+        }
     }
 
     // Settings
     s.beginGroup(QString("STARRY_SETTINGS"));
-    QStringList settings = s.childGroups();
+    QStringList settings = s.childKeys();
     for (QString key : settings)
     {
         addSetting(key, s.value(key));
@@ -214,35 +235,110 @@ void SConfig::deleteSetting(const QString &key)
     }
 }
 
-void SConfig::addPlugin(SPluginInfo *info, AddMode mode)
+bool SConfig::isPluginNameValid(const QString &name) const
+{
+    if (name.isEmpty() || name != name.trimmed() || name == "." || name == "..")
+    {
+        return false;
+    }
+
+    const QString invalidCharacters = QStringLiteral("<>:\"/\\|?*");
+    for (const QChar character : invalidCharacters)
+    {
+        if (name.contains(character))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool SConfig::isPluginNameAvailable(const QString &name, const SPluginInfo *exclude) const
+{
+    if (!isPluginNameValid(name))
+    {
+        return false;
+    }
+    for (const SPluginInfo *info : pInfoMap)
+    {
+        if (info != exclude && info->name.compare(name, Qt::CaseInsensitive) == 0)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool SConfig::addPlugin(SPluginInfo *info, AddMode mode)
 {
     SDEBUG
     if (!info)
     {
-        return;
+        return false;
     }
-    if (pInfoMap.contains(info->name))
+    if (!isPluginNameAvailable(info->name))
     {
-        qWarning() << info->name << "has already exist!";
-        return;
+        qWarning() << "Invalid or duplicate plugin name:" << info->name;
+        return false;
     }
     if (mode == AddMode::NewCreate)
     {
+        info->index = static_cast<int>(pInfoMap.size());
         info->iconPath = QDir::cleanPath(m_configPath + QDir::separator() + "icons" + QDir::separator() + info->name + ".png");
         qDebug() << "iconPath:" << info->iconPath;
-        savePluginIcon(info);
+        if (!savePluginIcon(info))
+        {
+            return false;
+        }
     }
     pInfoMap.insert(info->name, info);
     QObject::connect(info, &SPluginInfo::needDelete, this, &SConfig::deletePlugin);
-    QObject::connect(info, &SPluginInfo::nameChanged, [this] (SPluginInfo *info) {
-        if (QFileInfo::exists(info->iconPath)) // Remove previous icon file.
-        {
-            QFile::remove(info->iconPath);
-        }
-        info->iconPath = QDir::cleanPath(m_configPath + QDir::separator() + "icons" + QDir::separator() + info->name + ".png");
-        this->savePluginIcon(info);
-    });
     QObject::connect(info, &SPluginInfo::iconChanged, this, &SConfig::savePluginIcon);
+    return true;
+}
+
+bool SConfig::renamePlugin(SPluginInfo *info, const QString &newName)
+{
+    if (!info || !isPluginNameAvailable(newName, info))
+    {
+        return false;
+    }
+
+    auto current = std::find_if(pInfoMap.begin(), pInfoMap.end(), [info] (SPluginInfo *candidate) {
+        return candidate == info;
+    });
+    if (current == pInfoMap.end())
+    {
+        qWarning() << "Cannot rename a plugin that is not registered";
+        return false;
+    }
+    if (info->name == newName)
+    {
+        return true;
+    }
+
+    const QString oldName = info->name;
+    const QString oldIconPath = info->iconPath;
+    pInfoMap.erase(current);
+    info->name = newName;
+    pInfoMap.insert(newName, info);
+
+    info->iconPath = QDir::cleanPath(m_configPath + QDir::separator() + "icons" + QDir::separator() + newName + ".png");
+    if (!savePluginIcon(info))
+    {
+        pInfoMap.remove(newName);
+        info->name = oldName;
+        info->iconPath = oldIconPath;
+        pInfoMap.insert(oldName, info);
+        return false;
+    }
+    if (!oldIconPath.startsWith(":/")
+        && oldIconPath.compare(info->iconPath, Qt::CaseInsensitive) != 0)
+    {
+        QFile::remove(oldIconPath);
+    }
+    emit info->nameChanged(info);
+    return true;
 }
 
 void SConfig::deletePlugin(SPluginInfo *info)
@@ -252,26 +348,36 @@ void SConfig::deletePlugin(SPluginInfo *info)
     {
         return;
     }
-    if (!pInfoMap.contains(info->name))
+    auto current = std::find_if(pInfoMap.begin(), pInfoMap.end(), [info] (SPluginInfo *candidate) {
+        return candidate == info;
+    });
+    if (current == pInfoMap.end())
     {
         qWarning() << info->name << "doesn't exist!";
         return;
     }
-    pInfoMap.remove(info->name);
+    pInfoMap.erase(current);
+    normalizePluginIndexes();
     info->deleteLater();
 }
 
-void SConfig::savePluginIcon(SPluginInfo *info)
+bool SConfig::savePluginIcon(SPluginInfo *info)
 {
-    if (QFileInfo::exists(info->iconPath))
+    if (!info)
     {
-        qWarning() << "Icon file already exists, replace it.";
-        QFile::remove(info->iconPath);
+        return false;
     }
-    if (!info->icon.save(info->iconPath, "png", 100))
+
+    QSaveFile iconFile(info->iconPath);
+    if (!iconFile.open(QIODevice::WriteOnly)
+        || !info->icon.save(&iconFile, "PNG", 100)
+        || !iconFile.commit())
     {
         qWarning() << "Icon failed save to path: " << info->iconPath;
+        iconFile.cancelWriting();
+        return false;
     }
+    return true;
 }
 
 SPluginInfo* SConfig::getSPluginInfo(const QString &name)
@@ -283,17 +389,24 @@ SPluginInfo* SConfig::getSPluginInfo(const QString &name)
 QVector<SPluginInfo*> SConfig::getSPluginInfos()
 {
     SDEBUG
-    const int pCount = pInfoMap.count();
-    QVector<SPluginInfo*> plugins(pCount);
-    if (pCount > 0) // Only when pInfoMap is not empty,
-    { 
-        // read & return SPluginInfo
-        for (SPluginInfo* info : pInfoMap.values())
+    QVector<SPluginInfo*> plugins = pInfoMap.values();
+    std::stable_sort(plugins.begin(), plugins.end(), [] (const SPluginInfo *lhs, const SPluginInfo *rhs) {
+        if (lhs->index == rhs->index)
         {
-            plugins[info->index] = info;
+            return lhs->name.compare(rhs->name, Qt::CaseInsensitive) < 0;
         }
-    } // otherwise, return empty vector
+        return lhs->index < rhs->index;
+    });
     return plugins;
+}
+
+void SConfig::normalizePluginIndexes()
+{
+    const QVector<SPluginInfo*> plugins = getSPluginInfos();
+    for (qsizetype i = 0; i < plugins.size(); ++i)
+    {
+        plugins.at(i)->index = static_cast<int>(i);
+    }
 }
 
 QString SConfig::version()

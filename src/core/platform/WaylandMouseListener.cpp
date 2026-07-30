@@ -11,15 +11,14 @@
 #include <libinput.h>
 #include <poll.h>
 #include <array>
+#include <cerrno>
 
 #include <QtConcurrent>
 #include "WaylandMouseListener.h"
 
 WaylandMouseListener* WaylandMouseListener::m_instance = nullptr;
 
-void* WaylandMouseListener::m_libinput = nullptr;
-void* WaylandMouseListener::m_udev = nullptr;
-bool WaylandMouseListener::m_running = false;
+std::atomic_bool WaylandMouseListener::m_running = false;
 
 double WaylandMouseListener::m_x = 0;
 double WaylandMouseListener::m_y = 0;
@@ -30,12 +29,14 @@ QElapsedTimer* WaylandMouseListener::m_doubleClickTimer = nullptr;
 
 static int open_restricted(const char *path, int flags, void *user_data)
 {
+    Q_UNUSED(user_data)
     int fd = open(path, flags);
     return fd < 0 ? -errno : fd;
 }
 
 static void close_restricted(int fd, void *user_data)
 {
+    Q_UNUSED(user_data)
     close(fd);
 }
 
@@ -69,7 +70,12 @@ void WaylandMouseListener::handleEvent(void *ev)
         275: mouse 4
         276: mouse 5
     */
-    uint32_t button = libinput_event_pointer_get_button((libinput_event_pointer *)ev);
+    libinput_event_pointer *pointerEvent = libinput_event_get_pointer_event((libinput_event *)ev);
+    if (!pointerEvent)
+    {
+        return;
+    }
+    uint32_t button = libinput_event_pointer_get_button(pointerEvent);
     if (button != 272)
     {
         return;
@@ -78,7 +84,7 @@ void WaylandMouseListener::handleEvent(void *ev)
         0: released
         1: pressed
     */
-    libinput_button_state state = libinput_event_pointer_get_button_state((libinput_event_pointer *)ev);
+    libinput_button_state state = libinput_event_pointer_get_button_state(pointerEvent);
     if (state == 1) // pressed
     {
         if (m_pressed)
@@ -132,60 +138,94 @@ WaylandMouseListener* WaylandMouseListener::instance()
 
 void WaylandMouseListener::startListen()
 {
-    m_running = true;
-    QtConcurrent::run([](){
+    bool expected = false;
+    if (!m_running.compare_exchange_strong(expected, true))
+    {
+        return;
+    }
+    m_future = QtConcurrent::run([] {
         struct libinput_event *ev;
-        m_udev = (void*) udev_new();
+        struct udev *localUdev = udev_new();
+        if (!localUdev)
+        {
+            qWarning() << "udev_new failed";
+            m_running.store(false);
+            return;
+        }
         
-        m_libinput = (void*) libinput_udev_create_context(&interface, NULL, (struct udev*) m_udev);
-        if (!m_libinput)
+        struct libinput *localLibinput = libinput_udev_create_context(&interface, nullptr, localUdev);
+        if (!localLibinput)
         {
             qWarning() << "libinput_udev_create_context failed";
+            udev_unref(localUdev);
+            m_running.store(false);
+            return;
         }
-        if (libinput_udev_assign_seat((struct libinput*) m_libinput, "seat0") != 0)
+        if (libinput_udev_assign_seat(localLibinput, "seat0") != 0)
         {
             qWarning() << "libinput_udev_assign_seat failed";
+            libinput_unref(localLibinput);
+            udev_unref(localUdev);
+            m_running.store(false);
+            return;
         }
 
 // https://github.com/JoseExposito/touchegg/blob/686bff369ddfc7122180325dcbdc20a069396bd9/src/gesture-gatherer/libinput-gesture-gatherer.cpp
-        int fd = libinput_get_fd((struct libinput*) m_libinput);
+        int fd = libinput_get_fd(localLibinput);
         if (fd == -1)
         {
             qWarning() << "libinput_get_fd failed";
+            libinput_unref(localLibinput);
+            udev_unref(localUdev);
+            m_running.store(false);
+            return;
         }
-        int pollTimeout = -1;
+        constexpr int pollTimeout = 100;
         std::array<struct pollfd, 1> pollFds{{fd, POLLIN, 0}};
 
-        while (m_running && (poll(pollFds.data(), pollFds.size(), pollTimeout) >= 0) )
+        while (m_running.load())
         {
-            int dpErrno = libinput_dispatch((struct libinput*) m_libinput);
+            const int pollResult = poll(pollFds.data(), pollFds.size(), pollTimeout);
+            if (pollResult == 0)
+            {
+                continue;
+            }
+            if (pollResult < 0)
+            {
+                if (errno == EINTR)
+                {
+                    continue;
+                }
+                qWarning() << "Polling libinput failed with errno:" << errno;
+                break;
+            }
+
+            int dpErrno = libinput_dispatch(localLibinput);
             if (dpErrno)
             {
                 qWarning() << "libinput_dispatch error with errno:" << dpErrno;
             }
 
-            while((ev = libinput_get_event((struct libinput*) m_libinput)))
+            while((ev = libinput_get_event(localLibinput)))
             {
                 handleEvent(ev);
                 libinput_event_destroy(ev);
-                libinput_dispatch((struct libinput*) m_libinput);
+                libinput_dispatch(localLibinput);
             }
         }
-    
+        libinput_unref(localLibinput);
+        udev_unref(localUdev);
+        m_running.store(false);
     });
 }
 
 void WaylandMouseListener::stopListen()
 {
-    if (m_libinput)
-    {
-        libinput_unref((struct libinput*) m_libinput);
-    }
-    if (m_udev)
-    {
-        udev_unref((struct udev*) m_udev);
-    }
-    m_running = false;
+    m_running.store(false);
+    m_future.waitForFinished();
+    m_pressed = false;
+    m_x = 0;
+    m_y = 0;
 }
 
 /* private functions */
@@ -201,9 +241,6 @@ WaylandMouseListener::WaylandMouseListener()
 
 WaylandMouseListener::~WaylandMouseListener()
 {
-    if (m_instance)
-    {
-        delete m_instance;
-    }
+    stopListen();
     m_instance = nullptr;
 }

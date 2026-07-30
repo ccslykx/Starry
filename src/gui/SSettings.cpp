@@ -46,6 +46,9 @@ void SSettings::initGui()
         m_pluginListWidget->setItemAlignment(Qt::AlignVCenter);
         m_pluginListWidget->setDragDropMode(QAbstractItemView::InternalMove);
         m_pluginListWidget->setMinimumHeight(48);
+        QObject::connect(m_pluginListWidget->model(), &QAbstractItemModel::rowsMoved, this, [this] {
+            refreshPluginIndex();
+        });
     }
 
     SButton *newPluginButton = new SButton(tr("Create new plugin"), m_pluginListWidget);
@@ -160,9 +163,20 @@ void SSettings::deletePluginItem(SPluginItem *item)
     {
         return;
     }
-    int cur = m_pluginListWidget->currentRow();
-    QListWidgetItem *listWidgetItem = m_pluginListWidget->takeItem(cur);
-    delete listWidgetItem;
+    for (int row = 0; row < m_pluginListWidget->count(); ++row)
+    {
+        QListWidgetItem *listWidgetItem = m_pluginListWidget->item(row);
+        if (m_pluginListWidget->itemWidget(listWidgetItem) != item)
+        {
+            continue;
+        }
+        m_pluginListWidget->removeItemWidget(listWidgetItem);
+        delete m_pluginListWidget->takeItem(row);
+        item->deleteLater();
+        refreshPluginIndex();
+        return;
+    }
+    qWarning() << "Plugin item to delete was not found";
 }
 
 void SSettings::addMenuItem(QLabel *item)
@@ -223,7 +237,7 @@ void SSettings::closeEvent(QCloseEvent *ev)
 void SSettings::refreshPluginIndex() /* Need to be optmized */
 {
     SDEBUG
-    for (size_t i = 0; i < m_pluginListWidget->count(); ++i)
+    for (int i = 0; i < m_pluginListWidget->count(); ++i)
     {
         QListWidgetItem *item = m_pluginListWidget->item(i);
         SPluginItem *pluginItem = (SPluginItem *) m_pluginListWidget->itemWidget(item);

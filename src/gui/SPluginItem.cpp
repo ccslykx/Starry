@@ -24,7 +24,7 @@ void SPluginItem::remove(SPluginItem *item)
     }
 }
 
-void SPluginItem::setIndexToInfo(size_t index) /* Todo */
+void SPluginItem::setIndexToInfo(int index) /* Todo */
 {
     SDEBUG
     m_info->index = index;
@@ -140,7 +140,7 @@ void SPluginItem::initGui()
 
     QObject::connect(m_deleteButton, &SButton::clicked, [this] () {
         QMessageBox *box = new QMessageBox(QMessageBox::Icon::Question,  "提示", "确实要删除插件 " + this->m_info->name + " 吗？", QMessageBox::Yes | QMessageBox::Cancel, this);
-        QObject::connect(box, &QMessageBox::accepted, this, [this, box] {
+        QObject::connect(box, &QMessageBox::accepted, this, [this] {
             emit m_info->needDelete(m_info);
         });
         box->show(); 

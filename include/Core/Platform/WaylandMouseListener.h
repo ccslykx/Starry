@@ -1,6 +1,8 @@
 #pragma once
 
+#include <atomic>
 #include <QElapsedTimer>
+#include <QFuture>
 #include "AbstractMouseListener.h"
 
 class WaylandMouseListener : public AbstractMouseListener
@@ -21,13 +23,12 @@ private:
 private:
     static WaylandMouseListener *m_instance;
 
-    static void *m_libinput;
-    static void *m_udev;
-    static bool m_running;
+    static std::atomic_bool m_running;
 
     static double m_x;
     static double m_y;
     static bool m_pressed;
 
     static QElapsedTimer    *m_doubleClickTimer;    
+    QFuture<void>           m_future;
 };

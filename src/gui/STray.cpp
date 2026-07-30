@@ -25,13 +25,18 @@ void STray::setEnable(bool enable)
     {
         return;
     }
-    if (m_mouseListener->isListening())
+    if (enable == m_mouseListener->isListening())
     {
-        m_mouseListener->stopListen();
-    } else {
+        return;
+    }
+    if (enable)
+    {
         m_mouseListener->startListen();
     }
-
+    else
+    {
+        m_mouseListener->stopListen();
+    }
 }
 
 void STray::settings()
@@ -135,7 +140,12 @@ void STray::initServices()
     }
 
     QObject::connect(m_editor, &SPluginEditor::created, [this] (SPluginInfo *info) {
-        this->m_config->addPlugin(info, AddMode::NewCreate);
+        if (!this->m_config->addPlugin(info, AddMode::NewCreate))
+        {
+            qWarning() << "Plugin creation was rejected:" << info->name;
+            info->deleteLater();
+            return;
+        }
         this->m_settings->addPluginItem(info);
         this->m_popup->addItem(info);
     });

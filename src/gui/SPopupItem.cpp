@@ -15,9 +15,9 @@ SPopupItem* SPopupItem::create(SPluginInfo *info, QWidget *parent)
 void SPopupItem::remove(SPopupItem *item)
 {
     SDEBUG
-    if (!item)
+    if (item)
     {
-        delete item;
+        item->deleteLater();
     }
 }
 
@@ -94,7 +94,7 @@ SPopupItem::SPopupItem(SPluginInfo *info, QWidget *parent)
     m_info->popupItem = this;
     if (!m_process)
     {
-        m_process = new QProcess;
+        m_process = new QProcess(this);
     }
 
     initGui();
@@ -140,33 +140,33 @@ void SPopupItem::initGui()
     this->adjustSize();
 
     QObject::connect(this, &SPopupItem::clicked, this, &SPopupItem::exec);
-    QObject::connect(m_info, &SPluginInfo::iconChanged, [this] (SPluginInfo *info) {
+    QObject::connect(m_info, &SPluginInfo::iconChanged, this, [this] (SPluginInfo *info) {
         this->m_iconLabel->setPixmap(info->icon.scaled(32, 32, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     });
-    QObject::connect(m_info, &SPluginInfo::nameChanged, [this] (SPluginInfo *info) {
+    QObject::connect(m_info, &SPluginInfo::nameChanged, this, [this] (SPluginInfo *info) {
         this->m_nameLabel->setText(info->name);
     });
-    QObject::connect(m_info, &SPluginInfo::switchIconOn, [this] (SPluginInfo *info) {
+    QObject::connect(m_info, &SPluginInfo::switchIconOn, this, [this] (SPluginInfo *info) {
         this->m_iconLabel->setVisible(info->iconEnabled);
         this->setVisible(this->enabled());
         this->adjustSize();
     });
-    QObject::connect(m_info, &SPluginInfo::switchIconOff, [this] (SPluginInfo *info) {
+    QObject::connect(m_info, &SPluginInfo::switchIconOff, this, [this] (SPluginInfo *info) {
         this->m_iconLabel->setVisible(info->iconEnabled);
         this->setVisible(this->enabled());
         this->adjustSize();
     });
-    QObject::connect(m_info, &SPluginInfo::switchNameOn, [this] (SPluginInfo *info) {
+    QObject::connect(m_info, &SPluginInfo::switchNameOn, this, [this] (SPluginInfo *info) {
         this->m_nameLabel->setVisible(info->nameEnabled);
         this->setVisible(this->enabled());
         this->adjustSize();
     });
-    QObject::connect(m_info, &SPluginInfo::switchNameOff, [this] (SPluginInfo *info) {
+    QObject::connect(m_info, &SPluginInfo::switchNameOff, this, [this] (SPluginInfo *info) {
         this->m_nameLabel->setVisible(info->nameEnabled);
         this->setVisible(this->enabled());
         this->adjustSize();
     });
-    QObject::connect(m_info, &SPluginInfo::needDelete, [this] (SPluginInfo *info) {
+    QObject::connect(m_info, &SPluginInfo::needDelete, this, [this] {
         this->setVisible(false);
     });
 }

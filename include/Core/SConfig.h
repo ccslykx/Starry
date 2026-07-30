@@ -55,9 +55,12 @@ public:
     QVariant getSetting(const QString &key);  // 获取设置项
     void deleteSetting(const QString &key);   // 删除设置项
 
-    void addPlugin(SPluginInfo*, AddMode);     // 添加插件配置信息
+    bool isPluginNameValid(const QString &name) const;
+    bool isPluginNameAvailable(const QString &name, const SPluginInfo *exclude = nullptr) const;
+    bool addPlugin(SPluginInfo*, AddMode);     // 添加插件配置信息
+    bool renamePlugin(SPluginInfo*, const QString &newName);
     void deletePlugin(SPluginInfo*);  // 删除插件配置信息
-    void savePluginIcon(SPluginInfo*); // 保存图标到 ${m_configPath}/icons 下
+    bool savePluginIcon(SPluginInfo*); // 保存图标到 ${m_configPath}/icons 下
     SPluginInfo* getSPluginInfo(const QString &name);
     QVector<SPluginInfo*> getSPluginInfos(); // 返回为有序向量
 
@@ -71,6 +74,7 @@ signals:
 
 private:
     explicit SConfig(const QString &path = "");
+    void normalizePluginIndexes();
     // ~SConfig();
 
 private:

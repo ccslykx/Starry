@@ -3,7 +3,6 @@
 #include "AbstractMouseListener.h"
 #include <QObject>
 #include <QElapsedTimer>
-#include <QFuture>
 #include <CoreGraphics/CoreGraphics.h>
 
 class MacMouseListener : public AbstractMouseListener
@@ -14,11 +13,11 @@ public:
     static MacMouseListener* instance();
     virtual void startListen() override;
     virtual void stopListen() override;
-    static void handleCGEvent(int);
+    static void handleCGEvent(CGEventType);
 
 private:
     MacMouseListener();
-    static void createEventTap();
+    static bool createEventTap();
 
 private:
     static MacMouseListener *m_instance;
@@ -28,8 +27,7 @@ private:
 
     static QElapsedTimer    *m_doubleClickTimer;
 
-    static void             *m_eventTap;
+    static CFMachPortRef     m_eventTap;
     static CFRunLoopRef     m_runLoop;
-
-    QFuture<void>           m_future;
+    static CFRunLoopSourceRef m_runLoopSource;
 };

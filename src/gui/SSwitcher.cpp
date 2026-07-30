@@ -15,7 +15,7 @@
 #include "utils.h"
 
 SSwitcher::SSwitcher(const QString &on, const QString &off, bool status, QWidget *parent)
-    : m_on(on), m_off(off), m_isOn(status)
+    : m_isOn(status), m_on(on), m_off(off)
 {
     SDEBUG
     this->setParent(parent);

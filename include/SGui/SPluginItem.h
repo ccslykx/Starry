@@ -27,7 +27,7 @@ public:
     static void remove(SPluginItem*);
 
     void refresh(); // Call this function when m_info changed
-    void setIndexToInfo(size_t index);
+    void setIndexToInfo(int index);
     SPluginInfo* pluginInfo(); 
 
 private:

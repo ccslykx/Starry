@@ -44,11 +44,13 @@ void SSelection::refresh()
 #elif _WIN32
     tmp = getSelection_win();
 #endif
-    if (!tmp.isEmpty() && (m_selection != tmp))
+    if (tmp.isEmpty())
     {
-        m_selection = tmp;
-        emit selectionChanged();
+        m_selection.clear();
+        return;
     }
+    m_selection = tmp;
+    emit selectionChanged();
 }
 
 QString SSelection::selection()
@@ -208,7 +210,14 @@ QString SSelection::getSelection_win()
 QString SSelection::getSelection_linux()
 {
     SDEBUG
-    return "TEST";
+#ifdef __linux__
+    if (m_clipboard && m_clipboard->supportsSelection())
+    {
+        return m_clipboard->text(QClipboard::Mode::Selection);
+    }
+    qWarning() << "The current Wayland compositor does not expose primary selection through Qt";
+#endif
+    return {};
 }
 
 QString SSelection::getSelection_mac()
@@ -224,7 +233,8 @@ QString SSelection::getSelection_mac()
     if (errorCode != kAXErrorSuccess)
     {
         qDebug() << "errorCode:" << errorCode;
-        return std::move(res);
+        CFRelease(systemWideElement);
+        return res;
     }
     AXUIElementRef selectedTextElement = (AXUIElementRef)selectedTextValue;
     CFStringRef selectedTextString = nullptr;
@@ -232,11 +242,19 @@ QString SSelection::getSelection_mac()
     if (textErrorCode != kAXErrorSuccess)
     {
         qDebug() << "textErrorCode:" << textErrorCode;
-        return std::move(res);
+        CFRelease(selectedTextValue);
+        CFRelease(systemWideElement);
+        return res;
     }
-    res = QString::fromCFString(selectedTextString);
-    qDebug() << "selectedTextString:" << res;
+    if (selectedTextString)
+    {
+        res = QString::fromCFString(selectedTextString);
+        qDebug() << "selectedTextString:" << res;
+        CFRelease(selectedTextString);
+    }
+    CFRelease(selectedTextValue);
+    CFRelease(systemWideElement);
 #endif
 
-    return std::move(res);
+    return res;
 }

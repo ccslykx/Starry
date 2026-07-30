@@ -27,7 +27,7 @@ void SPopup::addItem(SPluginInfo *info)
     SPopupItem *item = SPopupItem::create(info, this);
     addItem(item);
 
-    QObject::connect(info, &SPluginInfo::needDelete, [this] (SPluginInfo *info) {
+    QObject::connect(info, &SPluginInfo::needDelete, this, [this] (SPluginInfo *info) {
         deleteItem(info->popupItem);
     });
 }

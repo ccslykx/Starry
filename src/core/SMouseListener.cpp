@@ -43,6 +43,15 @@ AbstractMouseListener* SMouseListener::listener()
 void SMouseListener::startListen()
 {
     SDEBUG
+    if (!m_listener)
+    {
+        qWarning() << "No supported mouse listener is available";
+        return;
+    }
+    if (m_listening)
+    {
+        return;
+    }
     m_listener->startListen();
     m_listening = true;
 }
@@ -50,7 +59,15 @@ void SMouseListener::startListen()
 void SMouseListener::stopListen()
 {
     SDEBUG
+    if (!m_listener || !m_listening)
+    {
+        return;
+    }
     m_listener->stopListen();
+    m_waitSelectionChangeTimer->stop();
+    m_waitB1ReleaseTimer->stop();
+    m_selectionChanged = false;
+    m_B1Released = false;
     m_listening = false;
 }
 
@@ -71,10 +88,7 @@ SMouseListener::SMouseListener()
 SMouseListener::~SMouseListener()
 {
     SDEBUG
-    if (m_instance)
-    {
-        delete m_instance;
-    }
+    stopListen();
     m_instance = nullptr;
 }
 
@@ -89,14 +103,18 @@ void SMouseListener::init()
 #ifdef __linux__
  qDebug() << "Defined __linux__";
      QString dpEnv = QProcessEnvironment::systemEnvironment().value("XDG_SESSION_TYPE");
-     if (dpEnv.toUpper() == "X11")
+     const QString platformName = QGuiApplication::platformName().toUpper();
+     if (dpEnv.toUpper() == "X11" || platformName == "XCB")
      {
  qDebug() << "X11";
          m_listener = X11MouseListener::instance();
-     } else /* if (dpEnv.toUpper() == "WAYLAND") */
+     } else if (dpEnv.toUpper() == "WAYLAND" || platformName.contains("WAYLAND"))
      {
  qDebug() << "Wayland";
         m_listener = WaylandMouseListener::instance();
+     } else
+     {
+        qWarning() << "Unsupported Linux display session:" << dpEnv << platformName;
      }
 #elif __APPLE__ && TARGET_OS_MAC /* Need Test */
     m_listener = MacMouseListener::instance();
@@ -105,9 +123,12 @@ qDebug() << "Defined _WIN32";
     m_listener = WinMouseListener::instance();
 #endif
     // Signals
-    QObject::connect(m_listener, &AbstractMouseListener::B1Pressed, this, &SMouseListener::onB1Pressed);
-    QObject::connect(m_listener, &AbstractMouseListener::B1Released, this, &SMouseListener::onB1Released);
-    QObject::connect(m_listener, &AbstractMouseListener::B1DoubleClicked, this, &SMouseListener::onB1DoubleClicked);
+    if (m_listener)
+    {
+        QObject::connect(m_listener, &AbstractMouseListener::B1Pressed, this, &SMouseListener::onB1Pressed);
+        QObject::connect(m_listener, &AbstractMouseListener::B1Released, this, &SMouseListener::onB1Released);
+        QObject::connect(m_listener, &AbstractMouseListener::B1DoubleClicked, this, &SMouseListener::onB1DoubleClicked);
+    }
 
     if (!m_selection)
     {

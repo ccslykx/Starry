@@ -2,6 +2,7 @@
 #include <QVBoxLayout>
 #include <QFileDialog>
 #include <QCloseEvent>
+#include <QMessageBox>
 
 #include "SConfig.h"
 #include "SSettings.h"
@@ -29,6 +30,8 @@ void SPluginEditor::edit(SPluginInfo *info)
         return;
     }
     m_editingInfo = info;
+    m_iconPath.clear();
+    m_icon = info->icon;
 
     m_iconContainor->setPixmap(info->icon.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     m_nameEdit->setText(info->name);
@@ -101,11 +104,28 @@ void SPluginEditor::initGui()
         this->m_iconContainor->setPixmap(m_icon.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     });
     QObject::connect(m_eButton, &SButton::clicked, this, [this]() {
-        SPluginInfo *info = this->m_editingInfo;
-        if (info->name != this->m_nameEdit->text())
+        SPluginInfo *info = this->m_editingInfo.data();
+        if (!info)
         {
-            info->name = this->m_nameEdit->text();
-            emit info->nameChanged(info);
+            return;
+        }
+        const QString name = this->m_nameEdit->text().trimmed();
+        const QString script = this->m_scriptEdit->text().trimmed();
+        SConfig *config = SConfig::config();
+        if (!config->isPluginNameAvailable(name, info))
+        {
+            QMessageBox::warning(this, tr("Invalid plugin"), tr("The plugin name is empty, invalid, or already in use."));
+            return;
+        }
+        if (script.isEmpty())
+        {
+            QMessageBox::warning(this, tr("Invalid plugin"), tr("The plugin command cannot be empty."));
+            return;
+        }
+        if (info->name != name && !config->renamePlugin(info, name))
+        {
+            QMessageBox::warning(this, tr("Rename failed"), tr("The plugin could not be renamed."));
+            return;
         }
         if (!m_iconPath.isEmpty())
         {
@@ -113,15 +133,27 @@ void SPluginEditor::initGui()
             emit info->iconChanged(info);
         }
 
-        info->script = this->m_scriptEdit->text();
+        info->script = script;
         info->tip = this->m_tipEdit->text();
         
         emit info->edited(info);
         this->close();
     });
     QObject::connect(m_cButton, &SButton::clicked, this, [this]() {
-        SPluginInfo *info = new SPluginInfo(this->m_nameEdit->text(), 
-            this->m_scriptEdit->text(), m_icon, 0, this->m_tipEdit->text(), true);
+        const QString name = this->m_nameEdit->text().trimmed();
+        const QString script = this->m_scriptEdit->text().trimmed();
+        SConfig *config = SConfig::config();
+        if (!config->isPluginNameAvailable(name))
+        {
+            QMessageBox::warning(this, tr("Invalid plugin"), tr("The plugin name is empty, invalid, or already in use."));
+            return;
+        }
+        if (script.isEmpty())
+        {
+            QMessageBox::warning(this, tr("Invalid plugin"), tr("The plugin command cannot be empty."));
+            return;
+        }
+        SPluginInfo *info = new SPluginInfo(name, script, m_icon, 0, this->m_tipEdit->text(), true);
         emit created(info);
         this->close();
     });
@@ -130,11 +162,13 @@ void SPluginEditor::initGui()
 void SPluginEditor::initialize()
 {
     QPixmap defaultIcon(":/default_icon.png");
-    m_iconContainor->setPixmap(std::move(defaultIcon).scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    m_icon = defaultIcon;
+    m_iconContainor->setPixmap(defaultIcon.scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     m_nameEdit->setText("");
     m_tipEdit->setText("");
     m_scriptEdit->setText("");
     m_iconPath = QString();
+    m_editingInfo = nullptr;
 
     m_eButton->setVisible(false);
     m_cButton->setVisible(true);

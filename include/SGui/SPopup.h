@@ -27,7 +27,7 @@
 
 class SPopup : public QWidget
 {
-    Q_OBJECT;
+    Q_OBJECT
 
 public:
     static SPopup* instance();
