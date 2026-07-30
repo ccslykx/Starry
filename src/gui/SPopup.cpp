@@ -167,6 +167,7 @@ void SPopup::initGui()
         m_statusWidget->setAttribute(Qt::WA_StyledBackground, true);
         m_statusWidget->setStyleSheet(
             "background-color: rgba(220, 220, 220, 224);"
+            "border: 1px solid rgba(249, 115, 22, 140);"
             "border-radius: 8px;"
             "color: #000000;");
 
@@ -175,6 +176,14 @@ void SPopup::initGui()
         m_loadingIndicator->setRange(0, 0);
         m_loadingIndicator->setTextVisible(false);
         m_loadingIndicator->setFixedSize(24, 14);
+        m_loadingIndicator->setStyleSheet(
+            "QProgressBar {"
+            "  background: rgba(249, 115, 22, 48);"
+            "  border: none; border-radius: 7px;"
+            "}"
+            "QProgressBar::chunk {"
+            "  background: #F97316; border-radius: 7px;"
+            "}");
 
         m_statusLabel = new QLabel(m_statusWidget);
         m_statusLabel->setObjectName("popupExecutionStatus");
@@ -261,7 +270,7 @@ void SPopup::showExecutionStatus(const QString &message, bool loading, bool succ
     m_loadingIndicator->setVisible(loading);
     m_statusLabel->setText(message);
     m_statusLabel->setStyleSheet(
-        loading ? "color: #2F5F8F;"
+        loading ? "color: #C2410C;"
                 : (success ? "color: #16794B;" : "color: #B42318;"));
     m_statusWidget->setAccessibleName(message);
     m_statusWidget->setVisible(true);

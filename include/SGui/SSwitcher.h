@@ -11,11 +11,8 @@
 
 #pragma once
 
+#include <QEvent>
 #include <QPushButton>
-
-#ifndef S_SWITCHER_STYLE
-    #define S_SWITCHER_STYLE "border-style: outset; border-width: 1px; border-radius:8px;"
-#endif
 
 enum SwitcherStatus
 {
@@ -33,8 +30,6 @@ public:
     void setStatus(bool);
     void setOnText(const QString&);
     void setOffText(const QString&);
-    void setOnStyleSheet(const QString&);
-    void setOffStyleSheet(const QString&);
     void setPixmap(const QPixmap &pixmap);
 
 signals:
@@ -43,11 +38,13 @@ signals:
 
 private:
     void updateAppearance();
+    void refreshStyle();
+    void changeEvent(QEvent *event) override;
 
 private:
     bool    m_isOn;
     QString m_on;
     QString m_off;
-    QString m_onStyleSheet = S_SWITCHER_STYLE + QString("background-color: #59C837");
-    QString m_offStyleSheet = S_SWITCHER_STYLE + QString("background-color: gray");
+    bool    m_darkStyle = false;
+    bool    m_styleInitialized = false;
 };

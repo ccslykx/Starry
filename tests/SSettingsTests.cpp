@@ -3,8 +3,11 @@
 #include <QDir>
 #include <QEvent>
 #include <QFileInfo>
+#include <QGuiApplication>
 #include <QHBoxLayout>
+#include <QLabel>
 #include <QMessageBox>
+#include <QPalette>
 #include <QPixmap>
 #include <QPointer>
 #include <QProgressBar>
@@ -37,6 +40,11 @@ private slots:
     void synchronizesPopupOrder();
     void restoresMinimizedSettingsWindow();
     void nativeControlsSupportKeyboard();
+    void buttonRolesAndNavigationSelection();
+    void darkModeUsesBrighterOrangeBackgrounds();
+    void pluginDeleteButtonFollowsEditButton();
+    void pluginItemRespondsToThemeChanges();
+    void pluginSelectionUsesOrangeBackground();
     void editorUsesInlineValidationInsideSettings();
     void popupItemsExposeTipsAndElideLongNames();
     void popupHonorsVisibilityAndEscapeRules();
@@ -181,6 +189,213 @@ void SSettingsTests::nativeControlsSupportKeyboard()
     QTest::keyClick(&switcher, Qt::Key_Space);
     QVERIFY(switcher.isOn());
     QCOMPARE(switchOnSpy.count(), 1);
+    QCOMPARE(switcher.text(), QString("✓ On"));
+    QCOMPARE(switcher.accessibleDescription(), QString("On"));
+    QVERIFY(switcher.styleSheet().contains("border-color: #59C837"));
+    QVERIFY(!switcher.styleSheet().contains("#F97316"));
+}
+
+void SSettingsTests::buttonRolesAndNavigationSelection()
+{
+    SButton primary("Primary");
+    primary.setRole(SButton::Role::Primary);
+    QCOMPARE(primary.role(), SButton::Role::Primary);
+    QCOMPARE(primary.property("buttonRole").toString(), QString("primary"));
+    QVERIFY(primary.styleSheet().contains("QPushButton:hover"));
+    QVERIFY(primary.styleSheet().contains("QPushButton:pressed"));
+    QVERIFY(primary.styleSheet().contains("QPushButton:focus"));
+    QVERIFY(primary.styleSheet().contains("QPushButton:disabled"));
+    QVERIFY(primary.styleSheet().contains("#F97316"));
+
+    SButton navigation("Navigation");
+    navigation.setRole(SButton::Role::Navigation);
+    navigation.setSelected(true);
+    QVERIFY(navigation.isCheckable());
+    QVERIFY(navigation.isChecked());
+    QVERIFY(navigation.isSelected());
+    QCOMPARE(navigation.property("selected").toBool(), true);
+    navigation.click();
+    navigation.setSelected(true);
+    QVERIFY(navigation.isChecked());
+
+    QListWidget *menu = m_settings->findChild<QListWidget *>("settingsMenuList");
+    QVERIFY(menu);
+    QCOMPARE(menu->count(), 4);
+    SButton *pluginsButton = qobject_cast<SButton *>(menu->itemWidget(menu->item(0)));
+    SButton *tasksButton = qobject_cast<SButton *>(menu->itemWidget(menu->item(1)));
+    QVERIFY(pluginsButton);
+    QVERIFY(tasksButton);
+    QVERIFY(pluginsButton->isSelected());
+    QCOMPARE(pluginsButton->role(), SButton::Role::Navigation);
+
+    tasksButton->click();
+    QVERIFY(tasksButton->isSelected());
+    QVERIFY(!pluginsButton->isSelected());
+    QCOMPARE(menu->currentRow(), 1);
+}
+
+void SSettingsTests::darkModeUsesBrighterOrangeBackgrounds()
+{
+    struct PaletteRestorer
+    {
+        QPalette palette;
+        ~PaletteRestorer()
+        {
+            QGuiApplication::setPalette(palette);
+            QCoreApplication::processEvents();
+        }
+    } restorer{QGuiApplication::palette()};
+
+    QPalette darkPalette = restorer.palette;
+    darkPalette.setColor(QPalette::Window, QColor("#101828"));
+    QGuiApplication::setPalette(darkPalette);
+    QCoreApplication::processEvents();
+
+    SButton primary("Primary");
+    primary.setRole(SButton::Role::Primary);
+    QVERIFY(primary.styleSheet().contains("background: #FB923C"));
+    QVERIFY(primary.styleSheet().contains("background: #9A3412"));
+    QVERIFY(!primary.styleSheet().contains("background: #431407"));
+
+    SSwitcher switcher("On", "Off", true);
+    QVERIFY(switcher.styleSheet().contains("background: #214E2D"));
+    QVERIFY(switcher.styleSheet().contains("border-color: #59C837"));
+    QVERIFY(!switcher.styleSheet().contains("#F97316"));
+
+    QListWidget *pluginList = m_settings->findChild<QListWidget *>("pluginList");
+    QVERIFY(pluginList);
+    QVERIFY(pluginList->styleSheet().contains("background: #9A3412"));
+}
+
+void SSettingsTests::pluginDeleteButtonFollowsEditButton()
+{
+    SPluginInfo *info = makePlugin("ActionOrderPlugin");
+    QPointer<SPluginItem> item(SPluginItem::create(info));
+    QHBoxLayout *layout = qobject_cast<QHBoxLayout *>(item->layout());
+    SButton *editButton = item->findChild<SButton *>("editPluginButton");
+    SButton *deleteButton = item->findChild<SButton *>("deletePluginButton");
+    QVERIFY(layout);
+    QVERIFY(editButton);
+    QVERIFY(deleteButton);
+    QCOMPARE(layout->indexOf(deleteButton), layout->indexOf(editButton) + 1);
+
+    item->deleteLater();
+    info->deleteLater();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    QVERIFY(item.isNull());
+}
+
+void SSettingsTests::pluginItemRespondsToThemeChanges()
+{
+    struct PaletteRestorer
+    {
+        QPalette palette;
+        ~PaletteRestorer()
+        {
+            QGuiApplication::setPalette(palette);
+            QCoreApplication::processEvents();
+        }
+    } restorer{QGuiApplication::palette()};
+
+    QPalette lightPalette = restorer.palette;
+    lightPalette.setColor(QPalette::Window, Qt::white);
+    QGuiApplication::setPalette(lightPalette);
+    QCoreApplication::processEvents();
+
+    SPluginInfo *info = makePlugin("TransparentTipPlugin");
+    QPointer<SPluginItem> item(SPluginItem::create(info));
+    QLabel *tipLabel = item->findChild<QLabel *>("pluginTipLabel");
+    SButton *deleteButton = item->findChild<SButton *>("deletePluginButton");
+    QVERIFY(tipLabel);
+    QVERIFY(deleteButton);
+    QVERIFY(tipLabel->styleSheet().contains("background-color: transparent"));
+    QVERIFY(tipLabel->styleSheet().contains("color: #000000"));
+    QVERIFY(tipLabel->styleSheet().contains("border: none"));
+    QVERIFY(!tipLabel->styleSheet().contains("palette(base)"));
+
+    const qint64 lightIconKey = deleteButton->icon().cacheKey();
+    const QImage deleteIcon = deleteButton->icon().pixmap(QSize(18, 18)).toImage();
+    bool hasDarkPixel = false;
+    for (int y = 0; y < deleteIcon.height() && !hasDarkPixel; ++y)
+    {
+        for (int x = 0; x < deleteIcon.width(); ++x)
+        {
+            const QColor pixel = deleteIcon.pixelColor(x, y);
+            if (pixel.alpha() > 128 && pixel.value() < 128)
+            {
+                hasDarkPixel = true;
+                break;
+            }
+        }
+    }
+    QVERIFY(hasDarkPixel);
+
+    QPalette darkPalette = restorer.palette;
+    darkPalette.setColor(QPalette::Window, QColor("#101828"));
+    QGuiApplication::setPalette(darkPalette);
+    QCoreApplication::processEvents();
+
+    QVERIFY(tipLabel->styleSheet().contains("color: #FFFFFF"));
+    QVERIFY(deleteButton->icon().cacheKey() != lightIconKey);
+    const QImage darkDeleteIcon = deleteButton->icon().pixmap(QSize(18, 18)).toImage();
+    bool hasLightPixel = false;
+    for (int y = 0; y < darkDeleteIcon.height() && !hasLightPixel; ++y)
+    {
+        for (int x = 0; x < darkDeleteIcon.width(); ++x)
+        {
+            const QColor pixel = darkDeleteIcon.pixelColor(x, y);
+            if (pixel.alpha() > 128 && pixel.value() > 220)
+            {
+                hasLightPixel = true;
+                break;
+            }
+        }
+    }
+    QVERIFY(hasLightPixel);
+
+    item->deleteLater();
+    info->deleteLater();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    QVERIFY(item.isNull());
+}
+
+void SSettingsTests::pluginSelectionUsesOrangeBackground()
+{
+    struct PaletteRestorer
+    {
+        QPalette palette;
+        ~PaletteRestorer()
+        {
+            QGuiApplication::setPalette(palette);
+            QCoreApplication::processEvents();
+        }
+    } restorer{QGuiApplication::palette()};
+
+    QPalette lightPalette = restorer.palette;
+    lightPalette.setColor(QPalette::Window, Qt::white);
+    QGuiApplication::setPalette(lightPalette);
+    QCoreApplication::processEvents();
+
+    QListWidget *pluginList = m_settings->findChild<QListWidget *>("pluginList");
+    QVERIFY(pluginList);
+    QVERIFY(pluginList->styleSheet().contains("QListWidget#pluginList::item:selected"));
+    QVERIFY(pluginList->styleSheet().contains("background: #FFF7ED"));
+
+    SPluginInfo *info = makePlugin("SelectedPlugin");
+    SPluginItem *item = SPluginItem::create(info);
+    m_settings->addPluginItem(item);
+    QListWidgetItem *listItem = pluginList->item(pluginList->count() - 1);
+    QVERIFY(listItem);
+
+    pluginList->clearSelection();
+    pluginList->setCurrentItem(nullptr);
+    QMetaObject::invokeMethod(item, "selectionRequested", Qt::DirectConnection);
+    QCOMPARE(pluginList->currentItem(), listItem);
+    QVERIFY(listItem->isSelected());
+
+    m_settings->deletePluginItem(item);
+    info->deleteLater();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 }
 
 void SSettingsTests::editorUsesInlineValidationInsideSettings()

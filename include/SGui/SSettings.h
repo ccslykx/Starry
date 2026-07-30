@@ -47,7 +47,9 @@ private:
     explicit SSettings(QWidget *parent = (QWidget*)nullptr);
     ~SSettings();
 
-    void closeEvent(QCloseEvent *ev);
+    void closeEvent(QCloseEvent *ev) override;
+    void changeEvent(QEvent *event) override;
+    void refreshTheme(bool force = false);
     void refreshPluginIndex();
     void addTaskItem(SPluginTask *task);
     void removeTaskItem(SPluginTask *task);
@@ -60,6 +62,7 @@ private:
     SPluginEditor           *m_pluginEditor = nullptr;
 
     QListWidget             *m_menuListWidget = nullptr; // 菜单页
+    QVector<SButton*>        m_menuButtons;
     QStackedWidget          *m_contentWidget = nullptr; // 内容页
     QWidget                 *m_pluginWidget = nullptr; // 内容页-插件
     QListWidget             *m_pluginListWidget = nullptr; // 内容页-插件-已有插件列表
@@ -69,4 +72,6 @@ private:
     QHash<SPluginTask*, QListWidgetItem*> m_taskItems;
     QListWidget             *m_shortcutWidget = nullptr; // 内容页-快捷键
     QWidget                 *m_aboutWidget = nullptr; // 内容页-关于
+    bool                     m_darkStyle = false;
+    bool                     m_styleInitialized = false;
 };

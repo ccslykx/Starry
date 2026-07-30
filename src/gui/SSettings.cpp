@@ -2,9 +2,12 @@
 #include <QHBoxLayout>
 #include <QCloseEvent>
 #include <QFontMetrics>
+#include <QGuiApplication>
 #include <QMessageBox>
+#include <QPalette>
 #include <QPointer>
 #include <QPushButton>
+#include <QStyle>
 #include <QTimer>
 
 #include "SSettings.h"
@@ -42,6 +45,48 @@ void SSettings::showAndActivate()
     });
 }
 
+void SSettings::refreshTheme(bool force)
+{
+    const bool dark = QGuiApplication::palette().color(QPalette::Window).lightness() < 128;
+    if (!force && m_styleInitialized && m_darkStyle == dark)
+    {
+        return;
+    }
+    m_darkStyle = dark;
+    m_styleInitialized = true;
+
+    if (!m_pluginListWidget)
+    {
+        return;
+    }
+
+    m_pluginListWidget->setStyleSheet(dark
+        ? QStringLiteral(
+            "QListWidget#pluginList { border: none; background: transparent; outline: none; }"
+            "QListWidget#pluginList::item {"
+            "  background: transparent; border: 1px solid transparent; border-radius: 7px;"
+            "}"
+            "QListWidget#pluginList::item:hover:!selected {"
+            "  background: #344054; border-color: #475467;"
+            "}"
+            "QListWidget#pluginList::item:selected {"
+            "  background: #9A3412; border: 1px solid #F97316;"
+            "  border-left: 3px solid #FDBA74;"
+            "}")
+        : QStringLiteral(
+            "QListWidget#pluginList { border: none; background: transparent; outline: none; }"
+            "QListWidget#pluginList::item {"
+            "  background: transparent; border: 1px solid transparent; border-radius: 7px;"
+            "}"
+            "QListWidget#pluginList::item:hover:!selected {"
+            "  background: #F2F4F7; border-color: #D0D5DD;"
+            "}"
+            "QListWidget#pluginList::item:selected {"
+            "  background: #FFF7ED; border: 1px solid #FED7AA;"
+            "  border-left: 3px solid #F97316;"
+            "}"));
+}
+
 void SSettings::initGui()
 {
     SDEBUG
@@ -50,8 +95,13 @@ void SSettings::initGui()
     {
         m_menuListWidget = new QListWidget(this);
     }
+    m_menuListWidget->setObjectName("settingsMenuList");
     m_menuListWidget->setItemAlignment(Qt::AlignCenter);
-    m_menuListWidget->setFixedWidth(48 * 3);
+    m_menuListWidget->setFixedWidth(160);
+    m_menuListWidget->setSpacing(4);
+    m_menuListWidget->setStyleSheet(
+        "QListWidget { border: none; background: transparent; outline: none; }"
+        "QListWidget::item { border: none; background: transparent; }");
 
     // 内容页（右侧）
     if (!m_contentWidget)
@@ -67,15 +117,19 @@ void SSettings::initGui()
     if (!m_pluginListWidget)
     {
         m_pluginListWidget = new QListWidget(m_pluginWidget);
+        m_pluginListWidget->setObjectName("pluginList");
         m_pluginListWidget->setItemAlignment(Qt::AlignVCenter);
         m_pluginListWidget->setDragDropMode(QAbstractItemView::InternalMove);
         m_pluginListWidget->setMinimumHeight(48);
+        m_pluginListWidget->setSpacing(4);
         QObject::connect(m_pluginListWidget->model(), &QAbstractItemModel::rowsMoved, this, [this] {
             refreshPluginIndex();
         });
     }
+    refreshTheme(true);
 
     SButton *newPluginButton = new SButton(tr("Create new plugin"), m_pluginListWidget);
+    newPluginButton->setRole(SButton::Role::Primary);
     QObject::connect(newPluginButton, &SButton::clicked, this, &SSettings::onCreatePluginClicked);
 
     QVBoxLayout *pluginsLayout = new QVBoxLayout(m_pluginWidget);
@@ -181,6 +235,10 @@ void SSettings::initGui()
     SButton *tasks = new SButton(tr("Tasks"), m_menuListWidget);
     SButton *shortcuts = new SButton(tr("Shortcuts"), m_menuListWidget);
     SButton *about = new SButton(tr("About"), m_menuListWidget);
+    plugins->setRole(SButton::Role::Navigation);
+    tasks->setRole(SButton::Role::Navigation);
+    shortcuts->setRole(SButton::Role::Navigation);
+    about->setRole(SButton::Role::Navigation);
 
     QObject::connect(plugins, &SButton::clicked, this, [this](){ this->showContent(0); });
     QObject::connect(tasks, &SButton::clicked, this, [this](){ this->showContent(1); });
@@ -191,6 +249,7 @@ void SSettings::initGui()
     addMenuItem(tasks);
     addMenuItem(shortcuts);
     addMenuItem(about);
+    showContent(0);
 
     // 主界面
     QIcon windowIcon(SUtils::STARRY_ICON(64));
@@ -212,6 +271,13 @@ void SSettings::addPluginItem(SPluginItem *item)
     listWidgetItem->setSizeHint(size);
     m_pluginListWidget->addItem(listWidgetItem);
     m_pluginListWidget->setItemWidget(listWidgetItem, item);
+    QObject::connect(item, &SPluginItem::selectionRequested, m_pluginListWidget,
+                     [this, listWidgetItem] {
+        if (m_pluginListWidget->row(listWidgetItem) >= 0)
+        {
+            m_pluginListWidget->setCurrentItem(listWidgetItem);
+        }
+    });
 }
 
 void SSettings::addPluginItem(SPluginInfo *info)
@@ -255,10 +321,14 @@ void SSettings::addMenuItem(QWidget *item)
 {
     SDEBUG
     QListWidgetItem *listWidgetItem = new QListWidgetItem(m_menuListWidget);
-    QSize size(m_menuListWidget->size().width() - 2, 48);
+    QSize size(m_menuListWidget->size().width() - 12, 44);
     listWidgetItem->setSizeHint(size);
     m_menuListWidget->addItem(listWidgetItem);
     m_menuListWidget->setItemWidget(listWidgetItem, item);
+    if (SButton *button = qobject_cast<SButton *>(item))
+    {
+        m_menuButtons.push_back(button);
+    }
 }
 
 void SSettings::showContent(int index)
@@ -267,7 +337,19 @@ void SSettings::showContent(int index)
     if (index == -1) {
         index = m_menuListWidget->currentRow();
     }
+    if (index < 0 || index >= m_contentWidget->count())
+    {
+        return;
+    }
     m_contentWidget->setCurrentIndex(index);
+    if (index < m_menuListWidget->count())
+    {
+        m_menuListWidget->setCurrentRow(index);
+    }
+    for (qsizetype buttonIndex = 0; buttonIndex < m_menuButtons.size(); ++buttonIndex)
+    {
+        m_menuButtons.at(buttonIndex)->setSelected(buttonIndex == static_cast<qsizetype>(index));
+    }
 }
 
 void SSettings::onCreatePluginClicked()
@@ -300,6 +382,16 @@ void SSettings::closeEvent(QCloseEvent *ev)
     emit windowClose();
     m_config->saveToFile(m_config->configPath());
     ev->accept();
+}
+
+void SSettings::changeEvent(QEvent *event)
+{
+    QWidget::changeEvent(event);
+    if (event && (event->type() == QEvent::PaletteChange
+        || event->type() == QEvent::ApplicationPaletteChange))
+    {
+        refreshTheme();
+    }
 }
 
 void SSettings::refreshPluginIndex() /* Need to be optmized */
@@ -341,6 +433,9 @@ void SSettings::addTaskItem(SPluginTask *task)
     statusLabel->setMinimumWidth(120);
 
     SButton *stopButton = new SButton(tr("Force stop"), row);
+    stopButton->setRole(SButton::Role::Danger);
+    stopButton->setIcon(style()->standardIcon(QStyle::SP_MediaStop));
+    stopButton->setIconSize(QSize(16, 16));
     stopButton->setObjectName("forceStopTaskButton");
     stopButton->setMinimumWidth(92);
     stopButton->setToolTip(tr("Immediately terminate this plugin process"));

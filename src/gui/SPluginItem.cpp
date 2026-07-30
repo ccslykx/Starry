@@ -1,6 +1,10 @@
 #include <QHBoxLayout>
 #include <QIcon>
+#include <QGuiApplication>
 #include <QMessageBox>
+#include <QMouseEvent>
+#include <QPainter>
+#include <QPalette>
 
 #include "SPluginItem.h"
 #include "SPluginInfo.h"
@@ -47,6 +51,42 @@ void SPluginItem::refresh()
     }
 }
 
+void SPluginItem::refreshTheme()
+{
+    const bool dark = QGuiApplication::palette().color(QPalette::Window).lightness() < 128;
+    if (m_tipLabel)
+    {
+        m_tipLabel->setStyleSheet(QStringLiteral(
+            "QLabel {"
+            "  background-color: transparent; color: %1;"
+            "  border: none;"
+            "  padding: 0 10px;"
+            "}").arg(dark ? QStringLiteral("#FFFFFF") : QStringLiteral("#000000")));
+    }
+
+    if (m_deleteButton)
+    {
+        QPixmap pixmap(18, 18);
+        pixmap.fill(Qt::transparent);
+        QPainter painter(&pixmap);
+        painter.setRenderHint(QPainter::Antialiasing);
+        QPen pen(dark ? QColor(QStringLiteral("#FFFFFF"))
+                      : QColor(QStringLiteral("#344054")));
+        pen.setWidthF(1.7);
+        pen.setCapStyle(Qt::RoundCap);
+        pen.setJoinStyle(Qt::RoundJoin);
+        painter.setPen(pen);
+        painter.setBrush(Qt::NoBrush);
+        painter.drawLine(QPointF(4.0, 5.0), QPointF(14.0, 5.0));
+        painter.drawLine(QPointF(7.0, 3.0), QPointF(11.0, 3.0));
+        painter.drawRoundedRect(QRectF(5.0, 5.0, 8.0, 10.0), 1.5, 1.5);
+        painter.drawLine(QPointF(8.0, 8.0), QPointF(8.0, 12.0));
+        painter.drawLine(QPointF(10.0, 8.0), QPointF(10.0, 12.0));
+        painter.end();
+        m_deleteButton->setIcon(QIcon(pixmap));
+    }
+}
+
 SPluginInfo* SPluginItem::pluginInfo()
 {
     SDEBUG
@@ -77,78 +117,63 @@ void SPluginItem::initGui()
 {
     SDEBUG
     m_deleteButton = new SButton("", this);
+    m_deleteButton->setObjectName("deletePluginButton");
     m_iconSwitcher = new SSwitcher("", "", m_info->iconEnabled, this);
     m_nameSwitcher = new SSwitcher(m_info->name, m_info->name, m_info->nameEnabled, this);
     m_tipLabel = new QLabel(m_info->tip, this);
+    m_tipLabel->setObjectName("pluginTipLabel");
+    m_tipLabel->setAttribute(Qt::WA_TransparentForMouseEvents);
     m_editButton = new SButton(tr("Edit"), this);
+    m_editButton->setObjectName("editPluginButton");
 
     // Delete Button
-    QString delImgPath = ":/PluginItem_Delete.png";
-    QPixmap delPixmap(delImgPath);
-    m_deleteButton->setPixmap(delPixmap.scaled(24, 24, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    m_deleteButton->setRole(SButton::Role::DangerIcon);
+    m_deleteButton->setIconSize(QSize(18, 18));
     m_deleteButton->setToolTip(tr("Delete plugin"));
     m_deleteButton->setAccessibleName(tr("Delete plugin"));
-    m_deleteButton->setFixedSize(28, 28);
-    m_deleteButton->setStyleSheet(
-        "background-color: #E9524A;"
-        "border-style: outset;"
-        "border-width: 2px;"
-        "border-radius: 14;"
-        "border-color: #E9524A");
+    m_deleteButton->setFixedSize(36, 36);
     // Icon
     m_iconSwitcher->setPixmap(m_info->icon.scaled(28, 28, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     m_iconSwitcher->setToolTip(tr("Show or hide the plugin icon in the popup"));
     m_iconSwitcher->setAccessibleName(tr("Show plugin icon"));
-    m_iconSwitcher->setFixedSize(32, 32);
-    m_iconSwitcher->setOnStyleSheet(
-        "background-color: #59C837;"
-        "border-style: outset;"
-        "border-width: 2px;"
-        "border-radius: 8px;"
-        "border-color: #59C837");
-    m_iconSwitcher->setOffStyleSheet(
-        "background-color: gray;"
-        "border-style: outset;"
-        "border-width: 2px;"
-        "border-radius: 8px;"
-        "border-color: gray");
+    m_iconSwitcher->setFixedSize(40, 36);
     m_iconSwitcher->setStatus(m_info->iconEnabled);
     // Name
-    m_nameSwitcher->setStyleSheet(S_BUTTON_STYLE);
     m_nameSwitcher->setToolTip(tr("Show or hide the plugin name in the popup"));
     m_nameSwitcher->setAccessibleName(tr("Show plugin name"));
-    m_nameSwitcher->setMinimumSize(32 * 2, 32);
-    m_nameSwitcher->setMaximumSize(32 * 3, 32);
-    m_nameSwitcher->setOnStyleSheet(
-        "background-color: #59C837;"
-        "border-style: outset;"
-        "border-width: 2px;"
-        "border-radius: 8px;"
-        "border-color: #59C837");
-    m_nameSwitcher->setOffStyleSheet(
-        "background-color: gray;"
-        "border-style: outset;"
-        "border-width: 2px;"
-        "border-radius: 8px;"
-        "border-color: gray");
+    m_nameSwitcher->setMinimumSize(96, 36);
+    m_nameSwitcher->setMaximumSize(180, 36);
     m_nameSwitcher->setStatus(m_info->nameEnabled);
     // Tip
-    m_tipLabel->setStyleSheet(S_BUTTON_STYLE);
-    m_tipLabel->setMinimumSize(32 * 5, 32);
+    m_tipLabel->setMinimumSize(160, 36);
+    m_tipLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    refreshTheme();
     // Edit Button
-    m_editButton->setFixedSize(32, 32);
+    m_editButton->setRole(SButton::Role::Secondary);
+    m_editButton->setMinimumWidth(64);
+    m_editButton->setFixedHeight(36);
     m_editButton->setToolTip(tr("Edit plugin"));
     m_editButton->setAccessibleName(tr("Edit plugin"));
 
     QHBoxLayout *layout = new QHBoxLayout(this);
-    layout->addWidget(m_deleteButton);
+    layout->setContentsMargins(6, 6, 6, 6);
+    layout->setSpacing(8);
     layout->addWidget(m_iconSwitcher);
     layout->addWidget(m_nameSwitcher);
-    layout->addWidget(m_tipLabel);
+    layout->addWidget(m_tipLabel, 1);
     layout->addWidget(m_editButton);
+    layout->addWidget(m_deleteButton);
 
     this->setLayout(layout);
     this->setFixedHeight(48);
+
+    const auto requestSelection = [this] {
+        emit selectionRequested();
+    };
+    QObject::connect(m_iconSwitcher, &QPushButton::pressed, this, requestSelection);
+    QObject::connect(m_nameSwitcher, &QPushButton::pressed, this, requestSelection);
+    QObject::connect(m_editButton, &QPushButton::pressed, this, requestSelection);
+    QObject::connect(m_deleteButton, &QPushButton::pressed, this, requestSelection);
 
     QObject::connect(m_deleteButton, &SButton::clicked, [this] () {
         QMessageBox *box = new QMessageBox(QMessageBox::Icon::Question,  "提示", "确实要删除插件 " + this->m_info->name + " 吗？", QMessageBox::Yes | QMessageBox::Cancel, this);
@@ -181,4 +206,20 @@ void SPluginItem::initGui()
         emit m_info->switchNameOff(m_info);
         this->refresh();
     });
+}
+
+void SPluginItem::changeEvent(QEvent *event)
+{
+    QWidget::changeEvent(event);
+    if (event && (event->type() == QEvent::PaletteChange
+        || event->type() == QEvent::ApplicationPaletteChange))
+    {
+        refreshTheme();
+    }
+}
+
+void SPluginItem::mousePressEvent(QMouseEvent *event)
+{
+    emit selectionRequested();
+    QWidget::mousePressEvent(event);
 }

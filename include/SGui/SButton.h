@@ -11,16 +11,43 @@
 
 #pragma once
 
+#include <QEvent>
 #include <QPushButton>
-
-#ifndef S_BUTTON_STYLE
-    #define S_BUTTON_STYLE "border-style: outset; border-width: 1px; border-radius:8px;"
-#endif
 
 class SButton : public QPushButton
 {
     Q_OBJECT
+
 public:
+    enum class Role
+    {
+        Primary,
+        Secondary,
+        Danger,
+        Navigation,
+        Icon,
+        DangerIcon,
+        IconPicker
+    };
+    Q_ENUM(Role)
+
     SButton(const QString &text = "", QWidget *parent = (QWidget*)nullptr);
+
+    Role role() const;
+    void setRole(Role role);
+    bool isSelected() const;
+    void setSelected(bool selected);
     void setPixmap(const QPixmap &pixmap);
+
+protected:
+    void changeEvent(QEvent *event) override;
+
+private:
+    void refreshStyle();
+    void refreshPolish();
+
+    Role m_role = Role::Secondary;
+    bool m_selected = false;
+    bool m_darkStyle = false;
+    bool m_styleInitialized = false;
 };

@@ -10,6 +10,7 @@
 #include <QGuiApplication>
 #include <QMimeData>
 #include <QProcess>
+#include <QStyle>
 #include <QUrl>
 
 #include "SConfig.h"
@@ -103,8 +104,16 @@ void SPluginEditor::initGui()
     if (!m_tipEdit)         m_tipEdit = new QLineEdit(this);
     if (!m_scriptEdit)      m_scriptEdit = new QLineEdit(this);
 
+    m_eButton->setRole(SButton::Role::Primary);
+    m_cButton->setRole(SButton::Role::Primary);
+    m_testButton->setRole(SButton::Role::Secondary);
+    m_testButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
+    m_testButton->setIconSize(QSize(16, 16));
+    m_cancelButton->setRole(SButton::Role::Secondary);
+    m_cancelButton->setIcon(style()->standardIcon(QStyle::SP_ArrowBack));
+    m_cancelButton->setIconSize(QSize(16, 16));
+    m_iconContainor->setRole(SButton::Role::IconPicker);
     m_iconContainor->setFixedSize(64, 64);
-    m_iconContainor->setStyleSheet("border-width: 0px");
     m_iconContainor->setToolTip(tr("Click to select an image, or drop an image anywhere on this page."));
     m_iconContainor->setAccessibleName(tr("Plugin icon"));
     m_titleLabel->setStyleSheet("font-size: 20px; font-weight: 600;");

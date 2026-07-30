@@ -10,10 +10,48 @@
  */
 
 #include <QIcon>
+#include <QGuiApplication>
+#include <QPalette>
 #include <QSignalBlocker>
 
 #include "SSwitcher.h"
 #include "utils.h"
+
+namespace
+{
+QString switcherStyleSheet(bool dark)
+{
+    if (dark)
+    {
+        return QStringLiteral(
+            "QPushButton {"
+            "  min-height: 36px; padding: 0 12px;"
+            "  border: 1px solid #475467; border-radius: 18px;"
+            "  background: #344054; color: #D0D5DD; font-weight: 500;"
+            "}"
+            "QPushButton:hover { background: #475467; border-color: #667085; }"
+            "QPushButton:pressed { background: #1D2939; }"
+            "QPushButton:checked { background: #214E2D; color: #EAF8E5; border-color: #59C837; }"
+            "QPushButton:checked:hover { background: #2B6039; border-color: #6ED34F; }"
+            "QPushButton:checked:pressed { background: #183B22; border-color: #49B02C; }"
+            "QPushButton:focus { border: 2px solid #83DE67; }"
+            "QPushButton:disabled { background: #1D2939; color: #667085; border-color: #344054; }");
+    }
+    return QStringLiteral(
+        "QPushButton {"
+        "  min-height: 36px; padding: 0 12px;"
+        "  border: 1px solid #D0D5DD; border-radius: 18px;"
+        "  background: #F2F4F7; color: #475467; font-weight: 500;"
+        "}"
+        "QPushButton:hover { background: #EAECF0; border-color: #98A2B3; }"
+        "QPushButton:pressed { background: #D0D5DD; }"
+        "QPushButton:checked { background: #EAF8E5; color: #245B16; border-color: #59C837; }"
+        "QPushButton:checked:hover { background: #DCF3D5; border-color: #49B02C; }"
+        "QPushButton:checked:pressed { background: #C9EDBE; border-color: #3D9424; }"
+        "QPushButton:focus { border: 2px solid #83DE67; }"
+        "QPushButton:disabled { background: #F2F4F7; color: #98A2B3; border-color: #EAECF0; }");
+}
+}
 
 SSwitcher::SSwitcher(const QString &on, const QString &off, bool status, QWidget *parent)
     : QPushButton(parent), m_isOn(status), m_on(on), m_off(off)
@@ -21,10 +59,19 @@ SSwitcher::SSwitcher(const QString &on, const QString &off, bool status, QWidget
     SDEBUG
     setCheckable(true);
     setCursor(Qt::PointingHandCursor);
+    setMinimumHeight(36);
+    refreshStyle();
     QObject::connect(this, &QPushButton::toggled, this, [this] (bool checked) {
         m_isOn = checked;
         updateAppearance();
-        emit checked ? switchOn() : switchOff();
+        if (checked)
+        {
+            emit switchOn();
+        }
+        else
+        {
+            emit switchOff();
+        }
     });
     this->setStatus(status);
 }
@@ -46,16 +93,13 @@ void SSwitcher::setStatus(bool status)
 
 void SSwitcher::updateAppearance()
 {
-    if (m_isOn)
+    QString label = m_isOn ? m_on : m_off;
+    if (m_isOn && !label.isEmpty())
     {
-        this->setText(m_on);
-        this->setStyleSheet(m_onStyleSheet);
+        label.prepend(QStringLiteral("✓ "));
     }
-    else
-    {
-        this->setText(m_off);
-        this->setStyleSheet(m_offStyleSheet);
-    }
+    setText(label);
+    setAccessibleDescription(m_isOn ? tr("On") : tr("Off"));
 }
 
 void SSwitcher::setOnText(const QString &text)
@@ -70,20 +114,30 @@ void SSwitcher::setOffText(const QString &text)
     updateAppearance();
 }
 
-void SSwitcher::setOnStyleSheet(const QString &styleSheet)
-{
-    m_onStyleSheet = styleSheet;
-    updateAppearance();
-}
-
-void SSwitcher::setOffStyleSheet(const QString &styleSheet)
-{
-    m_offStyleSheet = styleSheet;
-    updateAppearance();
-}
-
 void SSwitcher::setPixmap(const QPixmap &pixmap)
 {
     setIcon(QIcon(pixmap));
     setIconSize(pixmap.size());
+}
+
+void SSwitcher::refreshStyle()
+{
+    const bool dark = QGuiApplication::palette().color(QPalette::Window).lightness() < 128;
+    if (m_styleInitialized && dark == m_darkStyle)
+    {
+        return;
+    }
+    m_darkStyle = dark;
+    m_styleInitialized = true;
+    setStyleSheet(switcherStyleSheet(dark));
+}
+
+void SSwitcher::changeEvent(QEvent *event)
+{
+    QPushButton::changeEvent(event);
+    if (event && (event->type() == QEvent::PaletteChange
+        || event->type() == QEvent::ApplicationPaletteChange))
+    {
+        refreshStyle();
+    }
 }

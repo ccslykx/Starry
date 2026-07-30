@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <QEvent>
 #include <QLabel>
 #include <QWidget>
 #include "SPluginInfo.h"
@@ -18,6 +19,7 @@
 #include "SButton.h"
 
 class SPluginInfo;
+class QMouseEvent;
 
 class SPluginItem : public QWidget
 {
@@ -31,11 +33,17 @@ public:
     void setIndexToInfo(int index);
     SPluginInfo* pluginInfo(); 
 
+signals:
+    void selectionRequested();
+
 private:
     explicit SPluginItem(SPluginInfo *pluginInfo, QWidget *parent = (QWidget*)nullptr);
     ~SPluginItem();
 
-    void initGui(); 
+    void initGui();
+    void refreshTheme();
+    void changeEvent(QEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
 
 private:
     SPluginInfo     *m_info = nullptr;
