@@ -15,6 +15,43 @@
 #include "SPluginTaskManager.h"
 #include "utils.h"
 
+namespace
+{
+QString selectableListStyleSheet(const QString &objectName, bool dark)
+{
+    const QString selector = QStringLiteral("QListWidget#%1").arg(objectName);
+    if (dark)
+    {
+        return QStringLiteral(
+            "%1 { border: none; background: transparent; outline: none; }"
+            "%1::item {"
+            "  background: transparent; border: 1px solid transparent; border-radius: 7px;"
+            "}"
+            "%1::item:hover:!selected {"
+            "  background: #344054; border-color: #475467;"
+            "}"
+            "%1::item:selected {"
+            "  background: #9A3412; border: 1px solid #F97316;"
+            "  border-left: 3px solid #FDBA74;"
+            "}")
+            .arg(selector);
+    }
+    return QStringLiteral(
+        "%1 { border: none; background: transparent; outline: none; }"
+        "%1::item {"
+        "  background: transparent; border: 1px solid transparent; border-radius: 7px;"
+        "}"
+        "%1::item:hover:!selected {"
+        "  background: #F2F4F7; border-color: #D0D5DD;"
+        "}"
+        "%1::item:selected {"
+        "  background: #FFF7ED; border: 1px solid #FED7AA;"
+        "  border-left: 3px solid #F97316;"
+        "}")
+        .arg(selector);
+}
+}
+
 SSettings* SSettings::m_instance = nullptr;
 
 SSettings* SSettings::instance(QWidget *parent)
@@ -55,36 +92,16 @@ void SSettings::refreshTheme(bool force)
     m_darkStyle = dark;
     m_styleInitialized = true;
 
-    if (!m_pluginListWidget)
+    if (m_pluginListWidget)
     {
-        return;
+        m_pluginListWidget->setStyleSheet(
+            selectableListStyleSheet(m_pluginListWidget->objectName(), dark));
     }
-
-    m_pluginListWidget->setStyleSheet(dark
-        ? QStringLiteral(
-            "QListWidget#pluginList { border: none; background: transparent; outline: none; }"
-            "QListWidget#pluginList::item {"
-            "  background: transparent; border: 1px solid transparent; border-radius: 7px;"
-            "}"
-            "QListWidget#pluginList::item:hover:!selected {"
-            "  background: #344054; border-color: #475467;"
-            "}"
-            "QListWidget#pluginList::item:selected {"
-            "  background: #9A3412; border: 1px solid #F97316;"
-            "  border-left: 3px solid #FDBA74;"
-            "}")
-        : QStringLiteral(
-            "QListWidget#pluginList { border: none; background: transparent; outline: none; }"
-            "QListWidget#pluginList::item {"
-            "  background: transparent; border: 1px solid transparent; border-radius: 7px;"
-            "}"
-            "QListWidget#pluginList::item:hover:!selected {"
-            "  background: #F2F4F7; border-color: #D0D5DD;"
-            "}"
-            "QListWidget#pluginList::item:selected {"
-            "  background: #FFF7ED; border: 1px solid #FED7AA;"
-            "  border-left: 3px solid #F97316;"
-            "}"));
+    if (m_taskListWidget)
+    {
+        m_taskListWidget->setStyleSheet(
+            selectableListStyleSheet(m_taskListWidget->objectName(), dark));
+    }
 }
 
 void SSettings::initGui()
@@ -156,7 +173,9 @@ void SSettings::initGui()
 
         m_taskListWidget = new QListWidget(m_taskWidget);
         m_taskListWidget->setObjectName("pluginTaskList");
-        m_taskListWidget->setAlternatingRowColors(true);
+        m_taskListWidget->setAlternatingRowColors(false);
+        m_taskListWidget->setSpacing(4);
+        refreshTheme(true);
 
         m_emptyTaskLabel = new QLabel(tr("No plugin tasks are running."), m_taskWidget);
         m_emptyTaskLabel->setAlignment(Qt::AlignCenter);
@@ -417,6 +436,10 @@ void SSettings::addTaskItem(SPluginTask *task)
     m_taskListWidget->addItem(listItem);
 
     QWidget *row = new QWidget(m_taskListWidget);
+    row->setObjectName("pluginTaskRow");
+    row->setAttribute(Qt::WA_StyledBackground, true);
+    row->setStyleSheet(
+        "QWidget#pluginTaskRow { background: transparent; border: none; }");
     QLabel *nameLabel = new QLabel(task->pluginName(), row);
     nameLabel->setMinimumWidth(120);
     nameLabel->setStyleSheet("font-weight: 600;");

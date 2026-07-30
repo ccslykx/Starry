@@ -52,6 +52,7 @@ private slots:
     void pluginDeleteButtonFollowsEditButton();
     void pluginItemRespondsToThemeChanges();
     void pluginSelectionUsesOrangeBackground();
+    void taskSelectionMatchesPluginSelection();
     void editorUsesInlineValidationInsideSettings();
     void popupItemsExposeTipsAndElideLongNames();
     void popupHonorsVisibilityAndEscapeRules();
@@ -500,6 +501,48 @@ void SSettingsTests::pluginSelectionUsesOrangeBackground()
     m_settings->deletePluginItem(item);
     info->deleteLater();
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void SSettingsTests::taskSelectionMatchesPluginSelection()
+{
+    struct PaletteRestorer
+    {
+        QPalette palette;
+        ~PaletteRestorer()
+        {
+            QGuiApplication::setPalette(palette);
+            QCoreApplication::processEvents();
+        }
+    } restorer{QGuiApplication::palette()};
+
+    QListWidget *pluginList = m_settings->findChild<QListWidget *>("pluginList");
+    QListWidget *taskList =
+        m_settings->findChild<QListWidget *>("pluginTaskList");
+    QVERIFY(pluginList);
+    QVERIFY(taskList);
+    QVERIFY(!taskList->alternatingRowColors());
+    QCOMPARE(taskList->spacing(), pluginList->spacing());
+
+    const auto normalizedStyle = [] (QListWidget *list) {
+        QString style = list->styleSheet();
+        style.replace(QStringLiteral("QListWidget#") + list->objectName(),
+                      QStringLiteral("QListWidget#sharedList"));
+        return style;
+    };
+
+    QPalette lightPalette = restorer.palette;
+    lightPalette.setColor(QPalette::Window, Qt::white);
+    QGuiApplication::setPalette(lightPalette);
+    QCoreApplication::processEvents();
+    QCOMPARE(normalizedStyle(taskList), normalizedStyle(pluginList));
+    QVERIFY(taskList->styleSheet().contains("background: #FFF7ED"));
+
+    QPalette darkPalette = restorer.palette;
+    darkPalette.setColor(QPalette::Window, QColor("#101828"));
+    QGuiApplication::setPalette(darkPalette);
+    QCoreApplication::processEvents();
+    QCOMPARE(normalizedStyle(taskList), normalizedStyle(pluginList));
+    QVERIFY(taskList->styleSheet().contains("background: #9A3412"));
 }
 
 void SSettingsTests::editorUsesInlineValidationInsideSettings()
