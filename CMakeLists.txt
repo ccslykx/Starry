@@ -109,6 +109,7 @@ if (BUILD_TESTING)
 		include/SGui/SButton.h
 		include/SGui/SPluginEditor.h
 		include/SGui/SPluginItem.h
+		include/SGui/SPopup.h
 		include/SGui/SPopupItem.h
 		include/SGui/SSettings.h
 		include/SGui/SSwitcher.h
@@ -118,6 +119,7 @@ if (BUILD_TESTING)
 		src/gui/SButton.cpp
 		src/gui/SPluginEditor.cpp
 		src/gui/SPluginItem.cpp
+		src/gui/SPopup.cpp
 		src/gui/SPopupItem.cpp
 		src/gui/SSettings.cpp
 		src/gui/SSwitcher.cpp

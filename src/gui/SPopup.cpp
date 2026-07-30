@@ -2,6 +2,8 @@
 #include <QScreen>
 #include <QGuiApplication>
 
+#include <algorithm>
+
 #include "SPopup.h"
 #include "SConfig.h"
 #include "utils.h"
@@ -18,6 +20,30 @@ SPopup* SPopup::instance()
     return m_instance;
 }
 
+void SPopup::update()
+{
+    std::stable_sort(m_items.begin(), m_items.end(), [] (SPopupItem *lhs, SPopupItem *rhs) {
+        const SPluginInfo *lhsInfo = lhs ? lhs->pluginInfo() : nullptr;
+        const SPluginInfo *rhsInfo = rhs ? rhs->pluginInfo() : nullptr;
+        if (!lhsInfo || !rhsInfo)
+        {
+            return lhsInfo != nullptr;
+        }
+        return lhsInfo->index < rhsInfo->index;
+    });
+
+    for (SPopupItem *item : m_items)
+    {
+        m_layout->removeWidget(item);
+    }
+    for (SPopupItem *item : m_items)
+    {
+        m_layout->addWidget(item);
+    }
+    adjustSize();
+    QWidget::update();
+}
+
 void SPopup::addItem(SPluginInfo *info)
 {
     SDEBUG
@@ -31,6 +57,9 @@ void SPopup::addItem(SPluginInfo *info)
     QObject::connect(info, &SPluginInfo::needDelete, this, [this] (SPluginInfo *info) {
         deleteItem(info->popupItem);
     });
+    QObject::connect(info, &SPluginInfo::indexChanged, this, [this] {
+        update();
+    });
 }
 
 void SPopup::addItem(SPopupItem *item)
@@ -42,6 +71,7 @@ void SPopup::addItem(SPopupItem *item)
     }
     m_items.push_back(item);
     m_layout->addWidget(item);
+    update();
 
     QObject::connect(item, &SPopupItem::clicked, this, &SPopup::hide);
 }

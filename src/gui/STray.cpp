@@ -44,7 +44,7 @@ void STray::settings()
     SDEBUG
     if (m_settings)
     {
-        m_settings->show();
+        m_settings->showAndActivate();
     }
 }
 

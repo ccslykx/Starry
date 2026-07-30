@@ -2,6 +2,7 @@
 #include <QDir>
 #include <QEvent>
 #include <QFileInfo>
+#include <QHBoxLayout>
 #include <QPixmap>
 #include <QPointer>
 #include <QTemporaryDir>
@@ -12,6 +13,7 @@
 #include "SConfig.h"
 #include "SPluginInfo.h"
 #include "SPluginItem.h"
+#include "SPopup.h"
 #include "SPopupItem.h"
 #include "SSettings.h"
 
@@ -24,6 +26,8 @@ private slots:
     void deletesTheRequestedPluginWithoutASelectedRow();
     void deletesPopupItems();
     void supportsQuotedPluginArguments();
+    void synchronizesPopupOrder();
+    void restoresMinimizedSettingsWindow();
 
 private:
     static SPluginInfo *makePlugin(const QString &name);
@@ -106,6 +110,47 @@ void SSettingsTests::supportsQuotedPluginArguments()
     QVERIFY(item.isNull());
     QVERIFY(guardedInfo.isNull());
 #endif
+}
+
+void SSettingsTests::synchronizesPopupOrder()
+{
+    SPluginInfo *first = makePlugin("PopupFirst");
+    SPluginInfo *second = makePlugin("PopupSecond");
+    first->index = 0;
+    second->index = 1;
+
+    SPopup *popup = SPopup::instance();
+    popup->addItem(first);
+    popup->addItem(second);
+    SPluginItem *firstSettingsItem = SPluginItem::create(first);
+    SPluginItem *secondSettingsItem = SPluginItem::create(second);
+    QHBoxLayout *layout = qobject_cast<QHBoxLayout *>(popup->layout());
+    QVERIFY(layout);
+    QCOMPARE(qobject_cast<SPopupItem *>(layout->itemAt(0)->widget())->pluginInfo(), first);
+    QCOMPARE(qobject_cast<SPopupItem *>(layout->itemAt(1)->widget())->pluginInfo(), second);
+
+    firstSettingsItem->setIndexToInfo(1);
+    secondSettingsItem->setIndexToInfo(0);
+
+    QCOMPARE(qobject_cast<SPopupItem *>(layout->itemAt(0)->widget())->pluginInfo(), second);
+    QCOMPARE(qobject_cast<SPopupItem *>(layout->itemAt(1)->widget())->pluginInfo(), first);
+
+    popup->deleteItem(first->popupItem);
+    popup->deleteItem(second->popupItem);
+    firstSettingsItem->deleteLater();
+    secondSettingsItem->deleteLater();
+    first->deleteLater();
+    second->deleteLater();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void SSettingsTests::restoresMinimizedSettingsWindow()
+{
+    m_settings->setWindowState(Qt::WindowMinimized);
+    m_settings->showAndActivate();
+    QVERIFY(m_settings->isVisible());
+    QVERIFY(!(m_settings->windowState() & Qt::WindowMinimized));
+    QCoreApplication::processEvents();
 }
 
 QTEST_MAIN(SSettingsTests)

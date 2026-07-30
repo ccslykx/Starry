@@ -26,6 +26,7 @@ class SSettings : public QWidget
 public:
     static SSettings* instance(QWidget *parent = (QWidget*)nullptr);
     void initGui();
+    void showAndActivate();
     void addPluginItem(SPluginItem*); // 添加到 m_pluginListWidget
     void addPluginItem(SPluginInfo*); // 添加到 m_pluginListWidget
     void deletePluginItem(SPluginItem*);

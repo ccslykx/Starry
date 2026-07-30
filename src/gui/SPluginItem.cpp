@@ -27,8 +27,12 @@ void SPluginItem::remove(SPluginItem *item)
 void SPluginItem::setIndexToInfo(int index) /* Todo */
 {
     SDEBUG
+    if (!m_info || m_info->index == index)
+    {
+        return;
+    }
     m_info->index = index;
-    emit m_info->edited();
+    emit m_info->indexChanged(m_info);
 }
 
 void SPluginItem::refresh()

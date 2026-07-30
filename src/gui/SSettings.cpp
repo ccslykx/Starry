@@ -1,6 +1,7 @@
 #include <QVBoxLayout>
 #include <QCloseEvent>
 #include <QMessageBox>
+#include <QTimer>
 
 #include "SSettings.h"
 #include "SConfig.h"
@@ -16,6 +17,24 @@ SSettings* SSettings::instance(QWidget *parent)
         m_instance = new SSettings(parent);
     }
     return m_instance;
+}
+
+void SSettings::showAndActivate()
+{
+    Qt::WindowStates state = windowState();
+    state &= ~Qt::WindowMinimized;
+    state |= Qt::WindowActive;
+    setWindowState(state);
+    show();
+    raise();
+    activateWindow();
+
+    // A tray menu may still own focus while its QAction is being dispatched.
+    // Retry after that menu has closed.
+    QTimer::singleShot(0, this, [this] {
+        raise();
+        activateWindow();
+    });
 }
 
 void SSettings::initGui()
