@@ -218,10 +218,6 @@ SSettings::SSettings(QWidget *parent)
 SSettings::~SSettings()
 {
     SDEBUG
-    if (m_instance)
-    {
-        delete m_instance;
-    }
     m_instance = nullptr;
 }
 

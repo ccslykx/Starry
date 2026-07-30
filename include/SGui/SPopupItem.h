@@ -12,7 +12,6 @@
 #pragma once
 
 #include <QLabel>
-#include <QProcess>
 #include <QMouseEvent>
 
 #include "SPluginInfo.h"
@@ -26,7 +25,6 @@ public:
     SPluginInfo* pluginInfo();
     bool enabled();
     void exec();
-    void stop();
 
 signals:
     void clicked();
@@ -41,5 +39,4 @@ private:
     SPluginInfo *m_info = nullptr;
     QLabel      *m_iconLabel = nullptr;
     QLabel      *m_nameLabel = nullptr;
-    QProcess    *m_process = nullptr;
 };

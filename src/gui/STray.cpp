@@ -80,7 +80,12 @@ STray::~STray()
     if (m_config) { m_config->deleteLater(); }
     if (m_settings) { m_settings->deleteLater(); }
     if (m_mouseListener) { m_mouseListener->stopListen(); m_mouseListener->deleteLater(); }
-    if (m_instance) { m_instance->deleteLater(); }
+    m_editor = nullptr;
+    m_popup = nullptr;
+    m_config = nullptr;
+    m_settings = nullptr;
+    m_mouseListener = nullptr;
+    m_instance = nullptr;
 }
 
 void STray::initGui()

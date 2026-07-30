@@ -1,6 +1,7 @@
 #include <QGuiApplication>
 #include <QClipboard>
 #include <QHBoxLayout>
+#include <QProcess>
 
 #include "SPopupItem.h"
 #include "SSelection.h"
@@ -35,13 +36,14 @@ void SPopupItem::exec()
 {
     SDEBUG
     SSelection *s = SSelection::instance();
-    QStringList args = m_info->script.split(" ");
+    QStringList args = QProcess::splitCommand(m_info->script);
 
-    if (args.at(0) == "") // m_script为空时，args为只含有一个元素""的QList
+    if (args.isEmpty() || args.constFirst().isEmpty())
     {
         qWarning() << "执行脚本为空";
         return;
-    } else if (args.at(0) == "starry" && args.size() >= 2 && args.at(1) == "copy2clipboard") // TODO: 写成函数调用的形式
+    }
+    if (args.constFirst() == "starry" && args.size() >= 2 && args.at(1) == "copy2clipboard")
     {
         QGuiApplication::clipboard()->setText(s->selection());
         return;
@@ -60,28 +62,10 @@ void SPopupItem::exec()
         }
     }
 
-    if (!m_process->waitForFinished())
+    qDebug() << cmd << args;
+    if (!QProcess::startDetached(cmd, args))
     {
-        m_process->close();
-        m_process->kill();
-    }
-
-    try {
-        qDebug() << cmd << args;
-        m_process->startDetached(cmd, args);
-    }
-    catch (...) { // TODO：异常捕获
-        qWarning() << "插件调用出错，请检查指令是否有误"; 
-    }
-}
-
-void SPopupItem::stop()
-{
-    SDEBUG
-    if (!m_process->waitForFinished())
-    {
-        m_process->close();
-        m_process->kill();
+        qWarning() << "插件调用失败，请检查指令是否存在或参数是否正确:" << cmd << args;
     }
 }
 
@@ -92,10 +76,6 @@ SPopupItem::SPopupItem(SPluginInfo *info, QWidget *parent)
 {
     this->setParent(parent);
     m_info->popupItem = this;
-    if (!m_process)
-    {
-        m_process = new QProcess(this);
-    }
 
     initGui();
 }
@@ -103,8 +83,6 @@ SPopupItem::SPopupItem(SPluginInfo *info, QWidget *parent)
 SPopupItem::~SPopupItem()
 {
     SDEBUG
-    stop();
-    m_process = nullptr;
 }
 
 void SPopupItem::initGui()

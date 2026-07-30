@@ -2,7 +2,11 @@
 #include "utils.h"
 
 #include <QGuiApplication>
+#include <QMimeData>
 #include <QProcessEnvironment>
+#include <QThread>
+
+#include <memory>
 
 #ifdef __linux__
 #elif __APPLE__
@@ -10,8 +14,6 @@
 #elif _WIN32
 #   include <Windows.h>
 #   include <WinUser.h>
-#   include <string>
-#   include <vector>
 #endif
 
 SSelection* SSelection::m_instance = nullptr;
@@ -71,54 +73,17 @@ SSelection::SSelection()
 QString SSelection::getSelection_win()
 {
     SDEBUG
-    QString res = QString();
+    QString res;
 
 #ifdef _WIN32
-    /* Backup Clipboard */
-    HWND hwndCurrent = GetForegroundWindow();
-
-    // std::vector<std::string> buffers;
-    // std::vector<size_t> bufLens;
-    // std::vector<UINT> formats;
-
-    // if (!OpenClipboard(hwndCurrent))
-    // {
-    //     qWarning() << "Error while reading clipboard";
-    //     return res;
-    // }
-
-    // qDebug() << "Clipboard has formats count:" << CountClipboardFormats();
-    // UINT fmt = EnumClipboardFormats(0);
-    // while (fmt = EnumClipboardFormats(fmt))
-    // {
-    //     WCHAR name[64];
-    //     GetClipboardFormatName(fmt, name, 64);
-    //     HGLOBAL hglb = GetClipboardData(fmt);
-    //     if (hglb == NULL)
-    //     {
-    //         DWORD error = GetLastError();
-    //         qDebug() << "Error when calling GetClipboardData(), error:" << error << ", code:" << fmt << ", Clipboard format:" << *name;
-    //         continue;
-    //     }
-    //     LPVOID tmp = GlobalLock(hglb);
-    //     if (tmp == NULL)
-    //     {
-    //         DWORD error = GetLastError();
-    //         qDebug() << "Error when calling GlobalLock(), error:" << error << ", code:" << fmt << ", Clipboard format:" << *name;
-    //         GlobalUnlock(hglb);
-    //         continue;
-    //     }
-    //     std::string buf = std::string(static_cast<char*>(tmp));
-    //
-    //     formats.push_back(fmt);
-    //     bufLens.push_back(buf.size());
-    //     buffers.push_back(buf);
-    //     GlobalUnlock(hglb);
-    // }
-    // CloseClipboard();
-
-    /* Copying Information to the Clipboard */
-    // qDebug() << "Copying Information to the Clipboard";
+    std::unique_ptr<QMimeData> clipboardBackup = std::make_unique<QMimeData>();
+    if (const QMimeData *currentMimeData = m_clipboard->mimeData())
+    {
+        for (const QString &format : currentMimeData->formats())
+        {
+            clipboardBackup->setData(format, currentMimeData->data(format));
+        }
+    }
 
     // Simulate Ctrl + C
     // Ref: https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendinput
@@ -139,69 +104,38 @@ QString SSelection::getSelection_win()
     inputs[3].ki.wVk = VK_CONTROL;
     inputs[3].ki.dwFlags = KEYEVENTF_KEYUP;
 
-    UINT uSent = SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
+    const DWORD sequenceBeforeCopy = GetClipboardSequenceNumber();
+    const UINT uSent = SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
     if (uSent != ARRAYSIZE(inputs))
     {
         qWarning() << "Simulate 'Ctrl + C' failed" << HRESULT_FROM_WIN32(GetLastError());
+        return res;
     }
-    Sleep(10);
 
-    /* Get Selections */
-    if (OpenClipboard(hwndCurrent))
+    bool clipboardChanged = false;
+    constexpr int maxAttempts = 20;
+    for (int attempt = 0; attempt < maxAttempts; ++attempt)
     {
-        if (IsClipboardFormatAvailable(CF_TEXT))
+        if (GetClipboardSequenceNumber() != sequenceBeforeCopy)
         {
-            HGLOBAL hglbSelection = GetClipboardData(CF_TEXT);
-            LPVOID tmp = NULL;
-            if (hglbSelection)
-            {
-                tmp = GlobalLock(hglbSelection);
-            }
-            if (tmp)
-            {
-                res = QString::fromStdString(std::string(static_cast<char*>(tmp)));
-            }
-            GlobalUnlock(hglbSelection);
+            clipboardChanged = true;
+            break;
         }
-        CloseClipboard();
+        QThread::msleep(10);
     }
 
-    /* Restore Clipboard */
+    if (clipboardChanged)
+    {
+        res = m_clipboard->text(QClipboard::Clipboard);
+    }
+    else
+    {
+        qWarning() << "Clipboard did not change after simulating Ctrl + C";
+    }
 
-    /* Restoring clipboard may crash other application after copied files */
-
-    // if (OpenClipboard(hwndCurrent))
-    // {
-    //     if (!EmptyClipboard())
-    //     {
-    //         qWarning() << "Empty Clipboard failed";
-    //         CloseClipboard();
-    //         return res;
-    //     }
-    //     if (formats.empty())
-    //     {
-    //         CloseClipboard();
-    //         return res;
-    //     }
-    //     for (int i = 0; i < formats.size(); ++i)
-    //     {
-    //         if (buffers[i].empty()) continue;
-    //         WCHAR name[256];
-    //         GetClipboardFormatName(formats[i], name, 256);
-    //         qDebug() << "Restoring Clipboard of Format:" << *name << ", length:" << bufLens[i];
-    //         HANDLE restore = GlobalAlloc(GMEM_MOVEABLE, bufLens[i] + 1);
-    //         char *buffer = (char*) GlobalLock(restore);
-    //         strcpy_s(buffer, bufLens[i] + 1, buffers[i].c_str());
-    //         SetClipboardData(formats[i], restore);
-    //         GlobalUnlock(restore);
-    //         if (strlen(buffer) == strlen(buffers[i].c_str()))
-    //             { qDebug() << "Equal"; } else { qDebug() << "Not Equal";
-    //             qDebug() << "buffer:" << buffer << "."; qDebug() << "c_str():" << buffers[i].c_str() << "."; }
-    //     }
-    //
-    //     CloseClipboard();
-    //     qDebug() << "CloseClipboard();";
-    // }
+    // QClipboard takes ownership. Restoring all advertised MIME formats also
+    // preserves Unicode text and file/URL clipboard contents.
+    m_clipboard->setMimeData(clipboardBackup.release(), QClipboard::Clipboard);
 #endif
 
     return res;

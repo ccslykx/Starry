@@ -1,5 +1,6 @@
 #include <QTimer>
 #include <QScreen>
+#include <QGuiApplication>
 
 #include "SPopup.h"
 #include "SConfig.h"
@@ -87,15 +88,7 @@ SPopup::SPopup()
 SPopup::~SPopup()
 {
     SDEBUG
-    if (m_layout)
-    {
-        delete m_layout;
-    }
     m_layout = nullptr;
-    if (m_instance) 
-    {
-        delete m_instance;
-    }
     m_instance = nullptr;
 }
 
@@ -135,16 +128,22 @@ void SPopup::adjustGeometry(QPoint loc)
 {
     this->adjustSize();
 
-    QRect screenGeometry = this->screen()->virtualGeometry();
-
-    if (loc.x() + this->width() > screenGeometry.width())
+    QScreen *targetScreen = QGuiApplication::screenAt(loc);
+    if (!targetScreen)
     {
-        loc.setX(screenGeometry.width() - this->width());
+        targetScreen = QGuiApplication::primaryScreen();
     }
-    if (loc.y() + this->height() > screenGeometry.height())
+    if (!targetScreen)
     {
-        loc.setY(screenGeometry.height() - this->height());
+        this->move(loc);
+        return;
     }
 
-    this->setGeometry(loc.x(), loc.y(), this->width(), this->height());
+    const QRect available = targetScreen->availableGeometry();
+    const int maxX = qMax(available.left(), available.right() - this->width() + 1);
+    const int maxY = qMax(available.top(), available.bottom() - this->height() + 1);
+    loc.setX(qBound(available.left(), loc.x(), maxX));
+    loc.setY(qBound(available.top(), loc.y(), maxY));
+
+    this->setGeometry(QRect(loc, this->size()));
 }

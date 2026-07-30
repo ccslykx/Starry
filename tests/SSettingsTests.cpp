@@ -1,6 +1,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QEvent>
+#include <QFileInfo>
 #include <QPixmap>
 #include <QPointer>
 #include <QTemporaryDir>
@@ -22,6 +23,7 @@ private slots:
     void initTestCase();
     void deletesTheRequestedPluginWithoutASelectedRow();
     void deletesPopupItems();
+    void supportsQuotedPluginArguments();
 
 private:
     static SPluginInfo *makePlugin(const QString &name);
@@ -82,6 +84,28 @@ void SSettingsTests::deletesPopupItems()
     info->deleteLater();
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     QVERIFY(guardedInfo.isNull());
+}
+
+void SSettingsTests::supportsQuotedPluginArguments()
+{
+#ifndef Q_OS_UNIX
+    QSKIP("This command smoke test currently targets Unix executables");
+#else
+    const QString outputPath = m_configDir->filePath("quoted output");
+    SPluginInfo *info = makePlugin("QuotedCommand");
+    info->script = QString("/usr/bin/touch \"%1\"").arg(outputPath);
+    QPointer<SPluginInfo> guardedInfo(info);
+    QPointer<SPopupItem> item(SPopupItem::create(info));
+
+    item->exec();
+    QTRY_VERIFY_WITH_TIMEOUT(QFileInfo::exists(outputPath), 2000);
+
+    SPopupItem::remove(item);
+    info->deleteLater();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    QVERIFY(item.isNull());
+    QVERIFY(guardedInfo.isNull());
+#endif
 }
 
 QTEST_MAIN(SSettingsTests)
