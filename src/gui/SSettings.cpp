@@ -1,10 +1,15 @@
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QCloseEvent>
+#include <QFontMetrics>
 #include <QMessageBox>
+#include <QPointer>
+#include <QPushButton>
 #include <QTimer>
 
 #include "SSettings.h"
 #include "SConfig.h"
+#include "SPluginTaskManager.h"
 #include "utils.h"
 
 SSettings* SSettings::m_instance = nullptr;
@@ -71,7 +76,6 @@ void SSettings::initGui()
     }
 
     SButton *newPluginButton = new SButton(tr("Create new plugin"), m_pluginListWidget);
-    newPluginButton->setAlignment(Qt::AlignCenter);
     QObject::connect(newPluginButton, &SButton::clicked, this, &SSettings::onCreatePluginClicked);
 
     QVBoxLayout *pluginsLayout = new QVBoxLayout(m_pluginWidget);
@@ -83,6 +87,44 @@ void SSettings::initGui()
     if (!m_pluginEditor) 
     {
         m_pluginEditor = SPluginEditor::editor();
+    }
+
+    // 内容页-任务管理器
+    if (!m_taskWidget)
+    {
+        m_taskWidget = new QWidget(m_contentWidget);
+        QLabel *title = new QLabel(tr("Plugin Task Manager"), m_taskWidget);
+        title->setStyleSheet("font-size: 20px; font-weight: 600;");
+        QLabel *description = new QLabel(
+            tr("Running plugins remain here until they exit. Force stopping a task may lose its unsaved data."),
+            m_taskWidget);
+        description->setWordWrap(true);
+
+        m_taskListWidget = new QListWidget(m_taskWidget);
+        m_taskListWidget->setObjectName("pluginTaskList");
+        m_taskListWidget->setAlternatingRowColors(true);
+
+        m_emptyTaskLabel = new QLabel(tr("No plugin tasks are running."), m_taskWidget);
+        m_emptyTaskLabel->setAlignment(Qt::AlignCenter);
+        m_emptyTaskLabel->setStyleSheet("color: #777777; padding: 24px;");
+
+        QVBoxLayout *taskLayout = new QVBoxLayout(m_taskWidget);
+        taskLayout->setContentsMargins(24, 24, 24, 24);
+        taskLayout->setSpacing(12);
+        taskLayout->addWidget(title);
+        taskLayout->addWidget(description);
+        taskLayout->addWidget(m_emptyTaskLabel);
+        taskLayout->addWidget(m_taskListWidget);
+        m_taskWidget->setLayout(taskLayout);
+
+        SPluginTaskManager *taskManager = SPluginTaskManager::instance();
+        QObject::connect(taskManager, &SPluginTaskManager::taskAdded, this, &SSettings::addTaskItem);
+        QObject::connect(taskManager, &SPluginTaskManager::taskRemoved, this, &SSettings::removeTaskItem);
+        for (SPluginTask *task : taskManager->activeTasks())
+        {
+            addTaskItem(task);
+        }
+        updateTaskEmptyState();
     }
 
     // 内容页-快捷键
@@ -118,8 +160,16 @@ void SSettings::initGui()
 
     // 内容页（右侧）
     m_contentWidget->addWidget(m_pluginWidget);
+    m_contentWidget->addWidget(m_taskWidget);
     m_contentWidget->addWidget(m_shortcutWidget);
     m_contentWidget->addWidget(m_aboutWidget);
+    m_contentWidget->addWidget(m_pluginEditor);
+    QObject::connect(m_pluginEditor, &SPluginEditor::editingOpened, this, [this] {
+        m_contentWidget->setCurrentWidget(m_pluginEditor);
+    });
+    QObject::connect(m_pluginEditor, &SPluginEditor::editingFinished, this, [this] {
+        m_contentWidget->setCurrentWidget(m_pluginWidget);
+    });
 
     // Layout
     QHBoxLayout *mainLayout = new QHBoxLayout(this);
@@ -128,14 +178,17 @@ void SSettings::initGui()
 
     // 添加 菜单页 项目
     SButton *plugins = new SButton(tr("Plugins"), m_menuListWidget);
+    SButton *tasks = new SButton(tr("Tasks"), m_menuListWidget);
     SButton *shortcuts = new SButton(tr("Shortcuts"), m_menuListWidget);
     SButton *about = new SButton(tr("About"), m_menuListWidget);
 
     QObject::connect(plugins, &SButton::clicked, this, [this](){ this->showContent(0); });
-    QObject::connect(shortcuts, &SButton::clicked, this, [this](){ this->showContent(1); });
-    QObject::connect(about, &SButton::clicked, this, [this](){ this->showContent(2); });
+    QObject::connect(tasks, &SButton::clicked, this, [this](){ this->showContent(1); });
+    QObject::connect(shortcuts, &SButton::clicked, this, [this](){ this->showContent(2); });
+    QObject::connect(about, &SButton::clicked, this, [this](){ this->showContent(3); });
 
     addMenuItem(plugins); // ！！这里添加的顺序同上面showContent(index)内index
+    addMenuItem(tasks);
     addMenuItem(shortcuts);
     addMenuItem(about);
 
@@ -198,7 +251,7 @@ void SSettings::deletePluginItem(SPluginItem *item)
     qWarning() << "Plugin item to delete was not found";
 }
 
-void SSettings::addMenuItem(QLabel *item)
+void SSettings::addMenuItem(QWidget *item)
 {
     SDEBUG
     QListWidgetItem *listWidgetItem = new QListWidgetItem(m_menuListWidget);
@@ -258,4 +311,126 @@ void SSettings::refreshPluginIndex() /* Need to be optmized */
         SPluginItem *pluginItem = (SPluginItem *) m_pluginListWidget->itemWidget(item);
         pluginItem->setIndexToInfo(i);
     }
+}
+
+void SSettings::addTaskItem(SPluginTask *task)
+{
+    if (!task || m_taskItems.contains(task))
+    {
+        return;
+    }
+
+    QListWidgetItem *listItem = new QListWidgetItem;
+    listItem->setSizeHint(QSize(m_taskListWidget->width(), 58));
+    m_taskListWidget->addItem(listItem);
+
+    QWidget *row = new QWidget(m_taskListWidget);
+    QLabel *nameLabel = new QLabel(task->pluginName(), row);
+    nameLabel->setMinimumWidth(120);
+    nameLabel->setStyleSheet("font-weight: 600;");
+
+    QLabel *commandLabel = new QLabel(row);
+    commandLabel->setText(QFontMetrics(commandLabel->font()).elidedText(
+        task->commandLine(),
+        Qt::ElideMiddle,
+        280));
+    commandLabel->setToolTip(task->commandLine());
+    commandLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+    QLabel *statusLabel = new QLabel(row);
+    statusLabel->setMinimumWidth(120);
+
+    SButton *stopButton = new SButton(tr("Force stop"), row);
+    stopButton->setObjectName("forceStopTaskButton");
+    stopButton->setMinimumWidth(92);
+    stopButton->setToolTip(tr("Immediately terminate this plugin process"));
+    stopButton->setAccessibleName(tr("Force stop plugin") + ' ' + task->pluginName());
+
+    QHBoxLayout *rowLayout = new QHBoxLayout(row);
+    rowLayout->setContentsMargins(8, 4, 8, 4);
+    rowLayout->setSpacing(12);
+    rowLayout->addWidget(nameLabel);
+    rowLayout->addWidget(commandLabel, 1);
+    rowLayout->addWidget(statusLabel);
+    rowLayout->addWidget(stopButton);
+    row->setLayout(rowLayout);
+    m_taskListWidget->setItemWidget(listItem, row);
+    m_taskItems.insert(task, listItem);
+
+    auto updateStatus = [task, statusLabel, stopButton] {
+        QString status;
+        switch (task->state())
+        {
+        case SPluginTask::State::Starting:
+            status = tr("Starting…");
+            break;
+        case SPluginTask::State::Running:
+            status = tr("Running · PID %1").arg(task->processId());
+            break;
+        case SPluginTask::State::Stopping:
+            status = tr("Stopping…");
+            break;
+        case SPluginTask::State::Finished:
+            status = tr("Finished");
+            break;
+        case SPluginTask::State::Failed:
+            status = tr("Failed");
+            break;
+        case SPluginTask::State::Terminated:
+            status = tr("Terminated");
+            break;
+        }
+        statusLabel->setText(status);
+        stopButton->setEnabled(
+            task->state() == SPluginTask::State::Starting
+            || task->state() == SPluginTask::State::Running);
+    };
+    updateStatus();
+    QObject::connect(task, &SPluginTask::stateChanged, row, [updateStatus] {
+        updateStatus();
+    });
+    QObject::connect(stopButton, &SButton::clicked, row, [this, task] {
+        const QPointer<SPluginTask> guardedTask(task);
+        const QMessageBox::StandardButton choice = QMessageBox::question(
+            this,
+            tr("Confirm force stop"),
+            tr("Force stop plugin \"%1\"? Unsaved data in the plugin may be lost.")
+                .arg(task->pluginName()),
+            QMessageBox::Yes | QMessageBox::Cancel,
+            QMessageBox::Cancel);
+        if (choice == QMessageBox::Yes && guardedTask)
+        {
+            guardedTask->forceStop();
+        }
+    });
+    updateTaskEmptyState();
+}
+
+void SSettings::removeTaskItem(SPluginTask *task)
+{
+    QListWidgetItem *listItem = m_taskItems.take(task);
+    if (!listItem)
+    {
+        return;
+    }
+    const int rowIndex = m_taskListWidget->row(listItem);
+    QWidget *rowWidget = m_taskListWidget->itemWidget(listItem);
+    m_taskListWidget->removeItemWidget(listItem);
+    delete m_taskListWidget->takeItem(rowIndex);
+    if (rowWidget)
+    {
+        rowWidget->deleteLater();
+    }
+    updateTaskEmptyState();
+}
+
+void SSettings::updateTaskEmptyState()
+{
+    if (!m_taskListWidget || !m_emptyTaskLabel)
+    {
+        return;
+    }
+    const bool empty = m_taskItems.isEmpty();
+    m_emptyTaskLabel->setVisible(empty);
+    m_taskListWidget->setVisible(!empty);
 }

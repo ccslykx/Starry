@@ -12,12 +12,16 @@
 #pragma once
 
 #include <QWidget>
+#include <QHash>
 #include <QListWidget>
 #include <QStackedWidget>
 
 #include "SPluginEditor.h"
 #include "SPluginItem.h"
 #include "SConfig.h"
+
+class QLabel;
+class SPluginTask;
 
 class SSettings : public QWidget
 {
@@ -30,7 +34,7 @@ public:
     void addPluginItem(SPluginItem*); // 添加到 m_pluginListWidget
     void addPluginItem(SPluginInfo*); // 添加到 m_pluginListWidget
     void deletePluginItem(SPluginItem*);
-    void addMenuItem(QLabel*);
+    void addMenuItem(QWidget*);
 
 public slots:
     void showContent(int index = -1); // 根据左侧菜单显示对应的右侧内容
@@ -45,6 +49,9 @@ private:
 
     void closeEvent(QCloseEvent *ev);
     void refreshPluginIndex();
+    void addTaskItem(SPluginTask *task);
+    void removeTaskItem(SPluginTask *task);
+    void updateTaskEmptyState();
 
 private:
     static SSettings        *m_instance;
@@ -56,6 +63,10 @@ private:
     QStackedWidget          *m_contentWidget = nullptr; // 内容页
     QWidget                 *m_pluginWidget = nullptr; // 内容页-插件
     QListWidget             *m_pluginListWidget = nullptr; // 内容页-插件-已有插件列表
+    QWidget                 *m_taskWidget = nullptr; // 内容页-任务管理器
+    QListWidget             *m_taskListWidget = nullptr;
+    QLabel                  *m_emptyTaskLabel = nullptr;
+    QHash<SPluginTask*, QListWidgetItem*> m_taskItems;
     QListWidget             *m_shortcutWidget = nullptr; // 内容页-快捷键
     QWidget                 *m_aboutWidget = nullptr; // 内容页-关于
 };

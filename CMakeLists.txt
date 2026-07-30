@@ -105,6 +105,7 @@ if (BUILD_TESTING)
 		tests/SSettingsTests.cpp
 		include/Core/SConfig.h
 		include/Core/SPluginInfo.h
+		include/Core/SPluginTaskManager.h
 		include/Core/SSelection.h
 		include/SGui/SButton.h
 		include/SGui/SPluginEditor.h
@@ -115,6 +116,7 @@ if (BUILD_TESTING)
 		include/SGui/SSwitcher.h
 		src/core/SConfig.cpp
 		src/core/SPluginInfo.cpp
+		src/core/SPluginTaskManager.cpp
 		src/core/SSelection.cpp
 		src/gui/SButton.cpp
 		src/gui/SPluginEditor.cpp

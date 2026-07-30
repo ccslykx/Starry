@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include <QLabel>
+#include <QPushButton>
 
 #ifndef S_SWITCHER_STYLE
     #define S_SWITCHER_STYLE "border-style: outset; border-width: 1px; border-radius:8px;"
@@ -23,26 +23,26 @@ enum SwitcherStatus
     Off = false
 };
 
-class SSwitcher : public QLabel
+class SSwitcher : public QPushButton
 {
     Q_OBJECT
 public:
     SSwitcher(const QString &on = "On", const QString &off = "Off", 
         bool status = On, QWidget *parent = (QWidget*)nullptr);
-    bool isOn();
+    bool isOn() const;
     void setStatus(bool);
     void setOnText(const QString&);
     void setOffText(const QString&);
     void setOnStyleSheet(const QString&);
     void setOffStyleSheet(const QString&);
+    void setPixmap(const QPixmap &pixmap);
 
 signals:
     void switchOn();
     void switchOff();
 
 private:
-    void switchStatus();
-    void mouseReleaseEvent(QMouseEvent *ev);
+    void updateAppearance();
 
 private:
     bool    m_isOn;

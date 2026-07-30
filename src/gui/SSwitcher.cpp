@@ -9,21 +9,27 @@
  * 
  */
 
-#include <QMouseEvent>
+#include <QIcon>
+#include <QSignalBlocker>
 
 #include "SSwitcher.h"
 #include "utils.h"
 
 SSwitcher::SSwitcher(const QString &on, const QString &off, bool status, QWidget *parent)
-    : m_isOn(status), m_on(on), m_off(off)
+    : QPushButton(parent), m_isOn(status), m_on(on), m_off(off)
 {
     SDEBUG
-    this->setParent(parent);
-    this->setAlignment(Qt::AlignCenter);
+    setCheckable(true);
+    setCursor(Qt::PointingHandCursor);
+    QObject::connect(this, &QPushButton::toggled, this, [this] (bool checked) {
+        m_isOn = checked;
+        updateAppearance();
+        emit checked ? switchOn() : switchOff();
+    });
     this->setStatus(status);
 }
 
-bool SSwitcher::isOn()
+bool SSwitcher::isOn() const
 {
     SDEBUG
     return m_isOn;
@@ -33,6 +39,13 @@ void SSwitcher::setStatus(bool status)
 {
     SDEBUG
     m_isOn = status;
+    const QSignalBlocker blocker(this);
+    setChecked(status);
+    updateAppearance();
+}
+
+void SSwitcher::updateAppearance()
+{
     if (m_isOn)
     {
         this->setText(m_on);
@@ -48,37 +61,29 @@ void SSwitcher::setStatus(bool status)
 void SSwitcher::setOnText(const QString &text)
 {
     m_on = text;
+    updateAppearance();
 }
 
 void SSwitcher::setOffText(const QString &text)
 {
     m_off = text;
+    updateAppearance();
 }
 
 void SSwitcher::setOnStyleSheet(const QString &styleSheet)
 {
     m_onStyleSheet = styleSheet;
+    updateAppearance();
 }
 
 void SSwitcher::setOffStyleSheet(const QString &styleSheet)
 {
     m_offStyleSheet = styleSheet;
+    updateAppearance();
 }
 
-/* private functions */
-
-void SSwitcher::switchStatus()
+void SSwitcher::setPixmap(const QPixmap &pixmap)
 {
-    SDEBUG
-    setStatus(!m_isOn);
-}
-
-void SSwitcher::mouseReleaseEvent(QMouseEvent *ev)
-{
-    SDEBUG
-    if (ev != nullptr && ev->button() == Qt::LeftButton)
-    {
-        switchStatus();
-        emit m_isOn ? switchOn() : switchOff();
-    }
+    setIcon(QIcon(pixmap));
+    setIconSize(pixmap.size());
 }

@@ -11,24 +11,16 @@
 
 #pragma once
 
-#include <QLabel>
+#include <QPushButton>
 
 #ifndef S_BUTTON_STYLE
     #define S_BUTTON_STYLE "border-style: outset; border-width: 1px; border-radius:8px;"
 #endif
 
-class SButton : public QLabel
+class SButton : public QPushButton
 {
     Q_OBJECT
 public:
     SButton(const QString &text = "", QWidget *parent = (QWidget*)nullptr);
-
-signals:
-    void clicked();
-
-private:
-    void mouseReleaseEvent(QMouseEvent *ev);
-
-private:
-    QString m_text;
+    void setPixmap(const QPixmap &pixmap);
 };

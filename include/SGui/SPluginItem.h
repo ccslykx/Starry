@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <QLabel>
 #include <QWidget>
 #include "SPluginInfo.h"
 #include "SSwitcher.h"

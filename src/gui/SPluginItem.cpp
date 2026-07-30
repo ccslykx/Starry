@@ -41,7 +41,8 @@ void SPluginItem::refresh()
     if (m_info)
     {
         m_iconSwitcher->setPixmap(m_info->icon.scaled(28, 28, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        m_nameSwitcher->setText(m_info->name);
+        m_nameSwitcher->setOnText(m_info->name);
+        m_nameSwitcher->setOffText(m_info->name);
         m_tipLabel->setText(m_info->tip);
     }
 }
@@ -85,7 +86,8 @@ void SPluginItem::initGui()
     QString delImgPath = ":/PluginItem_Delete.png";
     QPixmap delPixmap(delImgPath);
     m_deleteButton->setPixmap(delPixmap.scaled(24, 24, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-    m_deleteButton->setAlignment(Qt::AlignCenter);
+    m_deleteButton->setToolTip(tr("Delete plugin"));
+    m_deleteButton->setAccessibleName(tr("Delete plugin"));
     m_deleteButton->setFixedSize(28, 28);
     m_deleteButton->setStyleSheet(
         "background-color: #E9524A;"
@@ -95,6 +97,8 @@ void SPluginItem::initGui()
         "border-color: #E9524A");
     // Icon
     m_iconSwitcher->setPixmap(m_info->icon.scaled(28, 28, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    m_iconSwitcher->setToolTip(tr("Show or hide the plugin icon in the popup"));
+    m_iconSwitcher->setAccessibleName(tr("Show plugin icon"));
     m_iconSwitcher->setFixedSize(32, 32);
     m_iconSwitcher->setOnStyleSheet(
         "background-color: #59C837;"
@@ -111,6 +115,8 @@ void SPluginItem::initGui()
     m_iconSwitcher->setStatus(m_info->iconEnabled);
     // Name
     m_nameSwitcher->setStyleSheet(S_BUTTON_STYLE);
+    m_nameSwitcher->setToolTip(tr("Show or hide the plugin name in the popup"));
+    m_nameSwitcher->setAccessibleName(tr("Show plugin name"));
     m_nameSwitcher->setMinimumSize(32 * 2, 32);
     m_nameSwitcher->setMaximumSize(32 * 3, 32);
     m_nameSwitcher->setOnStyleSheet(
@@ -131,6 +137,8 @@ void SPluginItem::initGui()
     m_tipLabel->setMinimumSize(32 * 5, 32);
     // Edit Button
     m_editButton->setFixedSize(32, 32);
+    m_editButton->setToolTip(tr("Edit plugin"));
+    m_editButton->setAccessibleName(tr("Edit plugin"));
 
     QHBoxLayout *layout = new QHBoxLayout(this);
     layout->addWidget(m_deleteButton);

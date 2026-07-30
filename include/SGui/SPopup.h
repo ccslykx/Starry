@@ -19,6 +19,9 @@
 #include "SPluginInfo.h"
 #include "SConfig.h"
 
+class QLabel;
+class QProgressBar;
+
 /* TODO: use SConfig instead of using macros */
 #define ICON_BASE_SIZE  32 // px
 #define ICON_SCALE      1.0
@@ -44,6 +47,12 @@ private:
 
     void initGui();
     void adjustGeometry(QPoint);
+    void adjustToVisibleContent();
+    void showExecutionStatus(const QString &message, bool loading, bool success);
+    void restoreItems();
+    void enterEvent(QEnterEvent *event) override;
+    void leaveEvent(QEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
 
 private:
     static SPopup           *m_instance;
@@ -51,4 +60,8 @@ private:
     QHBoxLayout             *m_layout = nullptr;
     QTimer                  *m_timer = nullptr; // 计时自动消失
     QVector<SPopupItem*>    m_items;
+    QWidget                 *m_statusWidget = nullptr;
+    QLabel                  *m_statusLabel = nullptr;
+    QProgressBar            *m_loadingIndicator = nullptr;
+    bool                     m_statusLoading = false;
 };

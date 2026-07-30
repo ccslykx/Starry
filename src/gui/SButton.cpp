@@ -9,26 +9,23 @@
  * 
  */
 
-#include <QMouseEvent>
+#include <QIcon>
 
 #include "SButton.h"
 #include "utils.h"
 
 SButton::SButton(const QString &text, QWidget *parent)
+    : QPushButton(text, parent)
 {
     SDEBUG
-    this->setText(text);
-    this->setParent(parent);
     this->setStyleSheet(S_BUTTON_STYLE);
-    this->setAlignment(Qt::AlignCenter);
-    this->setFixedHeight(48);
+    this->setMinimumHeight(40);
+    this->setCursor(Qt::PointingHandCursor);
+    this->setAccessibleName(text);
 }
 
-void SButton::mouseReleaseEvent(QMouseEvent *ev)
+void SButton::setPixmap(const QPixmap &pixmap)
 {
-    SDEBUG
-    if (ev != nullptr && ev->button() == Qt::LeftButton)
-    {
-        emit clicked();
-    }
+    setIcon(QIcon(pixmap));
+    setIconSize(pixmap.size());
 }
