@@ -34,6 +34,8 @@
 # Build
 build*
 release*
+/cmake-build-*/
+/dist/
 
 # IDE
 .vscode
