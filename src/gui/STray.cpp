@@ -22,22 +22,17 @@ STray* STray::instance(QApplication *app)
 void STray::setEnable(bool enable)
 {
     SDEBUG
-    if (!m_mouseListener)
+    if (!m_config)
     {
         return;
     }
-    if (enable == m_mouseListener->isListening())
+    if (enable == m_config->selectionPopupEnabled())
     {
+        applySelectionPopupEnabled(enable);
         return;
     }
-    if (enable)
-    {
-        m_mouseListener->startListen();
-    }
-    else
-    {
-        m_mouseListener->stopListen();
-    }
+    m_config->setSelectionPopupEnabled(enable);
+    m_config->saveToFile(m_config->configPath());
 }
 
 void STray::settings()
@@ -102,8 +97,7 @@ void STray::initGui()
 
     QObject::connect(m_enableAction, &QAction::triggered, this, [this]
     {
-        this->setEnable(!m_mouseListener->isListening());
-        retranslateUi();
+        this->setEnable(!m_config->selectionPopupEnabled());
     });
     QObject::connect(m_settingsAction, &QAction::triggered, this, &STray::settings);
     QObject::connect(m_exitAction, &QAction::triggered, this, &STray::exitTray);
@@ -150,8 +144,13 @@ void STray::initServices()
     if (!m_mouseListener)
     {
         m_mouseListener = SMouseListener::instance();
-        m_mouseListener->startListen();
     }
+    QObject::connect(
+        m_config,
+        &SConfig::selectionPopupEnabledChanged,
+        this,
+        &STray::applySelectionPopupEnabled);
+    applySelectionPopupEnabled(m_config->selectionPopupEnabled());
 
     QObject::connect(m_editor, &SPluginEditor::created, [this] (SPluginInfo *info) {
         if (!this->m_config->addPlugin(info, AddMode::NewCreate))
@@ -176,6 +175,22 @@ void STray::initServices()
     }
 }
 
+void STray::applySelectionPopupEnabled(bool enabled)
+{
+    if (m_mouseListener && enabled != m_mouseListener->isListening())
+    {
+        if (enabled)
+        {
+            m_mouseListener->startListen();
+        }
+        else
+        {
+            m_mouseListener->stopListen();
+        }
+    }
+    retranslateUi();
+}
+
 void STray::retranslateUi()
 {
     if (!m_enableAction || !m_settingsAction || !m_exitAction)
@@ -183,7 +198,7 @@ void STray::retranslateUi()
         return;
     }
     m_enableAction->setText(
-        m_mouseListener && m_mouseListener->isListening()
+        m_config && m_config->selectionPopupEnabled()
             ? tr("Disable")
             : tr("Enable"));
     m_settingsAction->setText(tr("Settings"));

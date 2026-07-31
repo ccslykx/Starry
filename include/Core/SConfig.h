@@ -50,6 +50,8 @@ public:
     void editSetting(const QString &key, QVariant newValue);  // 编辑设置项
     QVariant getSetting(const QString &key);  // 获取设置项
     void deleteSetting(const QString &key);   // 删除设置项
+    bool selectionPopupEnabled() const;
+    void setSelectionPopupEnabled(bool enabled);
     bool debugModeEnabled() const;
     void setDebugModeEnabled(bool enabled);
     QString languageCode() const;
@@ -71,6 +73,7 @@ public:
 
 signals:
     void readPlugin(SPluginInfo*);
+    void selectionPopupEnabledChanged(bool enabled);
     void debugModeChanged(bool enabled);
     void languageChanged(const QString &code);
 

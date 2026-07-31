@@ -42,6 +42,7 @@ private:
 
     void initGui(); // Initialize the gui.
     void initServices();
+    void applySelectionPopupEnabled(bool enabled);
     void retranslateUi();
 
 private:

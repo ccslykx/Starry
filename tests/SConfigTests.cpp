@@ -22,6 +22,7 @@ private slots:
     void validatesNamesAndRejectsDuplicates();
     void keepsLookupConsistentAfterRename();
     void normalizesIndexesAfterDelete();
+    void persistsSelectionPopupState();
     void persistsDebugMode();
     void persistsLanguage();
 
@@ -134,6 +135,28 @@ void SConfigTests::normalizesIndexesAfterDelete()
         QCOMPARE(plugins.at(index)->index, static_cast<int>(index));
     }
     QCOMPARE(beta->index, 3);
+}
+
+void SConfigTests::persistsSelectionPopupState()
+{
+    QVERIFY(m_config->selectionPopupEnabled());
+    QSignalSpy selectionPopupSpy(
+        m_config, &SConfig::selectionPopupEnabledChanged);
+
+    m_config->setSelectionPopupEnabled(false);
+    QVERIFY(!m_config->selectionPopupEnabled());
+    QCOMPARE(selectionPopupSpy.count(), 1);
+
+    m_config->saveToFile(m_configDir->path());
+    QSettings settings(m_configDir->filePath("starry.conf"), QSettings::NativeFormat);
+    QCOMPARE(
+        settings.value(
+            QStringLiteral("STARRY_SETTINGS/selectionPopupEnabled")).toBool(),
+        false);
+
+    m_config->setSelectionPopupEnabled(true);
+    QVERIFY(m_config->selectionPopupEnabled());
+    QCOMPARE(selectionPopupSpy.count(), 2);
 }
 
 void SConfigTests::persistsDebugMode()

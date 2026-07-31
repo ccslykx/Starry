@@ -82,6 +82,8 @@
     <message><source>Configure application-wide behavior.</source><translation>Configurez le comportement général de l’application.</translation></message>
     <message><source>Display language</source><translation>Langue d’affichage</translation></message>
     <message><source>Choose the language used by Starry. Changes apply immediately.</source><translation>Choisissez la langue utilisée par Starry. Les modifications s’appliquent immédiatement.</translation></message>
+    <message><source>Enable selection popup</source><translation>Activer la fenêtre de sélection</translation></message>
+    <message><source>Show the Starry popup after selecting text with the mouse.</source><translation>Afficher la fenêtre Starry après avoir sélectionné du texte avec la souris.</translation></message>
     <message><source>Enable debug mode</source><translation>Activer le mode débogage</translation></message>
     <message><source>When enabled, selected text and expanded plugin arguments are written to the debug log. The log may contain sensitive information.</source><translation>Lorsque ce mode est activé, le texte sélectionné et les arguments de plugin développés sont écrits dans le journal de débogage. Ce journal peut contenir des informations sensibles.</translation></message>
     <message><source>Enabled</source><translation>Activé</translation></message>

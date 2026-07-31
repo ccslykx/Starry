@@ -81,6 +81,10 @@ private:
     QLabel                  *m_languageDescriptionLabel = nullptr;
     QFrame                  *m_languageCard = nullptr;
     QComboBox               *m_languageComboBox = nullptr;
+    QLabel                  *m_selectionPopupTitleLabel = nullptr;
+    QLabel                  *m_selectionPopupDescriptionLabel = nullptr;
+    QFrame                  *m_selectionPopupCard = nullptr;
+    SSwitcher               *m_selectionPopupSwitcher = nullptr;
     QLabel                  *m_debugTitleLabel = nullptr;
     QLabel                  *m_debugDescriptionLabel = nullptr;
     QFrame                  *m_debugModeCard = nullptr;

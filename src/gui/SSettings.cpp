@@ -250,6 +250,12 @@ void SSettings::refreshTheme(bool force, Qt::ColorScheme scheme)
         m_languageCard->setStyleSheet(
             generalSettingsCardStyleSheet(m_languageCard->objectName(), dark));
     }
+    if (m_selectionPopupCard)
+    {
+        m_selectionPopupCard->setStyleSheet(
+            generalSettingsCardStyleSheet(
+                m_selectionPopupCard->objectName(), dark));
+    }
     if (m_debugModeCard)
     {
         m_debugModeCard->setStyleSheet(
@@ -276,6 +282,14 @@ void SSettings::refreshTheme(bool force, Qt::ColorScheme scheme)
     if (m_languageDescriptionLabel)
     {
         m_languageDescriptionLabel->setStyleSheet(descriptionStyle);
+    }
+    if (m_selectionPopupTitleLabel)
+    {
+        m_selectionPopupTitleLabel->setStyleSheet(titleStyle);
+    }
+    if (m_selectionPopupDescriptionLabel)
+    {
+        m_selectionPopupDescriptionLabel->setStyleSheet(descriptionStyle);
     }
     if (m_debugTitleLabel)
     {
@@ -372,6 +386,22 @@ void SSettings::retranslateUi()
         m_languageComboBox->setAccessibleName(tr("Display language"));
         syncLanguageSelection(
             SLanguageManager::instance()->currentLanguageCode());
+    }
+    if (m_selectionPopupTitleLabel)
+    {
+        m_selectionPopupTitleLabel->setText(tr("Enable selection popup"));
+    }
+    if (m_selectionPopupDescriptionLabel)
+    {
+        m_selectionPopupDescriptionLabel->setText(
+            tr("Show the Starry popup after selecting text with the mouse."));
+    }
+    if (m_selectionPopupSwitcher)
+    {
+        m_selectionPopupSwitcher->setOnText(tr("Enabled"));
+        m_selectionPopupSwitcher->setOffText(tr("Disabled"));
+        m_selectionPopupSwitcher->setAccessibleName(
+            tr("Enable selection popup"));
     }
     if (m_debugTitleLabel)
     {
@@ -525,6 +555,64 @@ void SSettings::initGui()
         languageLayout->addLayout(languageTextLayout, 1);
         languageLayout->addWidget(m_languageComboBox, 0, Qt::AlignVCenter);
 
+        m_selectionPopupCard = new QFrame(m_generalWidget);
+        m_selectionPopupCard->setObjectName("selectionPopupCard");
+        m_selectionPopupCard->setAttribute(Qt::WA_StyledBackground, true);
+
+        m_selectionPopupTitleLabel = new QLabel(m_selectionPopupCard);
+        m_selectionPopupTitleLabel->setObjectName("selectionPopupTitle");
+        m_selectionPopupTitleLabel->setStyleSheet("font-weight: 600;");
+        m_selectionPopupDescriptionLabel = new QLabel(m_selectionPopupCard);
+        m_selectionPopupDescriptionLabel->setObjectName(
+            "selectionPopupDescription");
+        m_selectionPopupDescriptionLabel->setWordWrap(true);
+
+        m_selectionPopupSwitcher = new SSwitcher(
+            QString(),
+            QString(),
+            m_config->selectionPopupEnabled(),
+            m_selectionPopupCard);
+        m_selectionPopupSwitcher->setObjectName("selectionPopupSwitcher");
+
+        QVBoxLayout *selectionPopupTextLayout = new QVBoxLayout;
+        selectionPopupTextLayout->setContentsMargins(0, 0, 0, 0);
+        selectionPopupTextLayout->setSpacing(4);
+        selectionPopupTextLayout->addWidget(m_selectionPopupTitleLabel);
+        selectionPopupTextLayout->addWidget(
+            m_selectionPopupDescriptionLabel);
+
+        QHBoxLayout *selectionPopupLayout =
+            new QHBoxLayout(m_selectionPopupCard);
+        selectionPopupLayout->setContentsMargins(18, 16, 18, 16);
+        selectionPopupLayout->setSpacing(16);
+        selectionPopupLayout->addLayout(selectionPopupTextLayout, 1);
+        selectionPopupLayout->addWidget(
+            m_selectionPopupSwitcher, 0, Qt::AlignVCenter);
+
+        const auto updateSelectionPopup = [this] (bool enabled) {
+            m_config->setSelectionPopupEnabled(enabled);
+            m_config->saveToFile(m_config->configPath());
+        };
+        QObject::connect(
+            m_selectionPopupSwitcher,
+            &SSwitcher::switchOn,
+            this,
+            [updateSelectionPopup] {
+                updateSelectionPopup(true);
+            });
+        QObject::connect(
+            m_selectionPopupSwitcher,
+            &SSwitcher::switchOff,
+            this,
+            [updateSelectionPopup] {
+                updateSelectionPopup(false);
+            });
+        QObject::connect(
+            m_config,
+            &SConfig::selectionPopupEnabledChanged,
+            m_selectionPopupSwitcher,
+            &SSwitcher::setStatus);
+
         m_debugModeCard = new QFrame(m_generalWidget);
         m_debugModeCard->setObjectName("debugModeCard");
         m_debugModeCard->setAttribute(Qt::WA_StyledBackground, true);
@@ -632,6 +720,7 @@ void SSettings::initGui()
         generalLayout->addWidget(m_generalTitleLabel);
         generalLayout->addWidget(m_generalDescriptionLabel);
         generalLayout->addWidget(m_languageCard);
+        generalLayout->addWidget(m_selectionPopupCard);
         generalLayout->addWidget(m_debugModeCard);
 #ifdef Q_OS_MACOS
         generalLayout->addWidget(m_accessibilityPermissionCard);

@@ -82,6 +82,8 @@
     <message><source>Configure application-wide behavior.</source><translation>設定 Starry 的一般行為。</translation></message>
     <message><source>Display language</source><translation>顯示語言</translation></message>
     <message><source>Choose the language used by Starry. Changes apply immediately.</source><translation>選擇 Starry 使用的顯示語言。變更會立即套用。</translation></message>
+    <message><source>Enable selection popup</source><translation>啟用劃詞功能</translation></message>
+    <message><source>Show the Starry popup after selecting text with the mouse.</source><translation>使用滑鼠選取文字後顯示 Starry 彈出視窗。</translation></message>
     <message><source>Enable debug mode</source><translation>開啟偵錯模式</translation></message>
     <message><source>When enabled, selected text and expanded plugin arguments are written to the debug log. The log may contain sensitive information.</source><translation>開啟後，選取文字和展開後的外掛程式參數會寫入偵錯記錄。記錄中可能包含敏感資訊。</translation></message>
     <message><source>Enabled</source><translation>已開啟</translation></message>

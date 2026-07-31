@@ -11,6 +11,7 @@
 
 namespace
 {
+const QString SELECTION_POPUP_KEY = QStringLiteral("selectionPopupEnabled");
 const QString DEBUG_MODE_KEY = QStringLiteral("debugModeEnabled");
 const QString LANGUAGE_KEY = QStringLiteral("language");
 
@@ -231,12 +232,17 @@ void SConfig::readFromFile(const QString &path)
     // Settings
     s.beginGroup(QString("STARRY_SETTINGS"));
     const QStringList settings = s.childKeys();
+    bool selectionPopupEnabled = true;
     bool debugMode = false;
     QString language = defaultLanguageCode();
     for (const QString &key : settings)
     {
         const QVariant value = s.value(key);
-        if (key == DEBUG_MODE_KEY)
+        if (key == SELECTION_POPUP_KEY)
+        {
+            selectionPopupEnabled = value.toBool();
+        }
+        else if (key == DEBUG_MODE_KEY)
         {
             debugMode = value.toBool();
         }
@@ -250,6 +256,7 @@ void SConfig::readFromFile(const QString &path)
         }
     }
     s.endGroup();
+    setSelectionPopupEnabled(selectionPopupEnabled);
     setDebugModeEnabled(debugMode);
     setLanguageCode(language);
 }
@@ -305,6 +312,21 @@ void SConfig::deleteSetting(const QString &key)
     {
         settingMap.remove(key);
     }
+}
+
+bool SConfig::selectionPopupEnabled() const
+{
+    return settingMap.value(SELECTION_POPUP_KEY, true).toBool();
+}
+
+void SConfig::setSelectionPopupEnabled(bool enabled)
+{
+    if (selectionPopupEnabled() == enabled)
+    {
+        return;
+    }
+    settingMap.insert(SELECTION_POPUP_KEY, enabled);
+    emit selectionPopupEnabledChanged(enabled);
 }
 
 bool SConfig::debugModeEnabled() const
@@ -548,6 +570,7 @@ SConfig::SConfig(const QString &path)
         detectConfigPath(m_configPath, true);
     }
     settingMap = QHash<QString, QVariant>();
+    settingMap.insert(SELECTION_POPUP_KEY, true);
     settingMap.insert(DEBUG_MODE_KEY, false);
     settingMap.insert(LANGUAGE_KEY, defaultLanguageCode());
     pInfoMap = QHash<QString, SPluginInfo*>();

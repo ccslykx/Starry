@@ -51,6 +51,7 @@ private slots:
     void synchronizesPopupOrder();
     void restoresMinimizedSettingsWindow();
     void nativeControlsSupportKeyboard();
+    void synchronizesSelectionPopupSetting();
     void buttonRolesAndNavigationSelection();
     void supportsRuntimeLanguageSwitching();
     void aboutPageUsesCMakeVersion();
@@ -215,6 +216,41 @@ void SSettingsTests::nativeControlsSupportKeyboard()
     QVERIFY(!switcher.styleSheet().contains("#F97316"));
 }
 
+void SSettingsTests::synchronizesSelectionPopupSetting()
+{
+    QFrame *selectionPopupCard =
+        m_settings->findChild<QFrame *>("selectionPopupCard");
+    SSwitcher *selectionPopupSwitcher =
+        m_settings->findChild<SSwitcher *>("selectionPopupSwitcher");
+    QVERIFY(selectionPopupCard);
+    QVERIFY(selectionPopupSwitcher);
+    QVERIFY(m_config->selectionPopupEnabled());
+    QVERIFY(selectionPopupSwitcher->isOn());
+    QCOMPARE(
+        selectionPopupSwitcher->accessibleName(),
+        QStringLiteral("Enable selection popup"));
+
+    selectionPopupSwitcher->click();
+    QVERIFY(!selectionPopupSwitcher->isOn());
+    QVERIFY(!m_config->selectionPopupEnabled());
+    QSettings savedSettings(
+        m_configDir->filePath("starry.conf"),
+        QSettings::NativeFormat);
+    QCOMPARE(
+        savedSettings.value(
+            QStringLiteral("STARRY_SETTINGS/selectionPopupEnabled")).toBool(),
+        false);
+
+    m_config->setSelectionPopupEnabled(true);
+    QVERIFY(selectionPopupSwitcher->isOn());
+    m_config->setSelectionPopupEnabled(false);
+    QVERIFY(!selectionPopupSwitcher->isOn());
+
+    selectionPopupSwitcher->click();
+    QVERIFY(selectionPopupSwitcher->isOn());
+    QVERIFY(m_config->selectionPopupEnabled());
+}
+
 void SSettingsTests::buttonRolesAndNavigationSelection()
 {
     SButton primary("Primary");
@@ -287,7 +323,10 @@ void SSettingsTests::supportsRuntimeLanguageSwitching()
     QCOMPARE(languageCombo->count(), 6);
     SSwitcher *debugModeSwitcher =
         m_settings->findChild<SSwitcher *>("debugModeSwitcher");
+    SSwitcher *selectionPopupSwitcher =
+        m_settings->findChild<SSwitcher *>("selectionPopupSwitcher");
     QVERIFY(debugModeSwitcher);
+    QVERIFY(selectionPopupSwitcher);
 
     struct ExpectedLanguage
     {
@@ -327,6 +366,10 @@ void SSettingsTests::supportsRuntimeLanguageSwitching()
         debugModeSwitcher->setStatus(true);
         QCOMPARE(debugModeSwitcher->text(), language.enabledText);
         debugModeSwitcher->setStatus(false);
+        selectionPopupSwitcher->setStatus(false);
+        QCOMPARE(selectionPopupSwitcher->text(), language.disabledText);
+        selectionPopupSwitcher->setStatus(true);
+        QCOMPARE(selectionPopupSwitcher->text(), language.enabledText);
         QCOMPARE(m_config->languageCode(), language.code);
         QCOMPARE(
             QCoreApplication::translate("SSettings", "General Settings"),
@@ -419,6 +462,8 @@ void SSettingsTests::generalSettingsFollowRuntimeThemeSwitch()
         m_settings->findChild<QFrame *>("languageCard");
     QFrame *debugModeCard =
         m_settings->findChild<QFrame *>("debugModeCard");
+    QFrame *selectionPopupCard =
+        m_settings->findChild<QFrame *>("selectionPopupCard");
 #ifdef Q_OS_MACOS
     QFrame *permissionCard =
         m_settings->findChild<QFrame *>("accessibilityPermissionCard");
@@ -429,6 +474,7 @@ void SSettingsTests::generalSettingsFollowRuntimeThemeSwitch()
         m_settings->findChild<SSwitcher *>("debugModeSwitcher");
     QVERIFY(languageCard);
     QVERIFY(debugModeCard);
+    QVERIFY(selectionPopupCard);
 #ifdef Q_OS_MACOS
     QVERIFY(permissionCard);
 #endif
@@ -441,6 +487,9 @@ void SSettingsTests::generalSettingsFollowRuntimeThemeSwitch()
         languageCard->styleSheet().contains("background: #1D2939"), 1000);
     QTRY_VERIFY_WITH_TIMEOUT(
         debugModeCard->styleSheet().contains("border: 1px solid #344054"), 1000);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        selectionPopupCard->styleSheet().contains(
+            "border: 1px solid #344054"), 1000);
 #ifdef Q_OS_MACOS
     QTRY_VERIFY_WITH_TIMEOUT(
         permissionCard->styleSheet().contains("border: 1px solid #344054"), 1000);
@@ -462,6 +511,9 @@ void SSettingsTests::generalSettingsFollowRuntimeThemeSwitch()
         languageCard->styleSheet().contains("background: #FFFFFF"), 1000);
     QTRY_VERIFY_WITH_TIMEOUT(
         debugModeCard->styleSheet().contains("border: 1px solid #EAECF0"), 1000);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        selectionPopupCard->styleSheet().contains(
+            "border: 1px solid #EAECF0"), 1000);
 #ifdef Q_OS_MACOS
     QTRY_VERIFY_WITH_TIMEOUT(
         permissionCard->styleSheet().contains("border: 1px solid #EAECF0"), 1000);
