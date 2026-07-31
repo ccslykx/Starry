@@ -43,7 +43,7 @@ void SPopupItem::exec()
         return;
     }
     m_executionLocked = true;
-    emit executionStarted(tr("启动中…"));
+    emit executionStarted(tr("Starting…"));
 
     const QString selectedText = SSelection::instance()->selection();
     SPluginCommand command;
@@ -54,9 +54,9 @@ void SPopupItem::exec()
             &command,
             &commandError))
     {
-        qWarning() << "插件命令无效:" << commandError;
+        qWarning() << "Invalid plugin command:" << commandError;
         m_executionLocked = false;
-        emit executionFinished(false, tr("命令无效"));
+        emit executionFinished(false, tr("Invalid command"));
         return;
     }
 
@@ -71,7 +71,7 @@ void SPopupItem::exec()
     {
         QGuiApplication::clipboard()->setText(selectedText);
         m_executionLocked = false;
-        emit executionFinished(true, tr("已复制"));
+        emit executionFinished(true, tr("Copied"));
         return;
     }
 
@@ -83,18 +83,18 @@ void SPopupItem::exec()
     if (!task)
     {
         m_executionLocked = false;
-        emit executionFinished(false, tr("启动失败"));
+        emit executionFinished(false, tr("Failed to start"));
         return;
     }
 
     QObject::connect(task, &SPluginTask::started, this, [this] {
         m_executionLocked = false;
-        emit executionFinished(true, tr("已启动"));
+        emit executionFinished(true, tr("Started"));
     });
     QObject::connect(task, &SPluginTask::failed, this, [this] (SPluginTask *, const QString &reason) {
-        qWarning() << "插件调用失败，请检查指令是否存在或参数是否正确:" << reason;
+        qWarning() << "Plugin failed to start:" << reason;
         m_executionLocked = false;
-        emit executionFinished(false, tr("启动失败"));
+        emit executionFinished(false, tr("Failed to start"));
     });
     QObject::connect(
         task,
@@ -111,15 +111,17 @@ void SPopupItem::exec()
         m_executionLocked = false;
         if (task->state() == SPluginTask::State::Terminated)
         {
-            emit executionFinished(false, tr("已中止"));
+            emit executionFinished(false, tr("Stopped"));
         }
         else if (exitStatus == QProcess::CrashExit)
         {
-            emit executionFinished(false, tr("执行异常终止"));
+            emit executionFinished(false, tr("Process crashed"));
         }
         else
         {
-            emit executionFinished(false, tr("执行失败（退出码 %1）").arg(exitCode));
+            emit executionFinished(
+                false,
+                tr("Failed (exit code %1)").arg(exitCode));
         }
     });
 }

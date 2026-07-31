@@ -16,11 +16,7 @@
 
 #include "SPluginInfo.h"
 #include "SPluginItem.h"
-
-#define STARRY_VERSION_MAJOR 0
-#define STARRY_VERSION_MINOR 2
-#define STARRY_VERSION_PATCH 0
-#define STARRY_VERSION       QString::number(STARRY_VERSION_MAJOR) + '.' + QString::number(STARRY_VERSION_MINOR) + '.' + QString::number(STARRY_VERSION_PATCH)
+#include "StarryVersion.h"
 
 class SPluginInfo;
 
@@ -56,6 +52,8 @@ public:
     void deleteSetting(const QString &key);   // 删除设置项
     bool debugModeEnabled() const;
     void setDebugModeEnabled(bool enabled);
+    QString languageCode() const;
+    void setLanguageCode(const QString &code);
 
     bool isPluginNameValid(const QString &name) const;
     bool isPluginNameAvailable(const QString &name, const SPluginInfo *exclude = nullptr) const;
@@ -74,6 +72,7 @@ public:
 signals:
     void readPlugin(SPluginInfo*);
     void debugModeChanged(bool enabled);
+    void languageChanged(const QString &code);
 
 private:
     explicit SConfig(const QString &path = "");

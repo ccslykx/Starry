@@ -1,3 +1,4 @@
+#include <QCoreApplication>
 #include <QProcess>
 #include <QUrl>
 
@@ -38,7 +39,9 @@ bool SPluginCommand::parse(
     {
         if (errorMessage)
         {
-            *errorMessage = QStringLiteral("Internal command parsing error.");
+            *errorMessage = QCoreApplication::translate(
+                "SPluginCommand",
+                "Internal command parsing error.");
         }
         return false;
     }
@@ -48,7 +51,9 @@ bool SPluginCommand::parse(
     {
         if (errorMessage)
         {
-            *errorMessage = QStringLiteral("Enter a command to run.");
+            *errorMessage = QCoreApplication::translate(
+                "SPluginCommand",
+                "Enter a command to run.");
         }
         return false;
     }
@@ -58,7 +63,8 @@ bool SPluginCommand::parse(
     {
         if (errorMessage)
         {
-            *errorMessage = QStringLiteral(
+            *errorMessage = QCoreApplication::translate(
+                "SPluginCommand",
                 "Selection placeholders can only be used in command arguments.");
         }
         return false;

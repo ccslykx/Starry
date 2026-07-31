@@ -1,24 +1,64 @@
+#include <QAbstractItemView>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QCloseEvent>
+#include <QComboBox>
 #include <QFontMetrics>
 #include <QFrame>
 #include <QGuiApplication>
 #include <QMessageBox>
+#include <QPainter>
+#include <QPainterPath>
 #include <QPalette>
 #include <QPointer>
 #include <QPushButton>
+#include <QSignalBlocker>
 #include <QStyle>
+#include <QStyleHints>
 #include <QTimer>
 
 #include "SSettings.h"
 #include "SConfig.h"
+#include "SLanguageManager.h"
 #include "SPluginTaskManager.h"
 #include "SSwitcher.h"
 #include "utils.h"
 
 namespace
 {
+class LanguageComboBox final : public QComboBox
+{
+public:
+    using QComboBox::QComboBox;
+
+protected:
+    void paintEvent(QPaintEvent *event) override
+    {
+        QComboBox::paintEvent(event);
+
+        const char *colorProperty = isEnabled()
+            ? "arrowColor"
+            : "disabledArrowColor";
+        const QColor color = property(colorProperty).value<QColor>();
+        if (!color.isValid())
+        {
+            return;
+        }
+
+        const qreal centerX = width() - 16.0;
+        const qreal centerY = height() / 2.0;
+        QPainterPath arrow;
+        arrow.moveTo(centerX - 4.0, centerY - 2.0);
+        arrow.lineTo(centerX, centerY + 2.0);
+        arrow.lineTo(centerX + 4.0, centerY - 2.0);
+
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setPen(QPen(color, 1.8, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+        painter.drawPath(arrow);
+    }
+};
+
 QString selectableListStyleSheet(const QString &objectName, bool dark)
 {
     const QString selector = QStringLiteral("QListWidget#%1").arg(objectName);
@@ -52,6 +92,94 @@ QString selectableListStyleSheet(const QString &objectName, bool dark)
         "}")
         .arg(selector);
 }
+
+QString generalSettingsCardStyleSheet(const QString &objectName, bool dark)
+{
+    const QString selector = QStringLiteral("QFrame#%1").arg(objectName);
+    return dark
+        ? QStringLiteral(
+            "%1 {"
+            "  background: #1D2939; border: 1px solid #344054;"
+            "  border-radius: 10px;"
+            "}")
+              .arg(selector)
+        : QStringLiteral(
+            "%1 {"
+            "  background: #FFFFFF; border: 1px solid #EAECF0;"
+            "  border-radius: 10px;"
+            "}")
+              .arg(selector);
+}
+
+QString languageComboBoxStyleSheet(bool dark)
+{
+    if (dark)
+    {
+        return QStringLiteral(
+            "QComboBox#languageComboBox {"
+            "  min-height: 36px; padding: 0 36px 0 12px;"
+            "  color: #F2F4F7; background: #344054;"
+            "  border: 1px solid #475467; border-radius: 8px;"
+            "  selection-color: #FFF7ED; selection-background-color: #9A3412;"
+            "}"
+            "QComboBox#languageComboBox:hover {"
+            "  background: #475467; border-color: #667085;"
+            "}"
+            "QComboBox#languageComboBox:focus,"
+            "QComboBox#languageComboBox:on { border: 2px solid #FB923C; }"
+            "QComboBox#languageComboBox:disabled {"
+            "  color: #667085; background: #1D2939; border-color: #344054;"
+            "}"
+            "QComboBox#languageComboBox::drop-down {"
+            "  width: 32px; border: none; border-left: 1px solid #475467;"
+            "}"
+            "QComboBox#languageComboBox::down-arrow { image: none; }");
+    }
+    return QStringLiteral(
+        "QComboBox#languageComboBox {"
+        "  min-height: 36px; padding: 0 36px 0 12px;"
+        "  color: #344054; background: #FFFFFF;"
+        "  border: 1px solid #D0D5DD; border-radius: 8px;"
+        "  selection-color: #9A3412; selection-background-color: #FFF7ED;"
+        "}"
+        "QComboBox#languageComboBox:hover {"
+        "  background: #F9FAFB; border-color: #98A2B3;"
+        "}"
+        "QComboBox#languageComboBox:focus,"
+        "QComboBox#languageComboBox:on { border: 2px solid #F97316; }"
+        "QComboBox#languageComboBox:disabled {"
+        "  color: #98A2B3; background: #F2F4F7; border-color: #EAECF0;"
+        "}"
+        "QComboBox#languageComboBox::drop-down {"
+        "  width: 32px; border: none; border-left: 1px solid #D0D5DD;"
+        "}"
+        "QComboBox#languageComboBox::down-arrow { image: none; }");
+}
+
+QString languageComboPopupStyleSheet(bool dark)
+{
+    return dark
+        ? QStringLiteral(
+            "QAbstractItemView {"
+            "  color: #F2F4F7; background: #1D2939;"
+            "  border: 1px solid #475467; border-radius: 8px;"
+            "  padding: 4px; outline: none; selection-color: #FFF7ED;"
+            "  selection-background-color: #9A3412;"
+            "}"
+            "QAbstractItemView::item { min-height: 32px; padding: 0 8px; }"
+            "QAbstractItemView::item:hover { background: #344054; }"
+            "QAbstractItemView::item:selected { background: #9A3412; }")
+        : QStringLiteral(
+            "QAbstractItemView {"
+            "  color: #344054; background: #FFFFFF;"
+            "  border: 1px solid #D0D5DD; border-radius: 8px;"
+            "  padding: 4px; outline: none; selection-color: #9A3412;"
+            "  selection-background-color: #FFF7ED;"
+            "}"
+            "QAbstractItemView::item { min-height: 32px; padding: 0 8px; }"
+            "QAbstractItemView::item:hover { background: #F2F4F7; }"
+            "QAbstractItemView::item:selected { background: #FFF7ED; }");
+}
 }
 
 SSettings* SSettings::m_instance = nullptr;
@@ -84,9 +212,11 @@ void SSettings::showAndActivate()
     });
 }
 
-void SSettings::refreshTheme(bool force)
+void SSettings::refreshTheme(bool force, Qt::ColorScheme scheme)
 {
-    const bool dark = QGuiApplication::palette().color(QPalette::Window).lightness() < 128;
+    const bool dark = scheme == Qt::ColorScheme::Dark
+        || (scheme == Qt::ColorScheme::Unknown
+            && QGuiApplication::palette().color(QPalette::Window).lightness() < 128);
     if (!force && m_styleInitialized && m_darkStyle == dark)
     {
         return;
@@ -94,6 +224,69 @@ void SSettings::refreshTheme(bool force)
     m_darkStyle = dark;
     m_styleInitialized = true;
 
+    if (m_generalTitleLabel)
+    {
+        m_generalTitleLabel->setStyleSheet(dark
+            ? QStringLiteral(
+                "font-size: 20px; font-weight: 600; color: #FFFFFF;")
+            : QStringLiteral(
+                "font-size: 20px; font-weight: 600; color: #101828;"));
+    }
+    if (m_generalDescriptionLabel)
+    {
+        m_generalDescriptionLabel->setStyleSheet(
+            dark ? QStringLiteral("color: #98A2B3;")
+                 : QStringLiteral("color: #667085;"));
+    }
+    if (m_languageCard)
+    {
+        m_languageCard->setStyleSheet(
+            generalSettingsCardStyleSheet(m_languageCard->objectName(), dark));
+    }
+    if (m_debugModeCard)
+    {
+        m_debugModeCard->setStyleSheet(
+            generalSettingsCardStyleSheet(m_debugModeCard->objectName(), dark));
+    }
+    const QString titleStyle = dark
+        ? QStringLiteral("font-weight: 600; color: #F2F4F7;")
+        : QStringLiteral("font-weight: 600; color: #344054;");
+    const QString descriptionStyle = dark
+        ? QStringLiteral("color: #98A2B3;")
+        : QStringLiteral("color: #667085;");
+    if (m_languageTitleLabel)
+    {
+        m_languageTitleLabel->setStyleSheet(titleStyle);
+    }
+    if (m_languageDescriptionLabel)
+    {
+        m_languageDescriptionLabel->setStyleSheet(descriptionStyle);
+    }
+    if (m_debugTitleLabel)
+    {
+        m_debugTitleLabel->setStyleSheet(titleStyle);
+    }
+    if (m_debugDescriptionLabel)
+    {
+        m_debugDescriptionLabel->setStyleSheet(descriptionStyle);
+    }
+    if (m_languageComboBox)
+    {
+        m_languageComboBox->setProperty(
+            "arrowColor",
+            dark ? QColor(QStringLiteral("#F2F4F7"))
+                 : QColor(QStringLiteral("#344054")));
+        m_languageComboBox->setProperty(
+            "disabledArrowColor",
+            dark ? QColor(QStringLiteral("#667085"))
+                 : QColor(QStringLiteral("#98A2B3")));
+        m_languageComboBox->setStyleSheet(languageComboBoxStyleSheet(dark));
+        m_languageComboBox->update();
+        if (QAbstractItemView *popupView = m_languageComboBox->view())
+        {
+            popupView->setStyleSheet(languageComboPopupStyleSheet(dark));
+        }
+    }
     if (m_pluginListWidget)
     {
         m_pluginListWidget->setStyleSheet(
@@ -104,6 +297,123 @@ void SSettings::refreshTheme(bool force)
         m_taskListWidget->setStyleSheet(
             selectableListStyleSheet(m_taskListWidget->objectName(), dark));
     }
+}
+
+void SSettings::syncLanguageSelection(const QString &code)
+{
+    if (!m_languageComboBox)
+    {
+        return;
+    }
+    const QString normalized =
+        SLanguageManager::normalizedLanguageCode(code);
+    const int index = m_languageComboBox->findData(normalized);
+    if (index < 0)
+    {
+        return;
+    }
+    const QSignalBlocker blocker(m_languageComboBox);
+    m_languageComboBox->setCurrentIndex(index);
+}
+
+void SSettings::retranslateUi()
+{
+    if (!m_contentWidget)
+    {
+        return;
+    }
+
+    if (m_generalTitleLabel)
+    {
+        m_generalTitleLabel->setText(tr("General Settings"));
+    }
+    if (m_generalDescriptionLabel)
+    {
+        m_generalDescriptionLabel->setText(
+            tr("Configure application-wide behavior."));
+    }
+    if (m_languageTitleLabel)
+    {
+        m_languageTitleLabel->setText(tr("Display language"));
+    }
+    if (m_languageDescriptionLabel)
+    {
+        m_languageDescriptionLabel->setText(
+            tr("Choose the language used by Starry. Changes apply immediately."));
+    }
+    if (m_languageComboBox)
+    {
+        m_languageComboBox->setAccessibleName(tr("Display language"));
+        syncLanguageSelection(
+            SLanguageManager::instance()->currentLanguageCode());
+    }
+    if (m_debugTitleLabel)
+    {
+        m_debugTitleLabel->setText(tr("Enable debug mode"));
+    }
+    if (m_debugDescriptionLabel)
+    {
+        m_debugDescriptionLabel->setText(
+            tr("When enabled, selected text and expanded plugin arguments are written "
+               "to the debug log. The log may contain sensitive information."));
+    }
+    if (m_debugModeSwitcher)
+    {
+        m_debugModeSwitcher->setOnText(tr("Enabled"));
+        m_debugModeSwitcher->setOffText(tr("Disabled"));
+        m_debugModeSwitcher->setAccessibleName(tr("Enable debug mode"));
+    }
+    if (m_newPluginButton)
+    {
+        m_newPluginButton->setText(tr("Create new plugin"));
+        m_newPluginButton->setAccessibleName(tr("Create new plugin"));
+    }
+    if (m_taskTitleLabel)
+    {
+        m_taskTitleLabel->setText(tr("Plugin Task Manager"));
+    }
+    if (m_taskDescriptionLabel)
+    {
+        m_taskDescriptionLabel->setText(
+            tr("Running plugins remain here until they exit. "
+               "Force stopping a task may lose its unsaved data."));
+    }
+    if (m_emptyTaskLabel)
+    {
+        m_emptyTaskLabel->setText(tr("No plugin tasks are running."));
+    }
+    if (m_shortcutHelpLabel)
+    {
+        m_shortcutHelpLabel->setText(
+            tr("Need another shortcut? Please contact the author."));
+    }
+    if (m_aboutContentLabel)
+    {
+        m_aboutContentLabel->setText(
+            tr("Version: %1\nAuthor: Ccslykx\nContact: ccslykx@outlook.com")
+                .arg(m_config->version()));
+    }
+
+    const QStringList menuTexts{
+        tr("General Settings"),
+        tr("Plugins"),
+        tr("Tasks"),
+        tr("Shortcuts"),
+        tr("About"),
+    };
+    for (qsizetype index = 0;
+         index < m_menuButtons.size() && index < menuTexts.size();
+         ++index)
+    {
+        m_menuButtons.at(index)->setText(menuTexts.at(index));
+        m_menuButtons.at(index)->setAccessibleName(menuTexts.at(index));
+    }
+
+    for (SPluginTask *task : m_taskItems.keys())
+    {
+        retranslateTaskRow(task);
+    }
+    setWindowTitle(tr("Starry Settings"));
 }
 
 void SSettings::initGui()
@@ -134,47 +444,68 @@ void SSettings::initGui()
         m_generalWidget = new QWidget(m_contentWidget);
         m_generalWidget->setObjectName("generalSettingsPage");
 
-        QLabel *title = new QLabel(tr("常规设置"), m_generalWidget);
-        title->setStyleSheet("font-size: 20px; font-weight: 600;");
-        QLabel *description = new QLabel(
-            tr("配置 Starry 的通用行为。"),
-            m_generalWidget);
-        description->setWordWrap(true);
+        m_generalTitleLabel = new QLabel(m_generalWidget);
+        m_generalTitleLabel->setStyleSheet("font-size: 20px; font-weight: 600;");
+        m_generalDescriptionLabel = new QLabel(m_generalWidget);
+        m_generalDescriptionLabel->setWordWrap(true);
 
-        QFrame *debugCard = new QFrame(m_generalWidget);
-        debugCard->setObjectName("debugModeCard");
-        debugCard->setAttribute(Qt::WA_StyledBackground, true);
-        debugCard->setStyleSheet(
-            "QFrame#debugModeCard {"
-            "  border: 1px solid palette(mid); border-radius: 10px;"
-            "  background: palette(base);"
-            "}");
+        m_languageCard = new QFrame(m_generalWidget);
+        m_languageCard->setObjectName("languageCard");
+        m_languageCard->setAttribute(Qt::WA_StyledBackground, true);
 
-        QLabel *debugTitle = new QLabel(tr("开启调试模式"), debugCard);
-        debugTitle->setObjectName("debugModeTitle");
-        debugTitle->setStyleSheet("font-weight: 600;");
-        QLabel *debugDescription = new QLabel(
-            tr("开启后，选中文本和展开后的插件参数会写入调试日志。"
-               "日志中可能包含敏感信息。"),
-            debugCard);
-        debugDescription->setObjectName("debugModeDescription");
-        debugDescription->setWordWrap(true);
+        m_languageTitleLabel = new QLabel(m_languageCard);
+        m_languageTitleLabel->setObjectName("languageTitle");
+        m_languageTitleLabel->setStyleSheet("font-weight: 600;");
+        m_languageDescriptionLabel = new QLabel(m_languageCard);
+        m_languageDescriptionLabel->setObjectName("languageDescription");
+        m_languageDescriptionLabel->setWordWrap(true);
+
+        m_languageComboBox = new LanguageComboBox(m_languageCard);
+        m_languageComboBox->setObjectName("languageComboBox");
+        m_languageComboBox->setMinimumWidth(160);
+        for (const SLanguageManager::Language &language
+             : SLanguageManager::supportedLanguages())
+        {
+            m_languageComboBox->addItem(language.nativeName, language.code);
+        }
+
+        QVBoxLayout *languageTextLayout = new QVBoxLayout;
+        languageTextLayout->setContentsMargins(0, 0, 0, 0);
+        languageTextLayout->setSpacing(4);
+        languageTextLayout->addWidget(m_languageTitleLabel);
+        languageTextLayout->addWidget(m_languageDescriptionLabel);
+
+        QHBoxLayout *languageLayout = new QHBoxLayout(m_languageCard);
+        languageLayout->setContentsMargins(18, 16, 18, 16);
+        languageLayout->setSpacing(16);
+        languageLayout->addLayout(languageTextLayout, 1);
+        languageLayout->addWidget(m_languageComboBox, 0, Qt::AlignVCenter);
+
+        m_debugModeCard = new QFrame(m_generalWidget);
+        m_debugModeCard->setObjectName("debugModeCard");
+        m_debugModeCard->setAttribute(Qt::WA_StyledBackground, true);
+
+        m_debugTitleLabel = new QLabel(m_debugModeCard);
+        m_debugTitleLabel->setObjectName("debugModeTitle");
+        m_debugTitleLabel->setStyleSheet("font-weight: 600;");
+        m_debugDescriptionLabel = new QLabel(m_debugModeCard);
+        m_debugDescriptionLabel->setObjectName("debugModeDescription");
+        m_debugDescriptionLabel->setWordWrap(true);
 
         m_debugModeSwitcher = new SSwitcher(
-            tr("开启"),
-            tr("关闭"),
+            QString(),
+            QString(),
             m_config->debugModeEnabled(),
-            debugCard);
+            m_debugModeCard);
         m_debugModeSwitcher->setObjectName("debugModeSwitcher");
-        m_debugModeSwitcher->setAccessibleName(tr("开启调试模式"));
 
         QVBoxLayout *debugTextLayout = new QVBoxLayout;
         debugTextLayout->setContentsMargins(0, 0, 0, 0);
         debugTextLayout->setSpacing(4);
-        debugTextLayout->addWidget(debugTitle);
-        debugTextLayout->addWidget(debugDescription);
+        debugTextLayout->addWidget(m_debugTitleLabel);
+        debugTextLayout->addWidget(m_debugDescriptionLabel);
 
-        QHBoxLayout *debugLayout = new QHBoxLayout(debugCard);
+        QHBoxLayout *debugLayout = new QHBoxLayout(m_debugModeCard);
         debugLayout->setContentsMargins(18, 16, 18, 16);
         debugLayout->setSpacing(16);
         debugLayout->addLayout(debugTextLayout, 1);
@@ -183,10 +514,45 @@ void SSettings::initGui()
         QVBoxLayout *generalLayout = new QVBoxLayout(m_generalWidget);
         generalLayout->setContentsMargins(24, 24, 24, 24);
         generalLayout->setSpacing(12);
-        generalLayout->addWidget(title);
-        generalLayout->addWidget(description);
-        generalLayout->addWidget(debugCard);
+        generalLayout->addWidget(m_generalTitleLabel);
+        generalLayout->addWidget(m_generalDescriptionLabel);
+        generalLayout->addWidget(m_languageCard);
+        generalLayout->addWidget(m_debugModeCard);
         generalLayout->addStretch();
+
+        syncLanguageSelection(m_config->languageCode());
+        QObject::connect(
+            m_languageComboBox,
+            qOverload<int>(&QComboBox::currentIndexChanged),
+            this,
+            [this] (int index) {
+                const QString code = m_languageComboBox->itemData(index).toString();
+                if (!SLanguageManager::instance()->setLanguage(code))
+                {
+                    syncLanguageSelection(m_config->languageCode());
+                    return;
+                }
+                m_config->setLanguageCode(code);
+                m_config->saveToFile(m_config->configPath());
+            });
+        QObject::connect(
+            m_config,
+            &SConfig::languageChanged,
+            this,
+            [this] (const QString &code) {
+                if (SLanguageManager::instance()->setLanguage(code))
+                {
+                    syncLanguageSelection(code);
+                }
+            });
+        QObject::connect(
+            SLanguageManager::instance(),
+            &SLanguageManager::languageChanged,
+            this,
+            [this] (const QString &code) {
+                syncLanguageSelection(code);
+                retranslateUi();
+            });
 
         const auto updateDebugMode = [this] (bool enabled) {
             m_config->setDebugModeEnabled(enabled);
@@ -202,6 +568,18 @@ void SSettings::initGui()
         });
         QObject::connect(m_config, &SConfig::debugModeChanged,
                          m_debugModeSwitcher, &SSwitcher::setStatus);
+    }
+
+    if (QStyleHints *styleHints = QGuiApplication::styleHints())
+    {
+        QObject::connect(
+            styleHints,
+            &QStyleHints::colorSchemeChanged,
+            this,
+            [this] (Qt::ColorScheme scheme) {
+                m_pendingColorScheme = scheme;
+                refreshTheme(true, scheme);
+            });
     }
 
     // 内容页-插件页
@@ -223,13 +601,14 @@ void SSettings::initGui()
     }
     refreshTheme(true);
 
-    SButton *newPluginButton = new SButton(tr("Create new plugin"), m_pluginListWidget);
-    newPluginButton->setRole(SButton::Role::Primary);
-    QObject::connect(newPluginButton, &SButton::clicked, this, &SSettings::onCreatePluginClicked);
+    m_newPluginButton = new SButton(QString(), m_pluginListWidget);
+    m_newPluginButton->setRole(SButton::Role::Primary);
+    QObject::connect(m_newPluginButton, &SButton::clicked,
+                     this, &SSettings::onCreatePluginClicked);
 
     QVBoxLayout *pluginsLayout = new QVBoxLayout(m_pluginWidget);
     pluginsLayout->addWidget(m_pluginListWidget);
-    pluginsLayout->addWidget(newPluginButton);
+    pluginsLayout->addWidget(m_newPluginButton);
     m_pluginWidget->setLayout(pluginsLayout);
 
     // 内容页-插件编辑器
@@ -242,12 +621,10 @@ void SSettings::initGui()
     if (!m_taskWidget)
     {
         m_taskWidget = new QWidget(m_contentWidget);
-        QLabel *title = new QLabel(tr("Plugin Task Manager"), m_taskWidget);
-        title->setStyleSheet("font-size: 20px; font-weight: 600;");
-        QLabel *description = new QLabel(
-            tr("Running plugins remain here until they exit. Force stopping a task may lose its unsaved data."),
-            m_taskWidget);
-        description->setWordWrap(true);
+        m_taskTitleLabel = new QLabel(m_taskWidget);
+        m_taskTitleLabel->setStyleSheet("font-size: 20px; font-weight: 600;");
+        m_taskDescriptionLabel = new QLabel(m_taskWidget);
+        m_taskDescriptionLabel->setWordWrap(true);
 
         m_taskListWidget = new QListWidget(m_taskWidget);
         m_taskListWidget->setObjectName("pluginTaskList");
@@ -255,15 +632,15 @@ void SSettings::initGui()
         m_taskListWidget->setSpacing(4);
         refreshTheme(true);
 
-        m_emptyTaskLabel = new QLabel(tr("No plugin tasks are running."), m_taskWidget);
+        m_emptyTaskLabel = new QLabel(m_taskWidget);
         m_emptyTaskLabel->setAlignment(Qt::AlignCenter);
         m_emptyTaskLabel->setStyleSheet("color: #777777; padding: 24px;");
 
         QVBoxLayout *taskLayout = new QVBoxLayout(m_taskWidget);
         taskLayout->setContentsMargins(24, 24, 24, 24);
         taskLayout->setSpacing(12);
-        taskLayout->addWidget(title);
-        taskLayout->addWidget(description);
+        taskLayout->addWidget(m_taskTitleLabel);
+        taskLayout->addWidget(m_taskDescriptionLabel);
         taskLayout->addWidget(m_emptyTaskLabel);
         taskLayout->addWidget(m_taskListWidget);
         m_taskWidget->setLayout(taskLayout);
@@ -283,11 +660,11 @@ void SSettings::initGui()
     {
         m_shortcutWidget = new QListWidget(m_contentWidget);
     }
-    QLabel *shortcutHelp = new QLabel("如果有什么需要的快捷捷功能，请联系作者", m_shortcutWidget);
-    shortcutHelp->setAlignment(Qt::AlignCenter);
+    m_shortcutHelpLabel = new QLabel(m_shortcutWidget);
+    m_shortcutHelpLabel->setAlignment(Qt::AlignCenter);
     QListWidgetItem *shortcutItem = new QListWidgetItem(m_shortcutWidget);
     shortcutItem->setSizeHint(QSize(m_shortcutWidget->size().width(), 48));
-    m_shortcutWidget->setItemWidget(shortcutItem, shortcutHelp);
+    m_shortcutWidget->setItemWidget(shortcutItem, m_shortcutHelpLabel);
 
     // 内容页-关于
     if (!m_aboutWidget)
@@ -299,13 +676,14 @@ void SSettings::initGui()
     aboutIcon->setPixmap(aboutPixmap.scaled(256, 256, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     aboutIcon->setFixedSize(256, 256);
     aboutIcon->setAlignment(Qt::AlignCenter);
-    QLabel *aboutContent = new QLabel("版本：" + STARRY_VERSION + "\n作者：Ccslykx\n联系方式：ccslykx@outlook.com", m_aboutWidget);
-    aboutContent->setAlignment(Qt::AlignCenter);
+    m_aboutContentLabel = new QLabel(m_aboutWidget);
+    m_aboutContentLabel->setObjectName("aboutContentLabel");
+    m_aboutContentLabel->setAlignment(Qt::AlignCenter);
 
     QVBoxLayout *aboutLayout = new QVBoxLayout(m_aboutWidget);
     aboutLayout->setAlignment(Qt::AlignCenter);
     aboutLayout->addWidget(aboutIcon);
-    aboutLayout->addWidget(aboutContent);
+    aboutLayout->addWidget(m_aboutContentLabel);
 
     m_aboutWidget->setLayout(aboutLayout);
 
@@ -329,11 +707,11 @@ void SSettings::initGui()
     mainLayout->addWidget(m_contentWidget);
 
     // 添加 菜单页 项目
-    SButton *general = new SButton(tr("常规设置"), m_menuListWidget);
-    SButton *plugins = new SButton(tr("Plugins"), m_menuListWidget);
-    SButton *tasks = new SButton(tr("Tasks"), m_menuListWidget);
-    SButton *shortcuts = new SButton(tr("Shortcuts"), m_menuListWidget);
-    SButton *about = new SButton(tr("About"), m_menuListWidget);
+    SButton *general = new SButton(QString(), m_menuListWidget);
+    SButton *plugins = new SButton(QString(), m_menuListWidget);
+    SButton *tasks = new SButton(QString(), m_menuListWidget);
+    SButton *shortcuts = new SButton(QString(), m_menuListWidget);
+    SButton *about = new SButton(QString(), m_menuListWidget);
     general->setRole(SButton::Role::Navigation);
     plugins->setRole(SButton::Role::Navigation);
     tasks->setRole(SButton::Role::Navigation);
@@ -357,8 +735,13 @@ void SSettings::initGui()
     QIcon windowIcon(SUtils::STARRY_ICON(64));
     this->setLayout(mainLayout);
     this->setMinimumSize(800, 600);
-    this->setWindowTitle(tr("Starry 设置"));
     this->setWindowIcon(windowIcon);
+    retranslateUi();
+    refreshTheme(
+        true,
+        QGuiApplication::styleHints()
+            ? QGuiApplication::styleHints()->colorScheme()
+            : Qt::ColorScheme::Unknown);
 }
 
 void SSettings::addPluginItem(SPluginItem *item)
@@ -468,6 +851,7 @@ SSettings::SSettings(QWidget *parent)
     SDEBUG
     this->setParent(parent);
     m_config = SConfig::config();
+    SLanguageManager::instance()->setLanguage(m_config->languageCode());
     initGui();
 }
 
@@ -489,10 +873,38 @@ void SSettings::closeEvent(QCloseEvent *ev)
 void SSettings::changeEvent(QEvent *event)
 {
     QWidget::changeEvent(event);
-    if (event && (event->type() == QEvent::PaletteChange
-        || event->type() == QEvent::ApplicationPaletteChange))
+    if (!event)
     {
-        refreshTheme();
+        return;
+    }
+    if (event->type() == QEvent::LanguageChange)
+    {
+        retranslateUi();
+    }
+    if (event->type() == QEvent::PaletteChange
+        || event->type() == QEvent::ApplicationPaletteChange
+        || event->type() == QEvent::ThemeChange)
+    {
+        Qt::ColorScheme scheme = m_pendingColorScheme;
+        if (event->type() == QEvent::ThemeChange)
+        {
+            scheme = QGuiApplication::styleHints()->colorScheme();
+            m_pendingColorScheme = scheme;
+        }
+        refreshTheme(true, scheme);
+
+        if (event->type() != QEvent::ThemeChange
+            && m_pendingColorScheme != Qt::ColorScheme::Unknown)
+        {
+            const bool paletteIsDark =
+                QGuiApplication::palette().color(QPalette::Window).lightness() < 128;
+            const bool pendingIsDark =
+                m_pendingColorScheme == Qt::ColorScheme::Dark;
+            if (paletteIsDark == pendingIsDark)
+            {
+                m_pendingColorScheme = Qt::ColorScheme::Unknown;
+            }
+        }
     }
 }
 
@@ -536,16 +948,15 @@ void SSettings::addTaskItem(SPluginTask *task)
     commandLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
     QLabel *statusLabel = new QLabel(row);
+    statusLabel->setObjectName("pluginTaskStatusLabel");
     statusLabel->setMinimumWidth(120);
 
-    SButton *stopButton = new SButton(tr("Force stop"), row);
+    SButton *stopButton = new SButton(QString(), row);
     stopButton->setRole(SButton::Role::Danger);
     stopButton->setIcon(style()->standardIcon(QStyle::SP_MediaStop));
     stopButton->setIconSize(QSize(16, 16));
     stopButton->setObjectName("forceStopTaskButton");
     stopButton->setMinimumWidth(92);
-    stopButton->setToolTip(tr("Immediately terminate this plugin process"));
-    stopButton->setAccessibleName(tr("Force stop plugin") + ' ' + task->pluginName());
 
     QHBoxLayout *rowLayout = new QHBoxLayout(row);
     rowLayout->setContentsMargins(8, 4, 8, 4);
@@ -558,37 +969,9 @@ void SSettings::addTaskItem(SPluginTask *task)
     m_taskListWidget->setItemWidget(listItem, row);
     m_taskItems.insert(task, listItem);
 
-    auto updateStatus = [task, statusLabel, stopButton] {
-        QString status;
-        switch (task->state())
-        {
-        case SPluginTask::State::Starting:
-            status = tr("Starting…");
-            break;
-        case SPluginTask::State::Running:
-            status = tr("Running · PID %1").arg(task->processId());
-            break;
-        case SPluginTask::State::Stopping:
-            status = tr("Stopping…");
-            break;
-        case SPluginTask::State::Finished:
-            status = tr("Finished");
-            break;
-        case SPluginTask::State::Failed:
-            status = tr("Failed");
-            break;
-        case SPluginTask::State::Terminated:
-            status = tr("Terminated");
-            break;
-        }
-        statusLabel->setText(status);
-        stopButton->setEnabled(
-            task->state() == SPluginTask::State::Starting
-            || task->state() == SPluginTask::State::Running);
-    };
-    updateStatus();
-    QObject::connect(task, &SPluginTask::stateChanged, row, [updateStatus] {
-        updateStatus();
+    retranslateTaskRow(task);
+    QObject::connect(task, &SPluginTask::stateChanged, row, [this, task] {
+        retranslateTaskRow(task);
     });
     QObject::connect(stopButton, &SButton::clicked, row, [this, task] {
         const QPointer<SPluginTask> guardedTask(task);
@@ -605,6 +988,57 @@ void SSettings::addTaskItem(SPluginTask *task)
         }
     });
     updateTaskEmptyState();
+}
+
+void SSettings::retranslateTaskRow(SPluginTask *task)
+{
+    QListWidgetItem *listItem = m_taskItems.value(task, nullptr);
+    if (!task || !listItem || !m_taskListWidget)
+    {
+        return;
+    }
+    QWidget *row = m_taskListWidget->itemWidget(listItem);
+    if (!row)
+    {
+        return;
+    }
+    QLabel *statusLabel = row->findChild<QLabel *>("pluginTaskStatusLabel");
+    SButton *stopButton = row->findChild<SButton *>("forceStopTaskButton");
+    if (!statusLabel || !stopButton)
+    {
+        return;
+    }
+
+    QString status;
+    switch (task->state())
+    {
+    case SPluginTask::State::Starting:
+        status = tr("Starting…");
+        break;
+    case SPluginTask::State::Running:
+        status = tr("Running · PID %1").arg(task->processId());
+        break;
+    case SPluginTask::State::Stopping:
+        status = tr("Stopping…");
+        break;
+    case SPluginTask::State::Finished:
+        status = tr("Finished");
+        break;
+    case SPluginTask::State::Failed:
+        status = tr("Failed");
+        break;
+    case SPluginTask::State::Terminated:
+        status = tr("Terminated");
+        break;
+    }
+    statusLabel->setText(status);
+    stopButton->setText(tr("Force stop"));
+    stopButton->setToolTip(tr("Immediately terminate this plugin process"));
+    stopButton->setAccessibleName(
+        tr("Force stop plugin") + ' ' + task->pluginName());
+    stopButton->setEnabled(
+        task->state() == SPluginTask::State::Starting
+        || task->state() == SPluginTask::State::Running);
 }
 
 void SSettings::removeTaskItem(SPluginTask *task)

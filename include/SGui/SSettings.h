@@ -21,6 +21,8 @@
 #include "SConfig.h"
 
 class QLabel;
+class QComboBox;
+class QFrame;
 class SPluginTask;
 class SSwitcher;
 
@@ -50,7 +52,11 @@ private:
 
     void closeEvent(QCloseEvent *ev) override;
     void changeEvent(QEvent *event) override;
-    void refreshTheme(bool force = false);
+    void refreshTheme(bool force = false,
+                      Qt::ColorScheme scheme = Qt::ColorScheme::Unknown);
+    void retranslateUi();
+    void retranslateTaskRow(SPluginTask *task);
+    void syncLanguageSelection(const QString &code);
     void refreshPluginIndex();
     void addTaskItem(SPluginTask *task);
     void removeTaskItem(SPluginTask *task);
@@ -66,15 +72,30 @@ private:
     QVector<SButton*>        m_menuButtons;
     QStackedWidget          *m_contentWidget = nullptr; // 内容页
     QWidget                 *m_generalWidget = nullptr; // 内容页-常规设置
+    QLabel                  *m_generalTitleLabel = nullptr;
+    QLabel                  *m_generalDescriptionLabel = nullptr;
+    QLabel                  *m_languageTitleLabel = nullptr;
+    QLabel                  *m_languageDescriptionLabel = nullptr;
+    QFrame                  *m_languageCard = nullptr;
+    QComboBox               *m_languageComboBox = nullptr;
+    QLabel                  *m_debugTitleLabel = nullptr;
+    QLabel                  *m_debugDescriptionLabel = nullptr;
+    QFrame                  *m_debugModeCard = nullptr;
     SSwitcher               *m_debugModeSwitcher = nullptr;
     QWidget                 *m_pluginWidget = nullptr; // 内容页-插件
     QListWidget             *m_pluginListWidget = nullptr; // 内容页-插件-已有插件列表
+    SButton                 *m_newPluginButton = nullptr;
     QWidget                 *m_taskWidget = nullptr; // 内容页-任务管理器
+    QLabel                  *m_taskTitleLabel = nullptr;
+    QLabel                  *m_taskDescriptionLabel = nullptr;
     QListWidget             *m_taskListWidget = nullptr;
     QLabel                  *m_emptyTaskLabel = nullptr;
     QHash<SPluginTask*, QListWidgetItem*> m_taskItems;
     QListWidget             *m_shortcutWidget = nullptr; // 内容页-快捷键
+    QLabel                  *m_shortcutHelpLabel = nullptr;
     QWidget                 *m_aboutWidget = nullptr; // 内容页-关于
+    QLabel                  *m_aboutContentLabel = nullptr;
     bool                     m_darkStyle = false;
     bool                     m_styleInitialized = false;
+    Qt::ColorScheme          m_pendingColorScheme = Qt::ColorScheme::Unknown;
 };

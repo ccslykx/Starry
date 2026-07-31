@@ -8,6 +8,14 @@ project(Starry VERSION 0.3.0)
 
 include(CTest)
 
+set(STARRY_GENERATED_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+file(MAKE_DIRECTORY "${STARRY_GENERATED_INCLUDE_DIR}")
+configure_file(
+	include/Core/StarryVersion.h.in
+	"${STARRY_GENERATED_INCLUDE_DIR}/StarryVersion.h"
+	@ONLY
+)
+
 file(GLOB HEADERS CMAKE_CONFIGURE_DEPENDS
     include/*.h
     include/Core/*.h
@@ -49,13 +57,14 @@ add_executable(${PROJECT_NAME}
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC
+	${STARRY_GENERATED_INCLUDE_DIR}
 	include
 	include/Core
 	include/SGui
 	include/Core/Platform
 )
 
-find_package(Qt6 COMPONENTS Core Widgets Concurrent Gui REQUIRED)
+find_package(Qt6 COMPONENTS Core Widgets Concurrent Gui LinguistTools REQUIRED)
 
 set(LIBRARYS Qt6::Core Qt6::Widgets	Qt6::Concurrent	Qt6::Gui)
 
@@ -101,6 +110,7 @@ if (BUILD_TESTING)
 		${RESOURCES}
 	)
 	target_include_directories(StarryConfigTests PRIVATE
+		${STARRY_GENERATED_INCLUDE_DIR}
 		include
 		include/Core
 		include/SGui
@@ -119,6 +129,7 @@ if (BUILD_TESTING)
 	add_executable(StarrySettingsTests
 		tests/SSettingsTests.cpp
 		include/Core/SConfig.h
+		include/Core/SLanguageManager.h
 		include/Core/SPluginInfo.h
 		include/Core/SPluginCommand.h
 		include/Core/SPluginTaskManager.h
@@ -131,6 +142,7 @@ if (BUILD_TESTING)
 		include/SGui/SSettings.h
 		include/SGui/SSwitcher.h
 		src/core/SConfig.cpp
+		src/core/SLanguageManager.cpp
 		src/core/SPluginInfo.cpp
 		src/core/SPluginCommand.cpp
 		src/core/SPluginTaskManager.cpp
@@ -145,6 +157,7 @@ if (BUILD_TESTING)
 		${RESOURCES}
 	)
 	target_include_directories(StarrySettingsTests PRIVATE
+		${STARRY_GENERATED_INCLUDE_DIR}
 		include
 		include/Core
 		include/SGui
@@ -160,3 +173,25 @@ if (BUILD_TESTING)
 		ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
 	)
 endif()
+
+set(STARRY_TRANSLATION_FILES
+	translations/starry_zh_CN.ts
+	translations/starry_zh_TW.ts
+	translations/starry_de.ts
+	translations/starry_fr.ts
+	translations/starry_ja.ts
+)
+
+set(STARRY_TRANSLATION_TARGETS Starry)
+if(BUILD_TESTING)
+	list(APPEND STARRY_TRANSLATION_TARGETS StarrySettingsTests)
+endif()
+
+qt_add_translations(
+	TARGETS ${STARRY_TRANSLATION_TARGETS}
+	SOURCE_TARGETS Starry
+	TS_FILES ${STARRY_TRANSLATION_FILES}
+	MERGE_QT_TRANSLATIONS
+	QT_TRANSLATION_CATALOGS qtbase
+	RESOURCE_PREFIX "/i18n"
+)

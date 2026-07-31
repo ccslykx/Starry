@@ -146,6 +146,10 @@ void SSwitcher::refreshStyle(bool force, Qt::ColorScheme scheme)
 void SSwitcher::changeEvent(QEvent *event)
 {
     QPushButton::changeEvent(event);
+    if (event && event->type() == QEvent::LanguageChange)
+    {
+        updateAppearance();
+    }
     if (event && (event->type() == QEvent::PaletteChange
         || event->type() == QEvent::ApplicationPaletteChange
         || event->type() == QEvent::ThemeChange))

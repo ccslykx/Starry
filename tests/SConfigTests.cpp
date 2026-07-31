@@ -23,6 +23,7 @@ private slots:
     void keepsLookupConsistentAfterRename();
     void normalizesIndexesAfterDelete();
     void persistsDebugMode();
+    void persistsLanguage();
 
 private:
     static SPluginInfo *makePlugin(const QString &name, const int index = 0);
@@ -63,6 +64,7 @@ void SConfigTests::initTestCase()
     settings.endGroup();
     settings.beginGroup("STARRY_SETTINGS");
     settings.setValue("theme", "dark");
+    settings.setValue("language", "de");
     settings.endGroup();
     settings.sync();
     QCOMPARE(settings.status(), QSettings::NoError);
@@ -80,6 +82,7 @@ void SConfigTests::repairsInvalidAndDuplicateIndexes()
         QCOMPARE(plugins.at(index)->index, static_cast<int>(index));
     }
     QCOMPARE(m_config->getSetting("theme").toString(), QString("dark"));
+    QCOMPARE(m_config->languageCode(), QString("de"));
 }
 
 void SConfigTests::validatesNamesAndRejectsDuplicates()
@@ -151,6 +154,25 @@ void SConfigTests::persistsDebugMode()
     m_config->setDebugModeEnabled(false);
     QVERIFY(!m_config->debugModeEnabled());
     QCOMPARE(debugModeSpy.count(), 2);
+}
+
+void SConfigTests::persistsLanguage()
+{
+    QSignalSpy languageSpy(m_config, &SConfig::languageChanged);
+
+    m_config->setLanguageCode(QStringLiteral("zh-HK"));
+    QCOMPARE(m_config->languageCode(), QStringLiteral("zh_TW"));
+    QCOMPARE(languageSpy.count(), 1);
+
+    m_config->setLanguageCode(QStringLiteral("ja-JP"));
+    QCOMPARE(m_config->languageCode(), QStringLiteral("ja"));
+    QCOMPARE(languageSpy.count(), 2);
+
+    m_config->saveToFile(m_configDir->path());
+    QSettings settings(m_configDir->filePath("starry.conf"), QSettings::NativeFormat);
+    QCOMPARE(
+        settings.value(QStringLiteral("STARRY_SETTINGS/language")).toString(),
+        QStringLiteral("ja"));
 }
 
 QTEST_MAIN(SConfigTests)

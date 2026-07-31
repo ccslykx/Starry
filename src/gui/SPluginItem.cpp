@@ -87,6 +87,21 @@ void SPluginItem::refreshTheme()
     }
 }
 
+void SPluginItem::retranslateUi()
+{
+    m_editButton->setText(tr("Edit"));
+    m_editButton->setToolTip(tr("Edit plugin"));
+    m_editButton->setAccessibleName(tr("Edit plugin"));
+    m_deleteButton->setToolTip(tr("Delete plugin"));
+    m_deleteButton->setAccessibleName(tr("Delete plugin"));
+    m_iconSwitcher->setToolTip(
+        tr("Show or hide the plugin icon in the popup"));
+    m_iconSwitcher->setAccessibleName(tr("Show plugin icon"));
+    m_nameSwitcher->setToolTip(
+        tr("Show or hide the plugin name in the popup"));
+    m_nameSwitcher->setAccessibleName(tr("Show plugin name"));
+}
+
 SPluginInfo* SPluginItem::pluginInfo()
 {
     SDEBUG
@@ -154,6 +169,7 @@ void SPluginItem::initGui()
     m_editButton->setFixedHeight(36);
     m_editButton->setToolTip(tr("Edit plugin"));
     m_editButton->setAccessibleName(tr("Edit plugin"));
+    retranslateUi();
 
     QHBoxLayout *layout = new QHBoxLayout(this);
     layout->setContentsMargins(6, 6, 6, 6);
@@ -176,7 +192,13 @@ void SPluginItem::initGui()
     QObject::connect(m_deleteButton, &QPushButton::pressed, this, requestSelection);
 
     QObject::connect(m_deleteButton, &SButton::clicked, [this] () {
-        QMessageBox *box = new QMessageBox(QMessageBox::Icon::Question,  "提示", "确实要删除插件 " + this->m_info->name + " 吗？", QMessageBox::Yes | QMessageBox::Cancel, this);
+        QMessageBox *box = new QMessageBox(
+            QMessageBox::Icon::Question,
+            tr("Delete plugin"),
+            tr("Delete plugin \"%1\"?").arg(m_info->name),
+            QMessageBox::Yes | QMessageBox::Cancel,
+            this);
+        box->setAttribute(Qt::WA_DeleteOnClose);
         QObject::connect(box, &QMessageBox::accepted, this, [this] {
             emit m_info->needDelete(m_info);
         });
@@ -211,6 +233,10 @@ void SPluginItem::initGui()
 void SPluginItem::changeEvent(QEvent *event)
 {
     QWidget::changeEvent(event);
+    if (event && event->type() == QEvent::LanguageChange)
+    {
+        retranslateUi();
+    }
     if (event && (event->type() == QEvent::PaletteChange
         || event->type() == QEvent::ApplicationPaletteChange))
     {

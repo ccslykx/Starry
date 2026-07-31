@@ -1,5 +1,6 @@
 #include <QSettings>
 #include <QDir>
+#include <QLocale>
 #include <QSaveFile>
 #include <QStandardPaths>
 
@@ -11,6 +12,56 @@
 namespace
 {
 const QString DEBUG_MODE_KEY = QStringLiteral("debugModeEnabled");
+const QString LANGUAGE_KEY = QStringLiteral("language");
+
+QString defaultLanguageCode()
+{
+    const QLocale locale = QLocale::system();
+    switch (locale.language())
+    {
+    case QLocale::Chinese:
+        return locale.territory() == QLocale::Taiwan
+                || locale.territory() == QLocale::HongKong
+                || locale.territory() == QLocale::Macao
+            ? QStringLiteral("zh_TW")
+            : QStringLiteral("zh_CN");
+    case QLocale::German:
+        return QStringLiteral("de");
+    case QLocale::French:
+        return QStringLiteral("fr");
+    case QLocale::Japanese:
+        return QStringLiteral("ja");
+    default:
+        return QStringLiteral("en");
+    }
+}
+
+QString normalizedLanguageCode(QString code)
+{
+    code.replace(QLatin1Char('-'), QLatin1Char('_'));
+    if (code.compare(QStringLiteral("zh_TW"), Qt::CaseInsensitive) == 0
+        || code.compare(QStringLiteral("zh_HK"), Qt::CaseInsensitive) == 0
+        || code.compare(QStringLiteral("zh_MO"), Qt::CaseInsensitive) == 0)
+    {
+        return QStringLiteral("zh_TW");
+    }
+    if (code.startsWith(QStringLiteral("zh"), Qt::CaseInsensitive))
+    {
+        return QStringLiteral("zh_CN");
+    }
+    for (const QString &language : {
+             QStringLiteral("en"),
+             QStringLiteral("de"),
+             QStringLiteral("fr"),
+             QStringLiteral("ja")})
+    {
+        if (code.startsWith(language, Qt::CaseInsensitive))
+        {
+            return language;
+        }
+    }
+    return defaultLanguageCode();
+}
 }
 
 SConfig* SConfig::m_instance = nullptr;
@@ -181,12 +232,17 @@ void SConfig::readFromFile(const QString &path)
     s.beginGroup(QString("STARRY_SETTINGS"));
     const QStringList settings = s.childKeys();
     bool debugMode = false;
+    QString language = defaultLanguageCode();
     for (const QString &key : settings)
     {
         const QVariant value = s.value(key);
         if (key == DEBUG_MODE_KEY)
         {
             debugMode = value.toBool();
+        }
+        else if (key == LANGUAGE_KEY)
+        {
+            language = normalizedLanguageCode(value.toString());
         }
         else
         {
@@ -195,6 +251,7 @@ void SConfig::readFromFile(const QString &path)
     }
     s.endGroup();
     setDebugModeEnabled(debugMode);
+    setLanguageCode(language);
 }
 
 void SConfig::setConfigFilePath(const QString &path)
@@ -263,6 +320,23 @@ void SConfig::setDebugModeEnabled(bool enabled)
     }
     settingMap.insert(DEBUG_MODE_KEY, enabled);
     emit debugModeChanged(enabled);
+}
+
+QString SConfig::languageCode() const
+{
+    return normalizedLanguageCode(
+        settingMap.value(LANGUAGE_KEY, defaultLanguageCode()).toString());
+}
+
+void SConfig::setLanguageCode(const QString &code)
+{
+    const QString normalized = normalizedLanguageCode(code);
+    if (languageCode() == normalized)
+    {
+        return;
+    }
+    settingMap.insert(LANGUAGE_KEY, normalized);
+    emit languageChanged(normalized);
 }
 
 bool SConfig::isPluginNameValid(const QString &name) const
@@ -442,7 +516,7 @@ void SConfig::normalizePluginIndexes()
 QString SConfig::version()
 {
     SDEBUG
-    return STARRY_VERSION;
+    return QStringLiteral(STARRY_VERSION_STRING);
 }
 
 int SConfig::major()
@@ -475,6 +549,7 @@ SConfig::SConfig(const QString &path)
     }
     settingMap = QHash<QString, QVariant>();
     settingMap.insert(DEBUG_MODE_KEY, false);
+    settingMap.insert(LANGUAGE_KEY, defaultLanguageCode());
     pInfoMap = QHash<QString, SPluginInfo*>();
 }
 

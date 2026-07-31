@@ -1,4 +1,5 @@
 #include "STray.h"
+#include "SLanguageManager.h"
 #include "utils.h"
 
 STray*          STray::m_instance = nullptr;
@@ -66,10 +67,13 @@ STray::STray(QApplication *app)
 {
     SDEBUG
     this->setParent(app);
-    
+
+    m_config = SConfig::config();
+    m_config->readFromFile(m_config->configPath());
+    SLanguageManager::instance()->setLanguage(m_config->languageCode());
+
     initServices();
-    initSettings();
-    initGui(); 
+    initGui();
 }
 
 STray::~STray()
@@ -92,31 +96,36 @@ void STray::initGui()
 {
     SDEBUG
     QMenu   *menu = new QMenu;
-    QAction *enable = new QAction(menu);
-    QAction *settings = new QAction(menu);
-    QAction *exit = new QAction(menu);
+    m_enableAction = new QAction(menu);
+    m_settingsAction = new QAction(menu);
+    m_exitAction = new QAction(menu);
 
-    enable->setText(tr(m_mouseListener->isListening() ? "Disable" : "Enable"));
-    settings->setText(tr("Setting"));
-    exit->setText(tr("Exit"));
-
-    QObject::connect(enable, &QAction::triggered, this, [this, enable]()
+    QObject::connect(m_enableAction, &QAction::triggered, this, [this]
     {
         this->setEnable(!m_mouseListener->isListening());
-        enable->setText(m_mouseListener->isListening() ? "Disable" : "Enable");
+        retranslateUi();
     });
-    QObject::connect(settings, &QAction::triggered, this, &STray::settings);
-    QObject::connect(exit, &QAction::triggered, this, &STray::exitTray);
+    QObject::connect(m_settingsAction, &QAction::triggered, this, &STray::settings);
+    QObject::connect(m_exitAction, &QAction::triggered, this, &STray::exitTray);
 
-    menu->addAction(enable);
-    menu->addAction(settings);
+    menu->addAction(m_enableAction);
+    menu->addAction(m_settingsAction);
     menu->addSeparator();
-    menu->addAction(exit);
+    menu->addAction(m_exitAction);
 
     this->setContextMenu(menu);
 
     QIcon trayIcon(SUtils::STARRY_ICON(32));
     this->setIcon(trayIcon);
+
+    QObject::connect(
+        SLanguageManager::instance(),
+        &SLanguageManager::languageChanged,
+        this,
+        [this] {
+            retranslateUi();
+        });
+    retranslateUi();
 }
 
 void STray::initServices()
@@ -159,10 +168,24 @@ void STray::initServices()
         this->m_popup->addItem(info);
     });
     QObject::connect(m_mouseListener, &SMouseListener::canShow, m_popup, &SPopup::showPopup);
+
+    for (SPluginInfo *info : m_config->getSPluginInfos())
+    {
+        m_settings->addPluginItem(info);
+        m_popup->addItem(info);
+    }
 }
 
-void STray::initSettings()
+void STray::retranslateUi()
 {
-    SDEBUG
-    m_config->readFromFile(m_config->configPath());
+    if (!m_enableAction || !m_settingsAction || !m_exitAction)
+    {
+        return;
+    }
+    m_enableAction->setText(
+        m_mouseListener && m_mouseListener->isListening()
+            ? tr("Disable")
+            : tr("Enable"));
+    m_settingsAction->setText(tr("Settings"));
+    m_exitAction->setText(tr("Exit"));
 }

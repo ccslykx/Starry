@@ -42,6 +42,7 @@ private:
 
     void initGui();
     void refreshTheme();
+    void retranslateUi();
     void changeEvent(QEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
 

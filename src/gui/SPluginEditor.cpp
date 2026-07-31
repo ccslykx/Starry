@@ -508,6 +508,61 @@ void SPluginEditor::initialize()
     m_nameEdit->setFocus();
 }
 
+void SPluginEditor::retranslateUi()
+{
+    m_dirtyLabel->setText(tr("Unsaved changes"));
+    m_iconLabel->setText(tr("Plugin icon"));
+    m_iconHintLabel->setText(
+        tr("Click the preview to choose an image, or drop an image anywhere on this page."));
+    m_nameLabel->setText(tr("Name"));
+    m_tipLabel->setText(tr("Tip"));
+    m_scriptLabel->setText(tr("Command"));
+    m_scriptHelpLabel->setText(
+        tr("$PLAINTEXT inserts raw selected text. $URLENCODED safely encodes it for URLs. "
+           "Commands run directly, without a shell."));
+
+    m_testButton->setText(tr("Test run"));
+    m_testButton->setAccessibleName(tr("Test run"));
+    m_cancelButton->setText(tr("Back"));
+    m_cancelButton->setAccessibleName(tr("Back"));
+    m_resetIconButton->setText(tr("Use default icon"));
+    m_resetIconButton->setAccessibleName(tr("Use default icon"));
+    m_insertVariableButton->setText(tr("Insert $PLAINTEXT"));
+    m_insertVariableButton->setAccessibleName(tr("Insert $PLAINTEXT"));
+    m_insertUrlEncodedButton->setText(tr("Insert $URLENCODED"));
+    m_insertUrlEncodedButton->setAccessibleName(tr("Insert $URLENCODED"));
+
+    m_iconContainor->setToolTip(tr("Select an image or drop one on this page."));
+    m_iconContainor->setAccessibleName(tr("Plugin icon"));
+    m_nameEdit->setPlaceholderText(tr("Example: Search the web"));
+    m_tipEdit->setPlaceholderText(tr("Short description shown in the popup"));
+    m_scriptEdit->setPlaceholderText(
+        tr("Example: open https://example.com?q=$URLENCODED"));
+    m_scriptEdit->setAccessibleName(tr("Plugin command"));
+
+    if (m_editMode && m_editingInfo)
+    {
+        m_submitButton->setText(tr("Save changes"));
+        m_submitButton->setAccessibleName(tr("Save plugin"));
+        m_titleLabel->setText(tr("Edit %1").arg(m_editingInfo->name));
+        m_subtitleLabel->setText(
+            tr("Update how this plugin appears and which command it runs."));
+        setWindowTitle(tr("Edit %1").arg(m_editingInfo->name));
+    }
+    else
+    {
+        m_submitButton->setText(tr("Create plugin"));
+        m_submitButton->setAccessibleName(tr("Create plugin"));
+        m_titleLabel->setText(tr("Create New Plugin"));
+        m_subtitleLabel->setText(
+            tr("Choose an icon, describe the plugin, and define the command to run."));
+        setWindowTitle(tr("Create New Plugin"));
+    }
+
+    updateTipCounter();
+    updateValidation();
+}
+
 void SPluginEditor::submit()
 {
     updateValidation();
@@ -972,6 +1027,10 @@ void SPluginEditor::setDragActive(bool active)
 void SPluginEditor::changeEvent(QEvent *event)
 {
     QWidget::changeEvent(event);
+    if (event && event->type() == QEvent::LanguageChange)
+    {
+        retranslateUi();
+    }
     if (event && (event->type() == QEvent::PaletteChange
         || event->type() == QEvent::ApplicationPaletteChange
         || event->type() == QEvent::ThemeChange))

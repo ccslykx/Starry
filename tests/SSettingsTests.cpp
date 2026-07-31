@@ -1,6 +1,8 @@
 #include <QCoreApplication>
 #include <QAbstractButton>
+#include <QAbstractItemView>
 #include <QApplication>
+#include <QComboBox>
 #include <QDir>
 #include <QEvent>
 #include <QFileInfo>
@@ -27,6 +29,7 @@
 
 #include "SButton.h"
 #include "SConfig.h"
+#include "SLanguageManager.h"
 #include "SPluginEditor.h"
 #include "SPluginInfo.h"
 #include "SPluginItem.h"
@@ -49,6 +52,9 @@ private slots:
     void restoresMinimizedSettingsWindow();
     void nativeControlsSupportKeyboard();
     void buttonRolesAndNavigationSelection();
+    void supportsRuntimeLanguageSwitching();
+    void aboutPageUsesCMakeVersion();
+    void generalSettingsFollowRuntimeThemeSwitch();
     void darkModeUsesBrighterOrangeBackgrounds();
     void editorRefreshesDuringRuntimeThemeSwitch();
     void pluginDeleteButtonFollowsEditButton();
@@ -82,6 +88,8 @@ void SSettingsTests::initTestCase()
     QVERIFY(m_configDir->isValid());
     QVERIFY(QDir().mkpath(m_configDir->filePath("icons")));
     m_config = SConfig::config(m_configDir->path());
+    m_config->setLanguageCode(QStringLiteral("en"));
+    QVERIFY(SLanguageManager::instance()->setLanguage(QStringLiteral("en")));
     m_settings = SSettings::instance();
 }
 
@@ -265,6 +273,156 @@ void SSettingsTests::buttonRolesAndNavigationSelection()
     QVERIFY(!pluginsButton->isSelected());
     QVERIFY(!generalButton->isSelected());
     QCOMPARE(menu->currentRow(), 2);
+}
+
+void SSettingsTests::supportsRuntimeLanguageSwitching()
+{
+    QComboBox *languageCombo =
+        m_settings->findChild<QComboBox *>("languageComboBox");
+    QListWidget *menu =
+        m_settings->findChild<QListWidget *>("settingsMenuList");
+    QVERIFY(languageCombo);
+    QVERIFY(menu);
+    QCOMPARE(languageCombo->count(), 6);
+    SSwitcher *debugModeSwitcher =
+        m_settings->findChild<SSwitcher *>("debugModeSwitcher");
+    QVERIFY(debugModeSwitcher);
+
+    struct ExpectedLanguage
+    {
+        QString code;
+        QString generalText;
+        QString enabledText;
+        QString disabledText;
+    };
+    const QList<ExpectedLanguage> expectedLanguages{
+        {QStringLiteral("zh_CN"), QStringLiteral("常规设置"),
+         QStringLiteral("✓ 已开启"), QStringLiteral("已关闭")},
+        {QStringLiteral("zh_TW"), QStringLiteral("一般設定"),
+         QStringLiteral("✓ 已開啟"), QStringLiteral("已關閉")},
+        {QStringLiteral("en"), QStringLiteral("General Settings"),
+         QStringLiteral("✓ Enabled"), QStringLiteral("Disabled")},
+        {QStringLiteral("de"), QStringLiteral("Allgemeine Einstellungen"),
+         QStringLiteral("✓ Aktiviert"), QStringLiteral("Deaktiviert")},
+        {QStringLiteral("fr"), QStringLiteral("Paramètres généraux"),
+         QStringLiteral("✓ Activé"), QStringLiteral("Désactivé")},
+        {QStringLiteral("ja"), QStringLiteral("一般設定"),
+         QStringLiteral("✓ 有効"), QStringLiteral("無効")},
+    };
+    for (const ExpectedLanguage &language : expectedLanguages)
+    {
+        const int index = languageCombo->findData(language.code);
+        QVERIFY(index >= 0);
+        languageCombo->setCurrentIndex(index);
+        SButton *generalButton =
+            qobject_cast<SButton *>(menu->itemWidget(menu->item(0)));
+        QVERIFY(generalButton);
+        QTRY_COMPARE_WITH_TIMEOUT(
+            generalButton->text(),
+            language.generalText,
+            1000);
+        debugModeSwitcher->setStatus(false);
+        QCOMPARE(debugModeSwitcher->text(), language.disabledText);
+        debugModeSwitcher->setStatus(true);
+        QCOMPARE(debugModeSwitcher->text(), language.enabledText);
+        debugModeSwitcher->setStatus(false);
+        QCOMPARE(m_config->languageCode(), language.code);
+        QCOMPARE(
+            QCoreApplication::translate("SSettings", "General Settings"),
+            language.generalText);
+    }
+
+    SPluginEditor *editor = SPluginEditor::editor();
+    editor->create();
+    languageCombo->setCurrentIndex(
+        languageCombo->findData(QStringLiteral("ja")));
+    QTRY_COMPARE_WITH_TIMEOUT(
+        editor->windowTitle(),
+        QStringLiteral("新しいプラグインを作成"),
+        1000);
+
+    languageCombo->setCurrentIndex(
+        languageCombo->findData(QStringLiteral("en")));
+    QTRY_COMPARE_WITH_TIMEOUT(
+        editor->windowTitle(),
+        QStringLiteral("Create New Plugin"),
+        1000);
+    QCOMPARE(m_config->languageCode(), QStringLiteral("en"));
+
+    QSettings savedSettings(
+        m_configDir->filePath("starry.conf"),
+        QSettings::NativeFormat);
+    QCOMPARE(
+        savedSettings.value(QStringLiteral("STARRY_SETTINGS/language")).toString(),
+        QStringLiteral("en"));
+}
+
+void SSettingsTests::aboutPageUsesCMakeVersion()
+{
+    QLabel *aboutContent =
+        m_settings->findChild<QLabel *>("aboutContentLabel");
+    QVERIFY(aboutContent);
+    QCOMPARE(m_config->version(), QStringLiteral(STARRY_VERSION_STRING));
+    QCOMPARE(m_config->major(), STARRY_VERSION_MAJOR);
+    QCOMPARE(m_config->minor(), STARRY_VERSION_MINOR);
+    QCOMPARE(m_config->patch(), STARRY_VERSION_PATCH);
+    QVERIFY(aboutContent->text().startsWith(
+        QStringLiteral("Version: %1\n").arg(QStringLiteral(STARRY_VERSION_STRING))));
+}
+
+void SSettingsTests::generalSettingsFollowRuntimeThemeSwitch()
+{
+    QStyleHints *styleHints = QGuiApplication::styleHints();
+    QVERIFY(styleHints);
+
+    QFrame *languageCard =
+        m_settings->findChild<QFrame *>("languageCard");
+    QFrame *debugModeCard =
+        m_settings->findChild<QFrame *>("debugModeCard");
+    QComboBox *languageCombo =
+        m_settings->findChild<QComboBox *>("languageComboBox");
+    SSwitcher *debugModeSwitcher =
+        m_settings->findChild<SSwitcher *>("debugModeSwitcher");
+    QVERIFY(languageCard);
+    QVERIFY(debugModeCard);
+    QVERIFY(languageCombo);
+    QVERIFY(languageCombo->view());
+    QVERIFY(debugModeSwitcher);
+
+    styleHints->colorSchemeChanged(Qt::ColorScheme::Dark);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        languageCard->styleSheet().contains("background: #1D2939"), 1000);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        debugModeCard->styleSheet().contains("border: 1px solid #344054"), 1000);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        languageCombo->styleSheet().contains("background: #344054"), 1000);
+    QCOMPARE(
+        languageCombo->property("arrowColor").value<QColor>(),
+        QColor("#F2F4F7"));
+    QVERIFY(languageCombo->styleSheet().contains(
+        "QComboBox#languageComboBox::down-arrow { image: none; }"));
+    QTRY_VERIFY_WITH_TIMEOUT(
+        languageCombo->view()->styleSheet().contains("background: #1D2939"), 1000);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        debugModeSwitcher->styleSheet().contains("background: #344054"), 1000);
+
+    styleHints->colorSchemeChanged(Qt::ColorScheme::Light);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        languageCard->styleSheet().contains("background: #FFFFFF"), 1000);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        debugModeCard->styleSheet().contains("border: 1px solid #EAECF0"), 1000);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        languageCombo->styleSheet().contains("border: 1px solid #D0D5DD"), 1000);
+    QCOMPARE(
+        languageCombo->property("arrowColor").value<QColor>(),
+        QColor("#344054"));
+    QTRY_VERIFY_WITH_TIMEOUT(
+        languageCombo->view()->styleSheet().contains("background: #FFFFFF"), 1000);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        debugModeSwitcher->styleSheet().contains("background: #F2F4F7"), 1000);
+
+    styleHints->colorSchemeChanged(styleHints->colorScheme());
+    QCoreApplication::processEvents();
 }
 
 void SSettingsTests::darkModeUsesBrighterOrangeBackgrounds()
@@ -771,7 +929,7 @@ void SSettingsTests::reportsNonZeroPluginExit()
     QTRY_VERIFY_WITH_TIMEOUT(executionSpy.count() >= 2, 2000);
     QVERIFY(executionSpy.at(0).at(0).toBool());
     QVERIFY(!executionSpy.constLast().at(0).toBool());
-    QVERIFY(executionSpy.constLast().at(1).toString().contains(QStringLiteral("退出码")));
+    QVERIFY(executionSpy.constLast().at(1).toString().contains(QStringLiteral("exit code")));
     QTRY_VERIFY_WITH_TIMEOUT(SPluginTaskManager::instance()->activeTasks().isEmpty(), 2000);
 
     SPopupItem::remove(item);
@@ -802,14 +960,14 @@ void SSettingsTests::tracksPopupTasksAndAllowsConfirmedForceStop()
 
     QSignalSpy executionSpy(info->popupItem, &SPopupItem::executionFinished);
     info->popupItem->exec();
-    QCOMPARE(statusLabel->text(), QString("启动中…"));
+    QCOMPARE(statusLabel->text(), QString("Starting…"));
     QVERIFY(loadingIndicator->isVisible());
     QVERIFY(!info->popupItem->isVisible());
     QCOMPARE(popup->size(), popup->layout()->sizeHint().expandedTo(popup->minimumSize()));
 
     QTRY_COMPARE_WITH_TIMEOUT(executionSpy.count(), 1, 2000);
     QVERIFY(executionSpy.constFirst().constFirst().toBool());
-    QCOMPARE(statusLabel->text(), QString("已启动"));
+    QCOMPARE(statusLabel->text(), QString("Started"));
     QVERIFY(!loadingIndicator->isVisible());
     QCOMPARE(popup->size(), popup->layout()->sizeHint().expandedTo(popup->minimumSize()));
     QTRY_COMPARE_WITH_TIMEOUT(taskList->count(), 1, 2000);
@@ -857,10 +1015,10 @@ void SSettingsTests::tracksPopupTasksAndAllowsConfirmedForceStop()
     popup->showPopup();
     QSignalSpy failedSpy(failedInfo->popupItem, &SPopupItem::executionFinished);
     failedInfo->popupItem->exec();
-    QCOMPARE(statusLabel->text(), QString("启动中…"));
+    QCOMPARE(statusLabel->text(), QString("Starting…"));
     QTRY_COMPARE_WITH_TIMEOUT(failedSpy.count(), 1, 2000);
     QVERIFY(!failedSpy.constFirst().constFirst().toBool());
-    QCOMPARE(statusLabel->text(), QString("启动失败"));
+    QCOMPARE(statusLabel->text(), QString("Failed to start"));
     QVERIFY(SPluginTaskManager::instance()->activeTasks().isEmpty());
     QTest::qWait(500);
     QVERIFY(popup->isVisible());

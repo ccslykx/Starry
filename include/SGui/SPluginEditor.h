@@ -70,6 +70,7 @@ private:
     void resetIcon();
     void updateIconPreview();
     void testCommand();
+    void retranslateUi();
     void refreshTheme(bool force = false,
                       Qt::ColorScheme scheme = Qt::ColorScheme::Unknown);
     void setDragActive(bool active);

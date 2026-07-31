@@ -42,7 +42,7 @@ private:
 
     void initGui(); // Initialize the gui.
     void initServices();
-    void initSettings(); // Initialize the settings.
+    void retranslateUi();
 
 private:
     static STray            *m_instance;
@@ -51,4 +51,8 @@ private:
     static SSettings        *m_settings;
     static SPopup           *m_popup;
     static SMouseListener   *m_mouseListener;
+
+    QAction                 *m_enableAction = nullptr;
+    QAction                 *m_settingsAction = nullptr;
+    QAction                 *m_exitAction = nullptr;
 };
