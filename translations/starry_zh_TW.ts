@@ -86,6 +86,14 @@
     <message><source>When enabled, selected text and expanded plugin arguments are written to the debug log. The log may contain sensitive information.</source><translation>開啟後，選取文字和展開後的外掛程式參數會寫入偵錯記錄。記錄中可能包含敏感資訊。</translation></message>
     <message><source>Enabled</source><translation>已開啟</translation></message>
     <message><source>Disabled</source><translation>已關閉</translation></message>
+    <message><source>Accessibility permission</source><translation>輔助使用權限</translation></message>
+    <message><source>Allows Starry to monitor mouse actions and read selected text.</source><translation>允許 Starry 監聽滑鼠操作並讀取選取的文字。</translation></message>
+    <message><source>Request permission</source><translation>申請權限</translation></message>
+    <message><source>Request again</source><translation>再次申請</translation></message>
+    <message><source>Request accessibility permission</source><translation>申請輔助使用權限</translation></message>
+    <message><source>Granted</source><translation>已授權</translation></message>
+    <message><source>Not granted</source><translation>未授權</translation></message>
+    <message><source>Accessibility permission status</source><translation>輔助使用權限狀態</translation></message>
     <message><source>Create new plugin</source><translation>建立新外掛程式</translation></message>
     <message><source>Plugin Task Manager</source><translation>外掛程式工作管理員</translation></message>
     <message><source>Running plugins remain here until they exit. Force stopping a task may lose its unsaved data.</source><translation>執行中的外掛程式會保留在此處，直到結束為止。強制停止工作可能會遺失未儲存的資料。</translation></message>

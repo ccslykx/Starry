@@ -86,6 +86,14 @@
     <message><source>When enabled, selected text and expanded plugin arguments are written to the debug log. The log may contain sensitive information.</source><translation>有効にすると、選択したテキストと展開後のプラグイン引数がデバッグログに記録されます。ログには機密情報が含まれる場合があります。</translation></message>
     <message><source>Enabled</source><translation>有効</translation></message>
     <message><source>Disabled</source><translation>無効</translation></message>
+    <message><source>Accessibility permission</source><translation>アクセシビリティ権限</translation></message>
+    <message><source>Allows Starry to monitor mouse actions and read selected text.</source><translation>Starry がマウス操作を監視し、選択したテキストを読み取ることを許可します。</translation></message>
+    <message><source>Request permission</source><translation>アクセス許可を要求</translation></message>
+    <message><source>Request again</source><translation>もう一度要求</translation></message>
+    <message><source>Request accessibility permission</source><translation>アクセシビリティ権限を要求</translation></message>
+    <message><source>Granted</source><translation>許可済み</translation></message>
+    <message><source>Not granted</source><translation>未許可</translation></message>
+    <message><source>Accessibility permission status</source><translation>アクセシビリティ権限の状態</translation></message>
     <message><source>Create new plugin</source><translation>新しいプラグインを作成</translation></message>
     <message><source>Plugin Task Manager</source><translation>プラグインタスクマネージャー</translation></message>
     <message><source>Running plugins remain here until they exit. Force stopping a task may lose its unsaved data.</source><translation>実行中のプラグインは終了するまでここに表示されます。タスクを強制停止すると、未保存のデータが失われる場合があります。</translation></message>

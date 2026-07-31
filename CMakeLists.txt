@@ -43,7 +43,12 @@ elseif (CMAKE_HOST_WIN32)
 		src/core/platform/WinMouseListener.cpp
 	)
 elseif (CMAKE_HOST_APPLE)
+	set(MAC_PERMISSION_FILE
+		include/Core/Platform/MacAccessibilityPermission.h
+		src/core/platform/MacAccessibilityPermission.cpp
+	)
 	set(PLATFORM_FILE
+		${MAC_PERMISSION_FILE}
 		include/Core/Platform/MacMouseListener.h
 		src/core/platform/MacMouseListener.cpp
 	)
@@ -82,6 +87,13 @@ set(LIBRARYS
 endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC ${LIBRARYS})
+
+if (CMAKE_HOST_APPLE)
+	find_library(APPLICATION_SERVICES_FRAMEWORK ApplicationServices REQUIRED)
+	target_link_libraries(${PROJECT_NAME} PUBLIC
+		${APPLICATION_SERVICES_FRAMEWORK}
+	)
+endif()
 
 if (BUILD_TESTING)
 	find_package(Qt6 COMPONENTS Test REQUIRED)
@@ -154,6 +166,7 @@ if (BUILD_TESTING)
 		src/gui/SPopupItem.cpp
 		src/gui/SSettings.cpp
 		src/gui/SSwitcher.cpp
+		${MAC_PERMISSION_FILE}
 		${RESOURCES}
 	)
 	target_include_directories(StarrySettingsTests PRIVATE
@@ -167,6 +180,7 @@ if (BUILD_TESTING)
 		Qt6::Gui
 		Qt6::Widgets
 		Qt6::Test
+		${APPLICATION_SERVICES_FRAMEWORK}
 	)
 	add_test(NAME StarrySettingsTests COMMAND StarrySettingsTests)
 	set_tests_properties(StarrySettingsTests PROPERTIES

@@ -57,6 +57,9 @@ private:
     void retranslateUi();
     void retranslateTaskRow(SPluginTask *task);
     void syncLanguageSelection(const QString &code);
+#ifdef Q_OS_MACOS
+    void refreshAccessibilityPermission();
+#endif
     void refreshPluginIndex();
     void addTaskItem(SPluginTask *task);
     void removeTaskItem(SPluginTask *task);
@@ -82,6 +85,13 @@ private:
     QLabel                  *m_debugDescriptionLabel = nullptr;
     QFrame                  *m_debugModeCard = nullptr;
     SSwitcher               *m_debugModeSwitcher = nullptr;
+#ifdef Q_OS_MACOS
+    QFrame                  *m_accessibilityPermissionCard = nullptr;
+    QLabel                  *m_accessibilityPermissionTitleLabel = nullptr;
+    QLabel                  *m_accessibilityPermissionDescriptionLabel = nullptr;
+    QLabel                  *m_accessibilityPermissionStatusLabel = nullptr;
+    SButton                 *m_requestAccessibilityPermissionButton = nullptr;
+#endif
     QWidget                 *m_pluginWidget = nullptr; // 内容页-插件
     QListWidget             *m_pluginListWidget = nullptr; // 内容页-插件-已有插件列表
     SButton                 *m_newPluginButton = nullptr;

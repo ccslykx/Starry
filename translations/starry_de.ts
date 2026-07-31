@@ -86,6 +86,14 @@
     <message><source>When enabled, selected text and expanded plugin arguments are written to the debug log. The log may contain sensitive information.</source><translation>Wenn aktiviert, werden ausgewählter Text und erweiterte Plugin-Argumente in das Debug-Protokoll geschrieben. Das Protokoll kann vertrauliche Informationen enthalten.</translation></message>
     <message><source>Enabled</source><translation>Aktiviert</translation></message>
     <message><source>Disabled</source><translation>Deaktiviert</translation></message>
+    <message><source>Accessibility permission</source><translation>Berechtigung für Bedienungshilfen</translation></message>
+    <message><source>Allows Starry to monitor mouse actions and read selected text.</source><translation>Erlaubt Starry, Mausaktionen zu überwachen und ausgewählten Text zu lesen.</translation></message>
+    <message><source>Request permission</source><translation>Berechtigung anfordern</translation></message>
+    <message><source>Request again</source><translation>Erneut anfordern</translation></message>
+    <message><source>Request accessibility permission</source><translation>Berechtigung für Bedienungshilfen anfordern</translation></message>
+    <message><source>Granted</source><translation>Erteilt</translation></message>
+    <message><source>Not granted</source><translation>Nicht erteilt</translation></message>
+    <message><source>Accessibility permission status</source><translation>Status der Berechtigung für Bedienungshilfen</translation></message>
     <message><source>Create new plugin</source><translation>Neues Plugin erstellen</translation></message>
     <message><source>Plugin Task Manager</source><translation>Plugin-Aufgabenverwaltung</translation></message>
     <message><source>Running plugins remain here until they exit. Force stopping a task may lose its unsaved data.</source><translation>Ausgeführte Plugins bleiben hier, bis sie beendet werden. Das erzwungene Beenden einer Aufgabe kann zum Verlust nicht gespeicherter Daten führen.</translation></message>

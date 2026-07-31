@@ -86,6 +86,14 @@
     <message><source>When enabled, selected text and expanded plugin arguments are written to the debug log. The log may contain sensitive information.</source><translation>开启后，选中文本和展开后的插件参数会写入调试日志。日志中可能包含敏感信息。</translation></message>
     <message><source>Enabled</source><translation>已开启</translation></message>
     <message><source>Disabled</source><translation>已关闭</translation></message>
+    <message><source>Accessibility permission</source><translation>辅助功能权限</translation></message>
+    <message><source>Allows Starry to monitor mouse actions and read selected text.</source><translation>允许 Starry 监听鼠标操作并读取选中的文本。</translation></message>
+    <message><source>Request permission</source><translation>申请权限</translation></message>
+    <message><source>Request again</source><translation>再次申请</translation></message>
+    <message><source>Request accessibility permission</source><translation>申请辅助功能权限</translation></message>
+    <message><source>Granted</source><translation>已授权</translation></message>
+    <message><source>Not granted</source><translation>未授权</translation></message>
+    <message><source>Accessibility permission status</source><translation>辅助功能权限状态</translation></message>
     <message><source>Create new plugin</source><translation>新建插件</translation></message>
     <message><source>Plugin Task Manager</source><translation>插件任务管理器</translation></message>
     <message><source>Running plugins remain here until they exit. Force stopping a task may lose its unsaved data.</source><translation>正在运行的插件会保留在此处，直至退出。强制停止任务可能导致未保存的数据丢失。</translation></message>

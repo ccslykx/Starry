@@ -120,6 +120,20 @@ macOS：
 - [WHLUG/xrecord-example](https://github.com/WHLUG/xrecord-example)
 
 
+## 许可证
+
+Starry 自有代码采用 [PolyForm Noncommercial License 1.0.0](./LICENSE)：
+
+- 允许许可证规定范围内的非商业使用、修改与再分发；
+- 任何不属于该许可证允许范围的商业使用，均需事先联系作者取得独立的书面商业授权；
+- 商业授权请联系：ccslykx@outlook.com。
+
+Qt、Qt 工具、Qt 文档及其他第三方组件不适用 Starry 的非商业许可证，继续由其各自原有
+许可证约束。Qt 可根据所采用的版本和发行方式适用 Qt 商业许可证、LGPL、GPL 及相关
+第三方许可证，详见 [Qt 官方许可说明](https://doc.qt.io/qt-6/licensing.html)。本节仅为摘要，
+具体权利和义务以 [LICENSE](./LICENSE) 全文及各第三方组件的许可证为准。
+
+
 ## 反馈&交流
 
 - [新建Issue](https://github.com/ccslykx/Starry/issues/new)

@@ -86,6 +86,14 @@
     <message><source>When enabled, selected text and expanded plugin arguments are written to the debug log. The log may contain sensitive information.</source><translation>Lorsque ce mode est activé, le texte sélectionné et les arguments de plugin développés sont écrits dans le journal de débogage. Ce journal peut contenir des informations sensibles.</translation></message>
     <message><source>Enabled</source><translation>Activé</translation></message>
     <message><source>Disabled</source><translation>Désactivé</translation></message>
+    <message><source>Accessibility permission</source><translation>Autorisation d’accessibilité</translation></message>
+    <message><source>Allows Starry to monitor mouse actions and read selected text.</source><translation>Permet à Starry de surveiller les actions de la souris et de lire le texte sélectionné.</translation></message>
+    <message><source>Request permission</source><translation>Demander l’autorisation</translation></message>
+    <message><source>Request again</source><translation>Demander à nouveau</translation></message>
+    <message><source>Request accessibility permission</source><translation>Demander l’autorisation d’accessibilité</translation></message>
+    <message><source>Granted</source><translation>Accordée</translation></message>
+    <message><source>Not granted</source><translation>Non accordée</translation></message>
+    <message><source>Accessibility permission status</source><translation>État de l’autorisation d’accessibilité</translation></message>
     <message><source>Create new plugin</source><translation>Créer un nouveau plugin</translation></message>
     <message><source>Plugin Task Manager</source><translation>Gestionnaire de tâches des plugins</translation></message>
     <message><source>Running plugins remain here until they exit. Force stopping a task may lose its unsaved data.</source><translation>Les plugins en cours d’exécution restent ici jusqu’à leur fermeture. L’arrêt forcé d’une tâche peut entraîner la perte de données non enregistrées.</translation></message>

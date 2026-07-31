@@ -54,6 +54,7 @@ private slots:
     void buttonRolesAndNavigationSelection();
     void supportsRuntimeLanguageSwitching();
     void aboutPageUsesCMakeVersion();
+    void showsAccessibilityPermissionOnlyOnMac();
     void generalSettingsFollowRuntimeThemeSwitch();
     void darkModeUsesBrighterOrangeBackgrounds();
     void editorRefreshesDuringRuntimeThemeSwitch();
@@ -370,6 +371,45 @@ void SSettingsTests::aboutPageUsesCMakeVersion()
         QStringLiteral("Version: %1\n").arg(QStringLiteral(STARRY_VERSION_STRING))));
 }
 
+void SSettingsTests::showsAccessibilityPermissionOnlyOnMac()
+{
+    QFrame *permissionCard =
+        m_settings->findChild<QFrame *>("accessibilityPermissionCard");
+#ifdef Q_OS_MACOS
+    QVERIFY(permissionCard);
+    QLabel *statusLabel =
+        permissionCard->findChild<QLabel *>("accessibilityPermissionStatus");
+    QPushButton *requestButton =
+        permissionCard->findChild<QPushButton *>(
+            "requestAccessibilityPermissionButton");
+    QVERIFY(statusLabel);
+    QVERIFY(requestButton);
+    QVERIFY(statusLabel->text() == QStringLiteral("Granted")
+            || statusLabel->text() == QStringLiteral("Not granted"));
+    QCOMPARE(
+        requestButton->isHidden(),
+        statusLabel->text() == QStringLiteral("Granted"));
+
+    SSwitcher *debugModeSwitcher =
+        m_settings->findChild<SSwitcher *>("debugModeSwitcher");
+    QVERIFY(debugModeSwitcher);
+    QVERIFY(!debugModeSwitcher->isOn());
+    debugModeSwitcher->click();
+    QVERIFY(debugModeSwitcher->isOn());
+    QVERIFY(!requestButton->isHidden());
+    QVERIFY(requestButton->isEnabled());
+    QCOMPARE(
+        requestButton->text(),
+        statusLabel->text() == QStringLiteral("Granted")
+            ? QStringLiteral("Request again")
+            : QStringLiteral("Request permission"));
+    debugModeSwitcher->click();
+    QVERIFY(!debugModeSwitcher->isOn());
+#else
+    QVERIFY(!permissionCard);
+#endif
+}
+
 void SSettingsTests::generalSettingsFollowRuntimeThemeSwitch()
 {
     QStyleHints *styleHints = QGuiApplication::styleHints();
@@ -379,12 +419,19 @@ void SSettingsTests::generalSettingsFollowRuntimeThemeSwitch()
         m_settings->findChild<QFrame *>("languageCard");
     QFrame *debugModeCard =
         m_settings->findChild<QFrame *>("debugModeCard");
+#ifdef Q_OS_MACOS
+    QFrame *permissionCard =
+        m_settings->findChild<QFrame *>("accessibilityPermissionCard");
+#endif
     QComboBox *languageCombo =
         m_settings->findChild<QComboBox *>("languageComboBox");
     SSwitcher *debugModeSwitcher =
         m_settings->findChild<SSwitcher *>("debugModeSwitcher");
     QVERIFY(languageCard);
     QVERIFY(debugModeCard);
+#ifdef Q_OS_MACOS
+    QVERIFY(permissionCard);
+#endif
     QVERIFY(languageCombo);
     QVERIFY(languageCombo->view());
     QVERIFY(debugModeSwitcher);
@@ -394,6 +441,10 @@ void SSettingsTests::generalSettingsFollowRuntimeThemeSwitch()
         languageCard->styleSheet().contains("background: #1D2939"), 1000);
     QTRY_VERIFY_WITH_TIMEOUT(
         debugModeCard->styleSheet().contains("border: 1px solid #344054"), 1000);
+#ifdef Q_OS_MACOS
+    QTRY_VERIFY_WITH_TIMEOUT(
+        permissionCard->styleSheet().contains("border: 1px solid #344054"), 1000);
+#endif
     QTRY_VERIFY_WITH_TIMEOUT(
         languageCombo->styleSheet().contains("background: #344054"), 1000);
     QCOMPARE(
@@ -411,6 +462,10 @@ void SSettingsTests::generalSettingsFollowRuntimeThemeSwitch()
         languageCard->styleSheet().contains("background: #FFFFFF"), 1000);
     QTRY_VERIFY_WITH_TIMEOUT(
         debugModeCard->styleSheet().contains("border: 1px solid #EAECF0"), 1000);
+#ifdef Q_OS_MACOS
+    QTRY_VERIFY_WITH_TIMEOUT(
+        permissionCard->styleSheet().contains("border: 1px solid #EAECF0"), 1000);
+#endif
     QTRY_VERIFY_WITH_TIMEOUT(
         languageCombo->styleSheet().contains("border: 1px solid #D0D5DD"), 1000);
     QCOMPARE(

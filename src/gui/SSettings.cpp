@@ -24,6 +24,10 @@
 #include "SSwitcher.h"
 #include "utils.h"
 
+#ifdef Q_OS_MACOS
+#include "Core/Platform/MacAccessibilityPermission.h"
+#endif
+
 namespace
 {
 class LanguageComboBox final : public QComboBox
@@ -196,6 +200,9 @@ SSettings* SSettings::instance(QWidget *parent)
 
 void SSettings::showAndActivate()
 {
+#ifdef Q_OS_MACOS
+    refreshAccessibilityPermission();
+#endif
     Qt::WindowStates state = windowState();
     state &= ~Qt::WindowMinimized;
     state |= Qt::WindowActive;
@@ -248,6 +255,14 @@ void SSettings::refreshTheme(bool force, Qt::ColorScheme scheme)
         m_debugModeCard->setStyleSheet(
             generalSettingsCardStyleSheet(m_debugModeCard->objectName(), dark));
     }
+#ifdef Q_OS_MACOS
+    if (m_accessibilityPermissionCard)
+    {
+        m_accessibilityPermissionCard->setStyleSheet(
+            generalSettingsCardStyleSheet(
+                m_accessibilityPermissionCard->objectName(), dark));
+    }
+#endif
     const QString titleStyle = dark
         ? QStringLiteral("font-weight: 600; color: #F2F4F7;")
         : QStringLiteral("font-weight: 600; color: #344054;");
@@ -270,6 +285,17 @@ void SSettings::refreshTheme(bool force, Qt::ColorScheme scheme)
     {
         m_debugDescriptionLabel->setStyleSheet(descriptionStyle);
     }
+#ifdef Q_OS_MACOS
+    if (m_accessibilityPermissionTitleLabel)
+    {
+        m_accessibilityPermissionTitleLabel->setStyleSheet(titleStyle);
+    }
+    if (m_accessibilityPermissionDescriptionLabel)
+    {
+        m_accessibilityPermissionDescriptionLabel->setStyleSheet(descriptionStyle);
+    }
+    refreshAccessibilityPermission();
+#endif
     if (m_languageComboBox)
     {
         m_languageComboBox->setProperty(
@@ -363,6 +389,24 @@ void SSettings::retranslateUi()
         m_debugModeSwitcher->setOffText(tr("Disabled"));
         m_debugModeSwitcher->setAccessibleName(tr("Enable debug mode"));
     }
+#ifdef Q_OS_MACOS
+    if (m_accessibilityPermissionTitleLabel)
+    {
+        m_accessibilityPermissionTitleLabel->setText(
+            tr("Accessibility permission"));
+    }
+    if (m_accessibilityPermissionDescriptionLabel)
+    {
+        m_accessibilityPermissionDescriptionLabel->setText(
+            tr("Allows Starry to monitor mouse actions and read selected text."));
+    }
+    if (m_requestAccessibilityPermissionButton)
+    {
+        m_requestAccessibilityPermissionButton->setAccessibleName(
+            tr("Request accessibility permission"));
+    }
+    refreshAccessibilityPermission();
+#endif
     if (m_newPluginButton)
     {
         m_newPluginButton->setText(tr("Create new plugin"));
@@ -511,6 +555,77 @@ void SSettings::initGui()
         debugLayout->addLayout(debugTextLayout, 1);
         debugLayout->addWidget(m_debugModeSwitcher, 0, Qt::AlignVCenter);
 
+#ifdef Q_OS_MACOS
+        m_accessibilityPermissionCard = new QFrame(m_generalWidget);
+        m_accessibilityPermissionCard->setObjectName(
+            "accessibilityPermissionCard");
+        m_accessibilityPermissionCard->setAttribute(
+            Qt::WA_StyledBackground, true);
+
+        m_accessibilityPermissionTitleLabel =
+            new QLabel(m_accessibilityPermissionCard);
+        m_accessibilityPermissionTitleLabel->setObjectName(
+            "accessibilityPermissionTitle");
+        m_accessibilityPermissionTitleLabel->setStyleSheet(
+            "font-weight: 600;");
+        m_accessibilityPermissionDescriptionLabel =
+            new QLabel(m_accessibilityPermissionCard);
+        m_accessibilityPermissionDescriptionLabel->setObjectName(
+            "accessibilityPermissionDescription");
+        m_accessibilityPermissionDescriptionLabel->setWordWrap(true);
+
+        m_accessibilityPermissionStatusLabel =
+            new QLabel(m_accessibilityPermissionCard);
+        m_accessibilityPermissionStatusLabel->setObjectName(
+            "accessibilityPermissionStatus");
+        m_accessibilityPermissionStatusLabel->setAlignment(Qt::AlignCenter);
+        m_accessibilityPermissionStatusLabel->setMinimumHeight(28);
+        m_accessibilityPermissionStatusLabel->setContentsMargins(10, 0, 10, 0);
+
+        m_requestAccessibilityPermissionButton =
+            new SButton(QString(), m_accessibilityPermissionCard);
+        m_requestAccessibilityPermissionButton->setObjectName(
+            "requestAccessibilityPermissionButton");
+        m_requestAccessibilityPermissionButton->setRole(
+            SButton::Role::Primary);
+
+        QVBoxLayout *accessibilityPermissionTextLayout = new QVBoxLayout;
+        accessibilityPermissionTextLayout->setContentsMargins(0, 0, 0, 0);
+        accessibilityPermissionTextLayout->setSpacing(4);
+        accessibilityPermissionTextLayout->addWidget(
+            m_accessibilityPermissionTitleLabel);
+        accessibilityPermissionTextLayout->addWidget(
+            m_accessibilityPermissionDescriptionLabel);
+
+        QHBoxLayout *accessibilityPermissionActionLayout = new QHBoxLayout;
+        accessibilityPermissionActionLayout->setContentsMargins(0, 0, 0, 0);
+        accessibilityPermissionActionLayout->setSpacing(10);
+        accessibilityPermissionActionLayout->addWidget(
+            m_accessibilityPermissionStatusLabel);
+        accessibilityPermissionActionLayout->addWidget(
+            m_requestAccessibilityPermissionButton);
+
+        QHBoxLayout *accessibilityPermissionLayout =
+            new QHBoxLayout(m_accessibilityPermissionCard);
+        accessibilityPermissionLayout->setContentsMargins(18, 16, 18, 16);
+        accessibilityPermissionLayout->setSpacing(16);
+        accessibilityPermissionLayout->addLayout(
+            accessibilityPermissionTextLayout, 1);
+        accessibilityPermissionLayout->addLayout(
+            accessibilityPermissionActionLayout);
+
+        QObject::connect(
+            m_requestAccessibilityPermissionButton,
+            &SButton::clicked,
+            this,
+            [this] {
+                MacAccessibilityPermission::request();
+                refreshAccessibilityPermission();
+                QTimer::singleShot(
+                    1000, this, &SSettings::refreshAccessibilityPermission);
+            });
+#endif
+
         QVBoxLayout *generalLayout = new QVBoxLayout(m_generalWidget);
         generalLayout->setContentsMargins(24, 24, 24, 24);
         generalLayout->setSpacing(12);
@@ -518,6 +633,9 @@ void SSettings::initGui()
         generalLayout->addWidget(m_generalDescriptionLabel);
         generalLayout->addWidget(m_languageCard);
         generalLayout->addWidget(m_debugModeCard);
+#ifdef Q_OS_MACOS
+        generalLayout->addWidget(m_accessibilityPermissionCard);
+#endif
         generalLayout->addStretch();
 
         syncLanguageSelection(m_config->languageCode());
@@ -568,6 +686,12 @@ void SSettings::initGui()
         });
         QObject::connect(m_config, &SConfig::debugModeChanged,
                          m_debugModeSwitcher, &SSwitcher::setStatus);
+#ifdef Q_OS_MACOS
+        QObject::connect(m_config, &SConfig::debugModeChanged,
+                         this, [this] {
+            refreshAccessibilityPermission();
+        });
+#endif
     }
 
     if (QStyleHints *styleHints = QGuiApplication::styleHints())
@@ -837,6 +961,54 @@ void SSettings::showContent(int index)
     }
 }
 
+#ifdef Q_OS_MACOS
+void SSettings::refreshAccessibilityPermission()
+{
+    if (!m_accessibilityPermissionStatusLabel
+        || !m_requestAccessibilityPermissionButton)
+    {
+        return;
+    }
+
+    const bool granted = MacAccessibilityPermission::isGranted();
+    const bool repeatedRequestEnabled =
+        granted && m_config->debugModeEnabled();
+    m_accessibilityPermissionStatusLabel->setText(
+        granted ? tr("Granted") : tr("Not granted"));
+    m_accessibilityPermissionStatusLabel->setAccessibleName(
+        tr("Accessibility permission status"));
+    m_accessibilityPermissionStatusLabel->setAccessibleDescription(
+        m_accessibilityPermissionStatusLabel->text());
+    m_accessibilityPermissionStatusLabel->setStyleSheet(
+        granted
+            ? (m_darkStyle
+                ? QStringLiteral(
+                    "color: #6CE9A6; background: #054F31;"
+                    "border: 1px solid #067647; border-radius: 7px;"
+                    "font-weight: 600;")
+                : QStringLiteral(
+                    "color: #067647; background: #ECFDF3;"
+                    "border: 1px solid #ABEFC6; border-radius: 7px;"
+                    "font-weight: 600;"))
+            : (m_darkStyle
+                ? QStringLiteral(
+                    "color: #FDBA74; background: #7C2D12;"
+                    "border: 1px solid #C2410C; border-radius: 7px;"
+                    "font-weight: 600;")
+                : QStringLiteral(
+                    "color: #C2410C; background: #FFF7ED;"
+                    "border: 1px solid #FED7AA; border-radius: 7px;"
+                    "font-weight: 600;")));
+    m_requestAccessibilityPermissionButton->setText(
+        repeatedRequestEnabled ? tr("Request again")
+                               : tr("Request permission"));
+    m_requestAccessibilityPermissionButton->setEnabled(
+        !granted || repeatedRequestEnabled);
+    m_requestAccessibilityPermissionButton->setVisible(
+        !granted || repeatedRequestEnabled);
+}
+#endif
+
 void SSettings::onCreatePluginClicked()
 {
     SDEBUG
@@ -881,6 +1053,12 @@ void SSettings::changeEvent(QEvent *event)
     {
         retranslateUi();
     }
+#ifdef Q_OS_MACOS
+    if (event->type() == QEvent::ActivationChange && isActiveWindow())
+    {
+        refreshAccessibilityPermission();
+    }
+#endif
     if (event->type() == QEvent::PaletteChange
         || event->type() == QEvent::ApplicationPaletteChange
         || event->type() == QEvent::ThemeChange)
