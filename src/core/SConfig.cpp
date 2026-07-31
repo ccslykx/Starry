@@ -8,6 +8,11 @@
 #include "SConfig.h"
 #include "utils.h"
 
+namespace
+{
+const QString DEBUG_MODE_KEY = QStringLiteral("debugModeEnabled");
+}
+
 SConfig* SConfig::m_instance = nullptr;
 
 SConfig* SConfig::config(const QString &path)
@@ -174,12 +179,22 @@ void SConfig::readFromFile(const QString &path)
 
     // Settings
     s.beginGroup(QString("STARRY_SETTINGS"));
-    QStringList settings = s.childKeys();
-    for (QString key : settings)
+    const QStringList settings = s.childKeys();
+    bool debugMode = false;
+    for (const QString &key : settings)
     {
-        addSetting(key, s.value(key));
+        const QVariant value = s.value(key);
+        if (key == DEBUG_MODE_KEY)
+        {
+            debugMode = value.toBool();
+        }
+        else
+        {
+            settingMap.insert(key, value);
+        }
     }
     s.endGroup();
+    setDebugModeEnabled(debugMode);
 }
 
 void SConfig::setConfigFilePath(const QString &path)
@@ -233,6 +248,21 @@ void SConfig::deleteSetting(const QString &key)
     {
         settingMap.remove(key);
     }
+}
+
+bool SConfig::debugModeEnabled() const
+{
+    return settingMap.value(DEBUG_MODE_KEY, false).toBool();
+}
+
+void SConfig::setDebugModeEnabled(bool enabled)
+{
+    if (debugModeEnabled() == enabled)
+    {
+        return;
+    }
+    settingMap.insert(DEBUG_MODE_KEY, enabled);
+    emit debugModeChanged(enabled);
 }
 
 bool SConfig::isPluginNameValid(const QString &name) const
@@ -444,6 +474,7 @@ SConfig::SConfig(const QString &path)
         detectConfigPath(m_configPath, true);
     }
     settingMap = QHash<QString, QVariant>();
+    settingMap.insert(DEBUG_MODE_KEY, false);
     pInfoMap = QHash<QString, SPluginInfo*>();
 }
 

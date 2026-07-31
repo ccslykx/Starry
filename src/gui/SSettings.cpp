@@ -2,6 +2,7 @@
 #include <QHBoxLayout>
 #include <QCloseEvent>
 #include <QFontMetrics>
+#include <QFrame>
 #include <QGuiApplication>
 #include <QMessageBox>
 #include <QPalette>
@@ -13,6 +14,7 @@
 #include "SSettings.h"
 #include "SConfig.h"
 #include "SPluginTaskManager.h"
+#include "SSwitcher.h"
 #include "utils.h"
 
 namespace
@@ -126,6 +128,82 @@ void SSettings::initGui()
         m_contentWidget = new QStackedWidget(this);
     }
 
+    // 内容页-常规设置
+    if (!m_generalWidget)
+    {
+        m_generalWidget = new QWidget(m_contentWidget);
+        m_generalWidget->setObjectName("generalSettingsPage");
+
+        QLabel *title = new QLabel(tr("常规设置"), m_generalWidget);
+        title->setStyleSheet("font-size: 20px; font-weight: 600;");
+        QLabel *description = new QLabel(
+            tr("配置 Starry 的通用行为。"),
+            m_generalWidget);
+        description->setWordWrap(true);
+
+        QFrame *debugCard = new QFrame(m_generalWidget);
+        debugCard->setObjectName("debugModeCard");
+        debugCard->setAttribute(Qt::WA_StyledBackground, true);
+        debugCard->setStyleSheet(
+            "QFrame#debugModeCard {"
+            "  border: 1px solid palette(mid); border-radius: 10px;"
+            "  background: palette(base);"
+            "}");
+
+        QLabel *debugTitle = new QLabel(tr("开启调试模式"), debugCard);
+        debugTitle->setObjectName("debugModeTitle");
+        debugTitle->setStyleSheet("font-weight: 600;");
+        QLabel *debugDescription = new QLabel(
+            tr("开启后，选中文本和展开后的插件参数会写入调试日志。"
+               "日志中可能包含敏感信息。"),
+            debugCard);
+        debugDescription->setObjectName("debugModeDescription");
+        debugDescription->setWordWrap(true);
+
+        m_debugModeSwitcher = new SSwitcher(
+            tr("开启"),
+            tr("关闭"),
+            m_config->debugModeEnabled(),
+            debugCard);
+        m_debugModeSwitcher->setObjectName("debugModeSwitcher");
+        m_debugModeSwitcher->setAccessibleName(tr("开启调试模式"));
+
+        QVBoxLayout *debugTextLayout = new QVBoxLayout;
+        debugTextLayout->setContentsMargins(0, 0, 0, 0);
+        debugTextLayout->setSpacing(4);
+        debugTextLayout->addWidget(debugTitle);
+        debugTextLayout->addWidget(debugDescription);
+
+        QHBoxLayout *debugLayout = new QHBoxLayout(debugCard);
+        debugLayout->setContentsMargins(18, 16, 18, 16);
+        debugLayout->setSpacing(16);
+        debugLayout->addLayout(debugTextLayout, 1);
+        debugLayout->addWidget(m_debugModeSwitcher, 0, Qt::AlignVCenter);
+
+        QVBoxLayout *generalLayout = new QVBoxLayout(m_generalWidget);
+        generalLayout->setContentsMargins(24, 24, 24, 24);
+        generalLayout->setSpacing(12);
+        generalLayout->addWidget(title);
+        generalLayout->addWidget(description);
+        generalLayout->addWidget(debugCard);
+        generalLayout->addStretch();
+
+        const auto updateDebugMode = [this] (bool enabled) {
+            m_config->setDebugModeEnabled(enabled);
+            m_config->saveToFile(m_config->configPath());
+        };
+        QObject::connect(m_debugModeSwitcher, &SSwitcher::switchOn, this,
+                         [updateDebugMode] {
+            updateDebugMode(true);
+        });
+        QObject::connect(m_debugModeSwitcher, &SSwitcher::switchOff, this,
+                         [updateDebugMode] {
+            updateDebugMode(false);
+        });
+        QObject::connect(m_config, &SConfig::debugModeChanged,
+                         m_debugModeSwitcher, &SSwitcher::setStatus);
+    }
+
     // 内容页-插件页
     if (!m_pluginWidget)
     {
@@ -232,6 +310,7 @@ void SSettings::initGui()
     m_aboutWidget->setLayout(aboutLayout);
 
     // 内容页（右侧）
+    m_contentWidget->addWidget(m_generalWidget);
     m_contentWidget->addWidget(m_pluginWidget);
     m_contentWidget->addWidget(m_taskWidget);
     m_contentWidget->addWidget(m_shortcutWidget);
@@ -250,20 +329,24 @@ void SSettings::initGui()
     mainLayout->addWidget(m_contentWidget);
 
     // 添加 菜单页 项目
+    SButton *general = new SButton(tr("常规设置"), m_menuListWidget);
     SButton *plugins = new SButton(tr("Plugins"), m_menuListWidget);
     SButton *tasks = new SButton(tr("Tasks"), m_menuListWidget);
     SButton *shortcuts = new SButton(tr("Shortcuts"), m_menuListWidget);
     SButton *about = new SButton(tr("About"), m_menuListWidget);
+    general->setRole(SButton::Role::Navigation);
     plugins->setRole(SButton::Role::Navigation);
     tasks->setRole(SButton::Role::Navigation);
     shortcuts->setRole(SButton::Role::Navigation);
     about->setRole(SButton::Role::Navigation);
 
-    QObject::connect(plugins, &SButton::clicked, this, [this](){ this->showContent(0); });
-    QObject::connect(tasks, &SButton::clicked, this, [this](){ this->showContent(1); });
-    QObject::connect(shortcuts, &SButton::clicked, this, [this](){ this->showContent(2); });
-    QObject::connect(about, &SButton::clicked, this, [this](){ this->showContent(3); });
+    QObject::connect(general, &SButton::clicked, this, [this](){ this->showContent(0); });
+    QObject::connect(plugins, &SButton::clicked, this, [this](){ this->showContent(1); });
+    QObject::connect(tasks, &SButton::clicked, this, [this](){ this->showContent(2); });
+    QObject::connect(shortcuts, &SButton::clicked, this, [this](){ this->showContent(3); });
+    QObject::connect(about, &SButton::clicked, this, [this](){ this->showContent(4); });
 
+    addMenuItem(general); // ！！这里添加的顺序同上面showContent(index)内index
     addMenuItem(plugins); // ！！这里添加的顺序同上面showContent(index)内index
     addMenuItem(tasks);
     addMenuItem(shortcuts);

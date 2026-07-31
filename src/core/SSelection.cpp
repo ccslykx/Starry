@@ -1,4 +1,5 @@
 #include "SSelection.h"
+#include "SConfig.h"
 #include "utils.h"
 
 #include <QGuiApplication>
@@ -183,7 +184,10 @@ QString SSelection::getSelection_mac()
     if (selectedTextString)
     {
         res = QString::fromCFString(selectedTextString);
-        qDebug() << "selectedTextString:" << res;
+        if (SConfig::config()->debugModeEnabled())
+        {
+            qDebug() << "Selected text:" << res;
+        }
         CFRelease(selectedTextString);
     }
     CFRelease(selectedTextValue);

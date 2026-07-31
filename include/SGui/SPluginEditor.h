@@ -108,6 +108,7 @@ private:
     SButton         *m_iconContainor = nullptr;
     SButton         *m_resetIconButton = nullptr;
     SButton         *m_insertVariableButton = nullptr;
+    SButton         *m_insertUrlEncodedButton = nullptr;
 
     QLineEdit       *m_nameEdit = nullptr;
     QLineEdit       *m_tipEdit = nullptr;

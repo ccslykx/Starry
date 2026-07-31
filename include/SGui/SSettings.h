@@ -22,6 +22,7 @@
 
 class QLabel;
 class SPluginTask;
+class SSwitcher;
 
 class SSettings : public QWidget
 {
@@ -64,6 +65,8 @@ private:
     QListWidget             *m_menuListWidget = nullptr; // 菜单页
     QVector<SButton*>        m_menuButtons;
     QStackedWidget          *m_contentWidget = nullptr; // 内容页
+    QWidget                 *m_generalWidget = nullptr; // 内容页-常规设置
+    SSwitcher               *m_debugModeSwitcher = nullptr;
     QWidget                 *m_pluginWidget = nullptr; // 内容页-插件
     QListWidget             *m_pluginListWidget = nullptr; // 内容页-插件-已有插件列表
     QWidget                 *m_taskWidget = nullptr; // 内容页-任务管理器

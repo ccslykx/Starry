@@ -54,6 +54,8 @@ public:
     void editSetting(const QString &key, QVariant newValue);  // 编辑设置项
     QVariant getSetting(const QString &key);  // 获取设置项
     void deleteSetting(const QString &key);   // 删除设置项
+    bool debugModeEnabled() const;
+    void setDebugModeEnabled(bool enabled);
 
     bool isPluginNameValid(const QString &name) const;
     bool isPluginNameAvailable(const QString &name, const SPluginInfo *exclude = nullptr) const;
@@ -71,6 +73,7 @@ public:
 
 signals:
     void readPlugin(SPluginInfo*);
+    void debugModeChanged(bool enabled);
 
 private:
     explicit SConfig(const QString &path = "");

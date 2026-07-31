@@ -36,7 +36,18 @@ SPluginTask::SPluginTask(
         qOverload<int, QProcess::ExitStatus>(&QProcess::finished),
         this,
         [this] (int exitCode, QProcess::ExitStatus exitStatus) {
-            setState(m_forceStopRequested ? State::Terminated : State::Finished);
+            if (m_forceStopRequested)
+            {
+                setState(State::Terminated);
+            }
+            else if (exitStatus == QProcess::NormalExit && exitCode == 0)
+            {
+                setState(State::Finished);
+            }
+            else
+            {
+                setState(State::Failed);
+            }
             emit finished(this, exitCode, exitStatus);
         });
 }

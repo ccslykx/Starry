@@ -22,6 +22,7 @@ private slots:
     void validatesNamesAndRejectsDuplicates();
     void keepsLookupConsistentAfterRename();
     void normalizesIndexesAfterDelete();
+    void persistsDebugMode();
 
 private:
     static SPluginInfo *makePlugin(const QString &name, const int index = 0);
@@ -130,6 +131,26 @@ void SConfigTests::normalizesIndexesAfterDelete()
         QCOMPARE(plugins.at(index)->index, static_cast<int>(index));
     }
     QCOMPARE(beta->index, 3);
+}
+
+void SConfigTests::persistsDebugMode()
+{
+    QVERIFY(!m_config->debugModeEnabled());
+    QSignalSpy debugModeSpy(m_config, &SConfig::debugModeChanged);
+
+    m_config->setDebugModeEnabled(true);
+    QVERIFY(m_config->debugModeEnabled());
+    QCOMPARE(debugModeSpy.count(), 1);
+
+    m_config->saveToFile(m_configDir->path());
+    QSettings settings(m_configDir->filePath("starry.conf"), QSettings::NativeFormat);
+    QCOMPARE(
+        settings.value(QStringLiteral("STARRY_SETTINGS/debugModeEnabled")).toBool(),
+        true);
+
+    m_config->setDebugModeEnabled(false);
+    QVERIFY(!m_config->debugModeEnabled());
+    QCOMPARE(debugModeSpy.count(), 2);
 }
 
 QTEST_MAIN(SConfigTests)

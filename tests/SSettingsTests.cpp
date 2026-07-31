@@ -16,6 +16,8 @@
 #include <QProgressBar>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QSettings>
+#include <QStandardPaths>
 #include <QStyleHints>
 #include <QTemporaryDir>
 #include <QTimer>
@@ -56,6 +58,7 @@ private slots:
     void editorUsesInlineValidationInsideSettings();
     void popupItemsExposeTipsAndElideLongNames();
     void popupHonorsVisibilityAndEscapeRules();
+    void reportsNonZeroPluginExit();
     void tracksPopupTasksAndAllowsConfirmedForceStop();
 
 private:
@@ -228,18 +231,40 @@ void SSettingsTests::buttonRolesAndNavigationSelection()
 
     QListWidget *menu = m_settings->findChild<QListWidget *>("settingsMenuList");
     QVERIFY(menu);
-    QCOMPARE(menu->count(), 4);
-    SButton *pluginsButton = qobject_cast<SButton *>(menu->itemWidget(menu->item(0)));
-    SButton *tasksButton = qobject_cast<SButton *>(menu->itemWidget(menu->item(1)));
+    QCOMPARE(menu->count(), 5);
+    SButton *generalButton = qobject_cast<SButton *>(menu->itemWidget(menu->item(0)));
+    SButton *pluginsButton = qobject_cast<SButton *>(menu->itemWidget(menu->item(1)));
+    SButton *tasksButton = qobject_cast<SButton *>(menu->itemWidget(menu->item(2)));
+    SSwitcher *debugModeSwitcher =
+        m_settings->findChild<SSwitcher *>("debugModeSwitcher");
+    QVERIFY(generalButton);
     QVERIFY(pluginsButton);
     QVERIFY(tasksButton);
-    QVERIFY(pluginsButton->isSelected());
+    QVERIFY(debugModeSwitcher);
+    QVERIFY(generalButton->isSelected());
+    QVERIFY(!debugModeSwitcher->isOn());
+    QCOMPARE(generalButton->role(), SButton::Role::Navigation);
     QCOMPARE(pluginsButton->role(), SButton::Role::Navigation);
+
+    debugModeSwitcher->click();
+    QVERIFY(debugModeSwitcher->isOn());
+    QVERIFY(m_config->debugModeEnabled());
+    QSettings savedSettings(
+        m_configDir->filePath("starry.conf"),
+        QSettings::NativeFormat);
+    QCOMPARE(
+        savedSettings.value(
+            QStringLiteral("STARRY_SETTINGS/debugModeEnabled")).toBool(),
+        true);
+    debugModeSwitcher->click();
+    QVERIFY(!debugModeSwitcher->isOn());
+    QVERIFY(!m_config->debugModeEnabled());
 
     tasksButton->click();
     QVERIFY(tasksButton->isSelected());
     QVERIFY(!pluginsButton->isSelected());
-    QCOMPARE(menu->currentRow(), 1);
+    QVERIFY(!generalButton->isSelected());
+    QCOMPARE(menu->currentRow(), 2);
 }
 
 void SSettingsTests::darkModeUsesBrighterOrangeBackgrounds()
@@ -577,6 +602,7 @@ void SSettingsTests::editorUsesInlineValidationInsideSettings()
     QPushButton *cancelButton = editor->findChild<QPushButton *>("cancelPluginButton");
     QPushButton *testButton = editor->findChild<QPushButton *>("testPluginButton");
     QPushButton *insertButton = editor->findChild<QPushButton *>("insertPlaintextButton");
+    QPushButton *insertUrlButton = editor->findChild<QPushButton *>("insertUrlEncodedButton");
     QPushButton *iconPicker = editor->findChild<QPushButton *>("pluginIconPicker");
     QFrame *formCard = editor->findChild<QFrame *>("pluginEditorCard");
     QFrame *statusWidget = editor->findChild<QFrame *>("pluginEditorStatus");
@@ -589,6 +615,7 @@ void SSettingsTests::editorUsesInlineValidationInsideSettings()
     QVERIFY(cancelButton);
     QVERIFY(testButton);
     QVERIFY(insertButton);
+    QVERIFY(insertUrlButton);
     QVERIFY(iconPicker);
     QVERIFY(formCard);
     QVERIFY(statusWidget);
@@ -618,6 +645,8 @@ void SSettingsTests::editorUsesInlineValidationInsideSettings()
     QVERIFY(createButton->isEnabled());
     insertButton->click();
     QVERIFY(scriptEdit->toPlainText().contains("$PLAINTEXT"));
+    insertUrlButton->click();
+    QVERIFY(scriptEdit->toPlainText().contains("$URLENCODED"));
     scriptEdit->setPlainText("starry copy2clipboard");
     testButton->click();
     QVERIFY(!statusWidget->isHidden());
@@ -723,6 +752,32 @@ void SSettingsTests::popupHonorsVisibilityAndEscapeRules()
     popup->deleteItem(enabled->popupItem);
     enabled->deleteLater();
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void SSettingsTests::reportsNonZeroPluginExit()
+{
+#ifndef Q_OS_UNIX
+    QSKIP("This process lifecycle test currently targets Unix executables");
+#else
+    const QString falseExecutable = QStandardPaths::findExecutable(QStringLiteral("false"));
+    QVERIFY(!falseExecutable.isEmpty());
+
+    SPluginInfo *info = makePlugin("NonZeroExitPlugin");
+    info->script = falseExecutable;
+    QPointer<SPopupItem> item(SPopupItem::create(info));
+    QSignalSpy executionSpy(item, &SPopupItem::executionFinished);
+
+    item->exec();
+    QTRY_VERIFY_WITH_TIMEOUT(executionSpy.count() >= 2, 2000);
+    QVERIFY(executionSpy.at(0).at(0).toBool());
+    QVERIFY(!executionSpy.constLast().at(0).toBool());
+    QVERIFY(executionSpy.constLast().at(1).toString().contains(QStringLiteral("退出码")));
+    QTRY_VERIFY_WITH_TIMEOUT(SPluginTaskManager::instance()->activeTasks().isEmpty(), 2000);
+
+    SPopupItem::remove(item);
+    info->deleteLater();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+#endif
 }
 
 void SSettingsTests::tracksPopupTasksAndAllowsConfirmedForceStop()

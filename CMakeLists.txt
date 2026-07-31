@@ -4,7 +4,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 
-project(Starry VERSION 0.2.0)
+project(Starry VERSION 0.3.0)
 
 include(CTest)
 
@@ -77,6 +77,21 @@ target_link_libraries(${PROJECT_NAME} PUBLIC ${LIBRARYS})
 if (BUILD_TESTING)
 	find_package(Qt6 COMPONENTS Test REQUIRED)
 
+	add_executable(StarryPluginCommandTests
+		tests/SPluginCommandTests.cpp
+		include/Core/SPluginCommand.h
+		src/core/SPluginCommand.cpp
+	)
+	target_include_directories(StarryPluginCommandTests PRIVATE
+		include
+		include/Core
+	)
+	target_link_libraries(StarryPluginCommandTests PRIVATE
+		Qt6::Core
+		Qt6::Test
+	)
+	add_test(NAME StarryPluginCommandTests COMMAND StarryPluginCommandTests)
+
 	add_executable(StarryConfigTests
 		tests/SConfigTests.cpp
 		include/Core/SConfig.h
@@ -105,6 +120,7 @@ if (BUILD_TESTING)
 		tests/SSettingsTests.cpp
 		include/Core/SConfig.h
 		include/Core/SPluginInfo.h
+		include/Core/SPluginCommand.h
 		include/Core/SPluginTaskManager.h
 		include/Core/SSelection.h
 		include/SGui/SButton.h
@@ -116,6 +132,7 @@ if (BUILD_TESTING)
 		include/SGui/SSwitcher.h
 		src/core/SConfig.cpp
 		src/core/SPluginInfo.cpp
+		src/core/SPluginCommand.cpp
 		src/core/SPluginTaskManager.cpp
 		src/core/SSelection.cpp
 		src/gui/SButton.cpp

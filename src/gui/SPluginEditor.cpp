@@ -14,7 +14,6 @@
 #include <QMimeData>
 #include <QPalette>
 #include <QPlainTextEdit>
-#include <QProcess>
 #include <QProgressBar>
 #include <QScrollArea>
 #include <QShortcut>
@@ -22,11 +21,11 @@
 #include <QStyleHints>
 #include <QTextCursor>
 #include <QTimer>
-#include <QUrl>
 #include <QVBoxLayout>
 
 #include "SButton.h"
 #include "SConfig.h"
+#include "SPluginCommand.h"
 #include "SPluginEditor.h"
 #include "SPluginTaskManager.h"
 #include "SSelection.h"
@@ -175,7 +174,8 @@ void SPluginEditor::initGui()
     m_tipCounterLabel = new QLabel(this);
     m_scriptLabel = new QLabel(tr("Command"), this);
     m_scriptHelpLabel = new QLabel(
-        tr("$PLAINTEXT is replaced with the currently selected text."),
+        tr("$PLAINTEXT inserts raw selected text. $URLENCODED safely encodes it for URLs. "
+           "Commands run directly, without a shell."),
         this);
     m_scriptErrorLabel = new QLabel(this);
     m_statusLabel = new QLabel(this);
@@ -186,6 +186,7 @@ void SPluginEditor::initGui()
     m_iconContainor = new SButton("", this);
     m_resetIconButton = new SButton(tr("Use default icon"), this);
     m_insertVariableButton = new SButton(tr("Insert $PLAINTEXT"), this);
+    m_insertUrlEncodedButton = new SButton(tr("Insert $URLENCODED"), this);
 
     m_nameEdit = new QLineEdit(this);
     m_tipEdit = new QLineEdit(this);
@@ -236,6 +237,8 @@ void SPluginEditor::initGui()
     m_resetIconButton->setObjectName("resetPluginIconButton");
     m_insertVariableButton->setRole(SButton::Role::Secondary);
     m_insertVariableButton->setObjectName("insertPlaintextButton");
+    m_insertUrlEncodedButton->setRole(SButton::Role::Secondary);
+    m_insertUrlEncodedButton->setObjectName("insertUrlEncodedButton");
 
     m_iconContainor->setRole(SButton::Role::IconPicker);
     m_iconContainor->setObjectName("pluginIconPicker");
@@ -259,7 +262,8 @@ void SPluginEditor::initGui()
     m_tipEdit->setMaxLength(TIP_MAX_LENGTH);
     m_nameEdit->setPlaceholderText(tr("Example: Search the web"));
     m_tipEdit->setPlaceholderText(tr("Short description shown in the popup"));
-    m_scriptEdit->setPlaceholderText(tr("Example: open https://example.com?q=$PLAINTEXT"));
+    m_scriptEdit->setPlaceholderText(
+        tr("Example: open https://example.com?q=$URLENCODED"));
     QFont commandFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
     const QFont inputFont = m_nameEdit->font();
     if (inputFont.pointSizeF() > 0.0)
@@ -340,6 +344,7 @@ void SPluginEditor::initGui()
     scriptMetaLayout->setSpacing(12);
     scriptMetaLayout->addWidget(m_scriptHelpLabel, 1);
     scriptMetaLayout->addWidget(m_insertVariableButton);
+    scriptMetaLayout->addWidget(m_insertUrlEncodedButton);
     formLayout->addLayout(scriptMetaLayout);
     formLayout->addWidget(m_scriptErrorLabel);
 
@@ -404,6 +409,12 @@ void SPluginEditor::initGui()
     QObject::connect(m_insertVariableButton, &SButton::clicked, this, [this] {
         QTextCursor cursor = m_scriptEdit->textCursor();
         cursor.insertText(QStringLiteral("$PLAINTEXT"));
+        m_scriptEdit->setTextCursor(cursor);
+        m_scriptEdit->setFocus();
+    });
+    QObject::connect(m_insertUrlEncodedButton, &SButton::clicked, this, [this] {
+        QTextCursor cursor = m_scriptEdit->textCursor();
+        cursor.insertText(QStringLiteral("$URLENCODED"));
         m_scriptEdit->setTextCursor(cursor);
         m_scriptEdit->setFocus();
     });
@@ -600,6 +611,15 @@ void SPluginEditor::updateValidation()
     {
         scriptError = tr("Enter a command to run.");
     }
+    else
+    {
+        SPluginCommand command;
+        QString commandError;
+        if (!SPluginCommand::parse(script, QString(), &command, &commandError))
+        {
+            scriptError = commandError;
+        }
+    }
 
     setFieldError(m_nameEdit, m_nameErrorLabel,
                   m_nameTouched ? nameError : QString());
@@ -709,31 +729,33 @@ void SPluginEditor::updateIconPreview()
 
 void SPluginEditor::testCommand()
 {
-    QStringList args = QProcess::splitCommand(m_scriptEdit->toPlainText().trimmed());
-    if (args.isEmpty() || args.constFirst().isEmpty())
+    const QString selectedText = SSelection::instance()->selection();
+    SPluginCommand command;
+    QString commandError;
+    if (!SPluginCommand::parse(
+            m_scriptEdit->toPlainText(),
+            selectedText,
+            &command,
+            &commandError))
     {
         m_scriptTouched = true;
         updateValidation();
-        showStatus(tr("Enter a command before testing."), StatusKind::Error);
+        showStatus(commandError, StatusKind::Error);
         return;
     }
 
-    if (args.constFirst() == QStringLiteral("starry")
-        && args.size() >= 2
-        && args.at(1) == QStringLiteral("copy2clipboard"))
+    if (SConfig::config()->debugModeEnabled())
     {
-        QGuiApplication::clipboard()->setText(SSelection::instance()->selection());
+        qDebug() << "Plugin test selected text:" << selectedText;
+        qDebug() << "Expanded plugin test command:"
+                 << command.program << command.arguments;
+    }
+
+    if (command.isCopyToClipboardCommand())
+    {
+        QGuiApplication::clipboard()->setText(selectedText);
         showStatus(tr("Test succeeded: copied the selected text."), StatusKind::Success);
         return;
-    }
-
-    const QString command = args.takeFirst();
-    for (QString &argument : args)
-    {
-        if (argument == QStringLiteral("$PLAINTEXT"))
-        {
-            argument = SSelection::instance()->selection();
-        }
     }
 
     const QString pluginName = m_nameEdit->text().trimmed().isEmpty()
@@ -742,8 +764,8 @@ void SPluginEditor::testCommand()
     showStatus(tr("Starting the test command…"), StatusKind::Loading);
     SPluginTask *task = SPluginTaskManager::instance()->startTask(
         pluginName,
-        command,
-        args,
+        command.program,
+        command.arguments,
         m_scriptEdit->toPlainText().trimmed());
     if (!task)
     {
@@ -765,6 +787,34 @@ void SPluginEditor::testCommand()
             showStatus(tr("Test command failed to start."), StatusKind::Error);
         }
     });
+    QObject::connect(
+        task,
+        &SPluginTask::finished,
+        this,
+        [this, sessionId, task] (
+            SPluginTask *,
+            int exitCode,
+            QProcess::ExitStatus exitStatus) {
+            if (sessionId != m_sessionId
+                || (exitStatus == QProcess::NormalExit && exitCode == 0))
+            {
+                return;
+            }
+            if (task->state() == SPluginTask::State::Terminated)
+            {
+                showStatus(tr("Test command was stopped."), StatusKind::Error);
+            }
+            else if (exitStatus == QProcess::CrashExit)
+            {
+                showStatus(tr("Test command crashed."), StatusKind::Error);
+            }
+            else
+            {
+                showStatus(
+                    tr("Test command exited with code %1.").arg(exitCode),
+                    StatusKind::Error);
+            }
+        });
 }
 
 void SPluginEditor::refreshTheme(bool force, Qt::ColorScheme scheme)

@@ -2,8 +2,9 @@
 #include <QClipboard>
 #include <QFontMetrics>
 #include <QHBoxLayout>
-#include <QProcess>
 
+#include "SConfig.h"
+#include "SPluginCommand.h"
 #include "SPluginTaskManager.h"
 #include "SPopupItem.h"
 #include "SSelection.h"
@@ -44,40 +45,40 @@ void SPopupItem::exec()
     m_executionLocked = true;
     emit executionStarted(tr("启动中…"));
 
-    QStringList args = QProcess::splitCommand(m_info->script);
-
-    if (args.isEmpty() || args.constFirst().isEmpty())
+    const QString selectedText = SSelection::instance()->selection();
+    SPluginCommand command;
+    QString commandError;
+    if (!SPluginCommand::parse(
+            m_info->script,
+            selectedText,
+            &command,
+            &commandError))
     {
-        qWarning() << "执行脚本为空";
+        qWarning() << "插件命令无效:" << commandError;
         m_executionLocked = false;
-        emit executionFinished(false, tr("命令为空"));
+        emit executionFinished(false, tr("命令无效"));
         return;
     }
-    if (args.constFirst() == "starry" && args.size() >= 2 && args.at(1) == "copy2clipboard")
+
+    if (SConfig::config()->debugModeEnabled())
     {
-        QGuiApplication::clipboard()->setText(SSelection::instance()->selection());
+        qDebug() << "Plugin selected text:" << selectedText;
+        qDebug() << "Expanded plugin command:"
+                 << command.program << command.arguments;
+    }
+
+    if (command.isCopyToClipboardCommand())
+    {
+        QGuiApplication::clipboard()->setText(selectedText);
         m_executionLocked = false;
         emit executionFinished(true, tr("已复制"));
         return;
     }
 
-    // 获取cmd
-    const QString cmd = args.takeFirst();
-
-    // 是否需要将selection作为参数传递
-    for (QString &arg : args)
-    {
-        if (arg == "$PLAINTEXT")
-        {
-            arg = SSelection::instance()->selection();
-        }
-    }
-
-    qDebug() << cmd << args;
     SPluginTask *task = SPluginTaskManager::instance()->startTask(
         m_info->name,
-        cmd,
-        args,
+        command.program,
+        command.arguments,
         m_info->script);
     if (!task)
     {
@@ -95,13 +96,31 @@ void SPopupItem::exec()
         m_executionLocked = false;
         emit executionFinished(false, tr("启动失败"));
     });
-    QObject::connect(task, &SPluginTask::finished, this, [this] {
-        if (!m_executionLocked)
+    QObject::connect(
+        task,
+        &SPluginTask::finished,
+        this,
+        [this, task] (
+            SPluginTask *,
+            int exitCode,
+            QProcess::ExitStatus exitStatus) {
+        if (exitStatus == QProcess::NormalExit && exitCode == 0)
         {
             return;
         }
         m_executionLocked = false;
-        emit executionFinished(false, tr("已中止"));
+        if (task->state() == SPluginTask::State::Terminated)
+        {
+            emit executionFinished(false, tr("已中止"));
+        }
+        else if (exitStatus == QProcess::CrashExit)
+        {
+            emit executionFinished(false, tr("执行异常终止"));
+        }
+        else
+        {
+            emit executionFinished(false, tr("执行失败（退出码 %1）").arg(exitCode));
+        }
     });
 }
 
