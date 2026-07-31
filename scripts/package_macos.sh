@@ -28,6 +28,7 @@ Options:
 
 Environment variables:
   QT_ROOT               Same as --qt.
+  Qt6_DIR               Qt 6 prefix or the directory containing Qt6Config.cmake.
   CODESIGN_IDENTITY     Same as --sign.
   MACOSX_DEPLOYMENT_TARGET
                         Optional CMake deployment target.
@@ -61,6 +62,33 @@ create_directory_path() {
         cd -- "${path}"
         pwd -P
     )
+}
+
+qt6_prefix_from_path() {
+    local candidate="${1%/}"
+    [[ -n "${candidate}" ]] || return 1
+
+    if [[ -f "${candidate}/lib/cmake/Qt6/Qt6Config.cmake" ]]; then
+        printf '%s\n' "${candidate}"
+        return 0
+    fi
+
+    if [[ -f "${candidate}/Qt6Config.cmake"
+        && "${candidate}" == */lib/cmake/Qt6 ]]; then
+        printf '%s\n' "${candidate%/lib/cmake/Qt6}"
+        return 0
+    fi
+
+    return 1
+}
+
+qt6_prefix_from_tool() {
+    local tool="$1"
+    local candidate
+    shift
+
+    candidate="$("${tool}" "$@" 2>/dev/null)" || return 1
+    qt6_prefix_from_path "${candidate}"
 }
 
 safe_remove_directory() {
@@ -123,19 +151,32 @@ if [[ -n "${sign_identity}" ]]; then
     command -v codesign >/dev/null 2>&1 || fail "codesign was not found."
 fi
 
-if [[ -z "${qt_root}" ]]; then
-    if command -v qtpaths6 >/dev/null 2>&1; then
-        qt_root="$(qtpaths6 --install-prefix)"
-    elif command -v qtpaths >/dev/null 2>&1; then
-        qt_root="$(qtpaths --install-prefix)"
-    elif command -v qmake6 >/dev/null 2>&1; then
-        qt_root="$(qmake6 -query QT_INSTALL_PREFIX)"
-    elif command -v qmake >/dev/null 2>&1; then
-        qt_root="$(qmake -query QT_INSTALL_PREFIX)"
-    fi
+if [[ -z "${qt_root}" && -n "${Qt6_DIR:-}" ]]; then
+    qt_root="$(qt6_prefix_from_path "${Qt6_DIR}" || true)"
+fi
+if [[ -z "${qt_root}" ]] && command -v qtpaths6 >/dev/null 2>&1; then
+    qt_root="$(qt6_prefix_from_tool "$(command -v qtpaths6)" --install-prefix || true)"
+fi
+if [[ -z "${qt_root}" ]] && command -v qmake6 >/dev/null 2>&1; then
+    qt_root="$(qt6_prefix_from_tool "$(command -v qmake6)" -query QT_INSTALL_PREFIX || true)"
+fi
+if [[ -z "${qt_root}" ]] && command -v qtpaths >/dev/null 2>&1; then
+    qt_root="$(qt6_prefix_from_tool "$(command -v qtpaths)" --install-prefix || true)"
+fi
+if [[ -z "${qt_root}" ]] && command -v qmake >/dev/null 2>&1; then
+    qt_root="$(qt6_prefix_from_tool "$(command -v qmake)" -query QT_INSTALL_PREFIX || true)"
+fi
+if [[ -z "${qt_root}" ]] && command -v brew >/dev/null 2>&1; then
+    for qt_formula in qt@6 qt; do
+        if brew_prefix="$(brew --prefix "${qt_formula}" 2>/dev/null)"; then
+            qt_root="$(qt6_prefix_from_path "${brew_prefix}" || true)"
+            [[ -n "${qt_root}" ]] && break
+        fi
+    done
 fi
 
-[[ -n "${qt_root}" ]] || fail "Qt was not found. Pass its installation prefix with --qt."
+[[ -n "${qt_root}" ]] \
+    || fail "Qt 6 was not found. Pass its installation prefix with --qt or set QT_ROOT/Qt6_DIR."
 qt_root="$(existing_directory_path "${qt_root}")"
 macdeployqt="${qt_root}/bin/macdeployqt"
 [[ -x "${macdeployqt}" ]] || fail "macdeployqt was not found at ${macdeployqt}."
