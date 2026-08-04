@@ -109,6 +109,7 @@ void SPluginEditor::edit(SPluginInfo *info)
     m_updatingFields = true;
     m_editMode = true;
     m_editingInfo = info;
+    m_usesDefaultIcon = info->usesDefaultIcon;
     m_icon = info->icon;
     m_iconChanged = false;
     m_nameTouched = false;
@@ -118,7 +119,7 @@ void SPluginEditor::edit(SPluginInfo *info)
     m_tipEdit->setText(info->tip);
     m_scriptEdit->setPlainText(info->script);
     updateIconPreview();
-    m_resetIconButton->setEnabled(true);
+    m_resetIconButton->setEnabled(!m_usesDefaultIcon);
     m_submitButton->setText(tr("Save changes"));
     m_submitButton->setObjectName("savePluginButton");
     m_submitButton->setAccessibleName(tr("Save plugin"));
@@ -343,8 +344,12 @@ void SPluginEditor::initGui()
     scriptMetaLayout->setContentsMargins(0, 0, 0, 0);
     scriptMetaLayout->setSpacing(12);
     scriptMetaLayout->addWidget(m_scriptHelpLabel, 1);
-    scriptMetaLayout->addWidget(m_insertVariableButton);
-    scriptMetaLayout->addWidget(m_insertUrlEncodedButton);
+    QVBoxLayout *scriptVariableLayout = new QVBoxLayout;
+    scriptVariableLayout->setContentsMargins(0, 0, 0, 0);
+    scriptVariableLayout->setSpacing(8);
+    scriptVariableLayout->addWidget(m_insertVariableButton);
+    scriptVariableLayout->addWidget(m_insertUrlEncodedButton);
+    scriptMetaLayout->addLayout(scriptVariableLayout);
     formLayout->addLayout(scriptMetaLayout);
     formLayout->addWidget(m_scriptErrorLabel);
 
@@ -423,6 +428,11 @@ void SPluginEditor::initGui()
     QObject::connect(m_cancelButton, &SButton::clicked, this, &SPluginEditor::requestBack);
 
     QObject::connect(m_nameEdit, &QLineEdit::textChanged, this, [this] {
+        if (m_usesDefaultIcon)
+        {
+            m_icon = SPluginInfo::createDefaultIcon(m_nameEdit->text());
+            updateIconPreview();
+        }
         if (!m_updatingFields)
         {
             m_nameTouched = true;
@@ -484,13 +494,14 @@ void SPluginEditor::initialize()
     m_editMode = false;
     m_editingInfo = nullptr;
     m_iconChanged = false;
+    m_usesDefaultIcon = true;
     m_nameTouched = false;
     m_scriptTouched = false;
 
-    m_icon = QPixmap(QStringLiteral(":/default_icon.png"));
     m_nameEdit->clear();
     m_tipEdit->clear();
     m_scriptEdit->clear();
+    m_icon = SPluginInfo::createDefaultIcon(m_nameEdit->text());
     updateIconPreview();
     m_resetIconButton->setEnabled(false);
     m_submitButton->setText(tr("Create plugin"));
@@ -594,7 +605,10 @@ void SPluginEditor::submit()
         }
         if (m_iconChanged)
         {
-            info->icon = m_icon;
+            info->usesDefaultIcon = m_usesDefaultIcon;
+            info->icon = m_usesDefaultIcon
+                ? SPluginInfo::createDefaultIcon(info->name)
+                : m_icon;
             emit info->iconChanged(info);
         }
         info->script = script;
@@ -603,7 +617,15 @@ void SPluginEditor::submit()
     }
     else
     {
-        SPluginInfo *info = new SPluginInfo(name, script, m_icon, 0, tip, true);
+        SPluginInfo *info = new SPluginInfo(
+            name,
+            script,
+            m_icon,
+            0,
+            tip,
+            true,
+            true,
+            m_usesDefaultIcon);
         emit created(info);
     }
 
@@ -759,6 +781,7 @@ bool SPluginEditor::loadIcon(const QString &path)
 
     m_icon = icon;
     m_iconChanged = true;
+    m_usesDefaultIcon = false;
     updateIconPreview();
     m_resetIconButton->setEnabled(true);
     setDirty(true);
@@ -768,7 +791,8 @@ bool SPluginEditor::loadIcon(const QString &path)
 
 void SPluginEditor::resetIcon()
 {
-    m_icon = QPixmap(QStringLiteral(":/default_icon.png"));
+    m_usesDefaultIcon = true;
+    m_icon = SPluginInfo::createDefaultIcon(m_nameEdit->text());
     m_iconChanged = true;
     updateIconPreview();
     m_resetIconButton->setEnabled(false);

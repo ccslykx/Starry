@@ -104,6 +104,41 @@ safe_remove_directory() {
     cmake -E remove_directory "${target}"
 }
 
+create_app_icon() {
+    local source_png="$1"
+    local app_bundle="$2"
+    local icon_work_dir="${build_dir}/Starry.icon-work"
+    local resources_dir="${app_bundle}/Contents/Resources"
+    local combined_tiff="${icon_work_dir}/Starry.tiff"
+    local tiff_files=()
+
+    if [[ -e "${icon_work_dir}" ]]; then
+        safe_remove_directory "${icon_work_dir}"
+    fi
+    mkdir -p -- "${icon_work_dir}" "${resources_dir}"
+
+    local icon_spec
+    for icon_spec in \
+        "16:icon_16x16.tiff" \
+        "32:icon_32x32.tiff" \
+        "128:icon_128x128.tiff" \
+        "256:icon_256x256.tiff" \
+        "512:icon_512x512.tiff" \
+        "1024:icon_1024x1024.tiff"; do
+        local icon_size="${icon_spec%%:*}"
+        local icon_name="${icon_spec#*:}"
+        local icon_path="${icon_work_dir}/${icon_name}"
+        sips -z "${icon_size}" "${icon_size}" -s format tiff \
+            "${source_png}" --out "${icon_path}" >/dev/null
+        tiff_files+=("${icon_path}")
+    done
+
+    tiffutil -cat "${tiff_files[@]}" -out "${combined_tiff}" \
+        >/dev/null 2>&1
+    tiff2icns "${combined_tiff}" "${resources_dir}/Starry.icns"
+    safe_remove_directory "${icon_work_dir}"
+}
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --qt)
@@ -147,6 +182,9 @@ done
 [[ "$(uname -s)" == "Darwin" ]] || fail "This packaging script must run on macOS."
 command -v cmake >/dev/null 2>&1 || fail "cmake was not found in PATH."
 command -v otool >/dev/null 2>&1 || fail "otool was not found."
+command -v sips >/dev/null 2>&1 || fail "sips was not found."
+command -v tiffutil >/dev/null 2>&1 || fail "tiffutil was not found."
+command -v tiff2icns >/dev/null 2>&1 || fail "tiff2icns was not found."
 if [[ -n "${sign_identity}" ]]; then
     command -v codesign >/dev/null 2>&1 || fail "codesign was not found."
 fi
@@ -186,6 +224,8 @@ macdeployqt="${qt_root}/bin/macdeployqt"
 build_dir="$(create_directory_path "${build_dir}")"
 output_dir="$(create_directory_path "${output_dir}")"
 output_app="${output_dir}/Starry.app"
+logo_source="${project_dir}/src/resources/starry_1024x1024.png"
+[[ -f "${logo_source}" ]] || fail "Application logo was not found: ${logo_source}"
 
 if ${clean_build}; then
     safe_remove_directory "${build_dir}"
@@ -221,6 +261,9 @@ if [[ -e "${output_app}" ]]; then
 fi
 cmake -E copy_directory "${built_app}" "${output_app}"
 
+printf 'Creating application icon...\n'
+create_app_icon "${logo_source}" "${output_app}"
+
 deploy_args=("${output_app}" -always-overwrite -verbose=1)
 if [[ -n "${sign_identity}" ]]; then
     deploy_args+=("-codesign=${sign_identity}")
@@ -230,7 +273,9 @@ printf 'Deploying Qt frameworks and plugins...\n'
 "${macdeployqt}" "${deploy_args[@]}"
 
 packaged_executable="${output_app}/Contents/MacOS/Starry"
+packaged_icon="${output_app}/Contents/Resources/Starry.icns"
 [[ -x "${packaged_executable}" ]] || fail "The packaged executable is missing."
+[[ -s "${packaged_icon}" ]] || fail "The packaged application icon is missing."
 [[ -d "${output_app}/Contents/Frameworks/QtCore.framework" ]] \
     || fail "Qt frameworks were not deployed into the app bundle."
 

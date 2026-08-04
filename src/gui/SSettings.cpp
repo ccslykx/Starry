@@ -231,17 +231,32 @@ void SSettings::refreshTheme(bool force, Qt::ColorScheme scheme)
     m_darkStyle = dark;
     m_styleInitialized = true;
 
-    if (m_generalTitleLabel)
+    const QString pageTitleStyle = dark
+        ? QStringLiteral(
+            "font-size: 20px; font-weight: 600; color: #FFFFFF;")
+        : QStringLiteral(
+            "font-size: 20px; font-weight: 600; color: #101828;");
+    for (QLabel *label : {
+             m_generalTitleLabel,
+             m_pluginTitleLabel,
+             m_taskTitleLabel,
+             m_shortcutTitleLabel,
+             m_aboutTitleLabel})
     {
-        m_generalTitleLabel->setStyleSheet(dark
-            ? QStringLiteral(
-                "font-size: 20px; font-weight: 600; color: #FFFFFF;")
-            : QStringLiteral(
-                "font-size: 20px; font-weight: 600; color: #101828;"));
+        if (label)
+        {
+            label->setStyleSheet(pageTitleStyle);
+        }
     }
     if (m_generalDescriptionLabel)
     {
         m_generalDescriptionLabel->setStyleSheet(
+            dark ? QStringLiteral("color: #98A2B3;")
+                 : QStringLiteral("color: #667085;"));
+    }
+    if (m_taskDescriptionLabel)
+    {
+        m_taskDescriptionLabel->setStyleSheet(
             dark ? QStringLiteral("color: #98A2B3;")
                  : QStringLiteral("color: #667085;"));
     }
@@ -442,6 +457,10 @@ void SSettings::retranslateUi()
         m_newPluginButton->setText(tr("Create new plugin"));
         m_newPluginButton->setAccessibleName(tr("Create new plugin"));
     }
+    if (m_pluginTitleLabel)
+    {
+        m_pluginTitleLabel->setText(tr("Plugins"));
+    }
     if (m_taskTitleLabel)
     {
         m_taskTitleLabel->setText(tr("Plugin Task Manager"));
@@ -460,6 +479,14 @@ void SSettings::retranslateUi()
     {
         m_shortcutHelpLabel->setText(
             tr("Need another shortcut? Please contact the author."));
+    }
+    if (m_shortcutTitleLabel)
+    {
+        m_shortcutTitleLabel->setText(tr("Shortcuts"));
+    }
+    if (m_aboutTitleLabel)
+    {
+        m_aboutTitleLabel->setText(tr("About"));
     }
     if (m_aboutContentLabel)
     {
@@ -519,6 +546,7 @@ void SSettings::initGui()
         m_generalWidget->setObjectName("generalSettingsPage");
 
         m_generalTitleLabel = new QLabel(m_generalWidget);
+        m_generalTitleLabel->setObjectName("generalPageTitle");
         m_generalTitleLabel->setStyleSheet("font-size: 20px; font-weight: 600;");
         m_generalDescriptionLabel = new QLabel(m_generalWidget);
         m_generalDescriptionLabel->setWordWrap(true);
@@ -800,6 +828,9 @@ void SSettings::initGui()
     {
         m_pluginWidget = new QWidget(m_contentWidget);
     }
+    m_pluginTitleLabel = new QLabel(m_pluginWidget);
+    m_pluginTitleLabel->setObjectName("pluginsPageTitle");
+    m_pluginTitleLabel->setStyleSheet("font-size: 20px; font-weight: 600;");
     if (!m_pluginListWidget)
     {
         m_pluginListWidget = new QListWidget(m_pluginWidget);
@@ -820,6 +851,9 @@ void SSettings::initGui()
                      this, &SSettings::onCreatePluginClicked);
 
     QVBoxLayout *pluginsLayout = new QVBoxLayout(m_pluginWidget);
+    pluginsLayout->setContentsMargins(24, 24, 24, 24);
+    pluginsLayout->setSpacing(12);
+    pluginsLayout->addWidget(m_pluginTitleLabel);
     pluginsLayout->addWidget(m_pluginListWidget);
     pluginsLayout->addWidget(m_newPluginButton);
     m_pluginWidget->setLayout(pluginsLayout);
@@ -835,7 +869,9 @@ void SSettings::initGui()
     {
         m_taskWidget = new QWidget(m_contentWidget);
         m_taskTitleLabel = new QLabel(m_taskWidget);
+        m_taskTitleLabel->setObjectName("tasksPageTitle");
         m_taskTitleLabel->setStyleSheet("font-size: 20px; font-weight: 600;");
+        m_taskTitleLabel->setAlignment(Qt::AlignLeft | Qt::AlignTop);
         m_taskDescriptionLabel = new QLabel(m_taskWidget);
         m_taskDescriptionLabel->setWordWrap(true);
 
@@ -854,8 +890,8 @@ void SSettings::initGui()
         taskLayout->setSpacing(12);
         taskLayout->addWidget(m_taskTitleLabel);
         taskLayout->addWidget(m_taskDescriptionLabel);
-        taskLayout->addWidget(m_emptyTaskLabel);
-        taskLayout->addWidget(m_taskListWidget);
+        taskLayout->addWidget(m_emptyTaskLabel, 1);
+        taskLayout->addWidget(m_taskListWidget, 1);
         m_taskWidget->setLayout(taskLayout);
 
         SPluginTaskManager *taskManager = SPluginTaskManager::instance();
@@ -871,19 +907,32 @@ void SSettings::initGui()
     // 内容页-快捷键
     if (!m_shortcutWidget)
     {
-        m_shortcutWidget = new QListWidget(m_contentWidget);
+        m_shortcutWidget = new QWidget(m_contentWidget);
     }
-    m_shortcutHelpLabel = new QLabel(m_shortcutWidget);
+    m_shortcutTitleLabel = new QLabel(m_shortcutWidget);
+    m_shortcutTitleLabel->setObjectName("shortcutsPageTitle");
+    m_shortcutTitleLabel->setStyleSheet("font-size: 20px; font-weight: 600;");
+    m_shortcutListWidget = new QListWidget(m_shortcutWidget);
+    m_shortcutListWidget->setObjectName("shortcutList");
+    m_shortcutHelpLabel = new QLabel(m_shortcutListWidget);
     m_shortcutHelpLabel->setAlignment(Qt::AlignCenter);
-    QListWidgetItem *shortcutItem = new QListWidgetItem(m_shortcutWidget);
-    shortcutItem->setSizeHint(QSize(m_shortcutWidget->size().width(), 48));
-    m_shortcutWidget->setItemWidget(shortcutItem, m_shortcutHelpLabel);
+    QListWidgetItem *shortcutItem = new QListWidgetItem(m_shortcutListWidget);
+    shortcutItem->setSizeHint(QSize(m_shortcutListWidget->size().width(), 48));
+    m_shortcutListWidget->setItemWidget(shortcutItem, m_shortcutHelpLabel);
+    QVBoxLayout *shortcutLayout = new QVBoxLayout(m_shortcutWidget);
+    shortcutLayout->setContentsMargins(24, 24, 24, 24);
+    shortcutLayout->setSpacing(12);
+    shortcutLayout->addWidget(m_shortcutTitleLabel);
+    shortcutLayout->addWidget(m_shortcutListWidget);
 
     // 内容页-关于
     if (!m_aboutWidget)
     {
         m_aboutWidget = new QWidget(m_contentWidget);
     }
+    m_aboutTitleLabel = new QLabel(m_aboutWidget);
+    m_aboutTitleLabel->setObjectName("aboutPageTitle");
+    m_aboutTitleLabel->setStyleSheet("font-size: 20px; font-weight: 600;");
     QPixmap aboutPixmap(SUtils::STARRY_ICON(256));
     QLabel *aboutIcon = new QLabel("Starry");
     aboutIcon->setPixmap(aboutPixmap.scaled(256, 256, Qt::KeepAspectRatio, Qt::SmoothTransformation));
@@ -894,9 +943,13 @@ void SSettings::initGui()
     m_aboutContentLabel->setAlignment(Qt::AlignCenter);
 
     QVBoxLayout *aboutLayout = new QVBoxLayout(m_aboutWidget);
-    aboutLayout->setAlignment(Qt::AlignCenter);
-    aboutLayout->addWidget(aboutIcon);
-    aboutLayout->addWidget(m_aboutContentLabel);
+    aboutLayout->setContentsMargins(24, 24, 24, 24);
+    aboutLayout->setSpacing(12);
+    aboutLayout->addWidget(m_aboutTitleLabel);
+    aboutLayout->addStretch();
+    aboutLayout->addWidget(aboutIcon, 0, Qt::AlignHCenter);
+    aboutLayout->addWidget(m_aboutContentLabel, 0, Qt::AlignHCenter);
+    aboutLayout->addStretch();
 
     m_aboutWidget->setLayout(aboutLayout);
 

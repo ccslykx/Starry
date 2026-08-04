@@ -120,6 +120,7 @@ private:
     quint64          m_sessionId = 0;
     bool             m_editMode = false;
     bool             m_iconChanged = false;
+    bool             m_usesDefaultIcon = true;
     bool             m_dirty = false;
     bool             m_updatingFields = false;
     bool             m_nameTouched = false;

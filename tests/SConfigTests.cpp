@@ -1,7 +1,9 @@
 #include <QApplication>
+#include <QColor>
 #include <QCoreApplication>
 #include <QDir>
 #include <QEvent>
+#include <QImage>
 #include <QPixmap>
 #include <QSettings>
 #include <QTemporaryDir>
@@ -18,6 +20,7 @@ class SConfigTests : public QObject
 
 private slots:
     void initTestCase();
+    void generatesDefaultCharacterIcons();
     void repairsInvalidAndDuplicateIndexes();
     void validatesNamesAndRejectsDuplicates();
     void keepsLookupConsistentAfterRename();
@@ -47,6 +50,16 @@ void SConfigTests::initTestCase()
     QVERIFY(QDir().mkpath(m_configDir->filePath("icons")));
 
     QSettings settings(m_configDir->filePath("starry.conf"), QSettings::NativeFormat);
+    const QString legacyDefaultIconPath =
+        m_configDir->filePath("icons/legacy-default.png");
+    const QString customIconPath =
+        m_configDir->filePath("icons/custom.png");
+    QVERIFY(QPixmap(QStringLiteral(":/default_icon.png")).save(
+        legacyDefaultIconPath));
+    QPixmap customIcon(16, 16);
+    customIcon.fill(Qt::blue);
+    QVERIFY(customIcon.save(customIconPath));
+
     settings.beginGroup("STARRY_PLUGINS");
     const QList<QPair<QString, int>> plugins{
         {"HighIndex", 999},
@@ -60,6 +73,14 @@ void SConfigTests::initTestCase()
         settings.setValue("index", index);
         settings.setValue("iconEnabled", true);
         settings.setValue("nameEnabled", true);
+        if (name == QStringLiteral("HighIndex"))
+        {
+            settings.setValue("iconPath", legacyDefaultIconPath);
+        }
+        else if (name == QStringLiteral("DuplicateIndex"))
+        {
+            settings.setValue("iconPath", customIconPath);
+        }
         settings.endGroup();
     }
     settings.endGroup();
@@ -74,6 +95,25 @@ void SConfigTests::initTestCase()
     m_config->readFromFile(m_configDir->path());
 }
 
+void SConfigTests::generatesDefaultCharacterIcons()
+{
+    QCOMPARE(SPluginInfo::defaultIconText(QStringLiteral("翻译")),
+             QStringLiteral("翻"));
+    QCOMPARE(SPluginInfo::defaultIconText(QStringLiteral("search")),
+             QStringLiteral("S"));
+    QCOMPARE(SPluginInfo::defaultIconText(QStringLiteral("Google Search")),
+             QStringLiteral("GS"));
+    QCOMPARE(SPluginInfo::defaultIconText(QStringLiteral("quick-browse")),
+             QStringLiteral("QB"));
+    QCOMPARE(SPluginInfo::defaultIconText(QStringLiteral("123")),
+             QStringLiteral("?"));
+
+    const QPixmap icon = SPluginInfo::createDefaultIcon(
+        QStringLiteral("Google Search"));
+    QVERIFY(!icon.isNull());
+    QCOMPARE(icon.size(), QSize(96, 96));
+}
+
 void SConfigTests::repairsInvalidAndDuplicateIndexes()
 {
     const QVector<SPluginInfo *> plugins = m_config->getSPluginInfos();
@@ -84,6 +124,15 @@ void SConfigTests::repairsInvalidAndDuplicateIndexes()
     }
     QCOMPARE(m_config->getSetting("theme").toString(), QString("dark"));
     QCOMPARE(m_config->languageCode(), QString("de"));
+    QVERIFY(m_config->getSPluginInfo("HighIndex")->usesDefaultIcon);
+    QVERIFY(m_config->getSPluginInfo("NegativeIndex")->usesDefaultIcon);
+    QVERIFY(!m_config->getSPluginInfo("DuplicateIndex")->usesDefaultIcon);
+    QVERIFY(!m_config->getSPluginInfo("HighIndex")->icon.isNull());
+    QVERIFY(!m_config->getSPluginInfo("NegativeIndex")->icon.isNull());
+    QVERIFY(!m_config->getSPluginInfo("DuplicateIndex")->icon.isNull());
+    QCOMPARE(
+        m_config->getSPluginInfo("DuplicateIndex")->icon.toImage().pixelColor(0, 0),
+        QColor(Qt::blue));
 }
 
 void SConfigTests::validatesNamesAndRejectsDuplicates()
@@ -97,7 +146,15 @@ void SConfigTests::validatesNamesAndRejectsDuplicates()
     QVERIFY(!m_config->addPlugin(duplicate, NewCreate));
     duplicate->deleteLater();
 
-    SPluginInfo *alpha = makePlugin("Alpha");
+    SPluginInfo *alpha = new SPluginInfo(
+        QStringLiteral("Alpha"),
+        QStringLiteral("echo test"),
+        QPixmap(),
+        0,
+        QStringLiteral("test"),
+        true,
+        true,
+        true);
     QVERIFY(m_config->addPlugin(alpha, NewCreate));
     QCOMPARE(alpha->index, 3);
 }
@@ -106,9 +163,12 @@ void SConfigTests::keepsLookupConsistentAfterRename()
 {
     SPluginInfo *alpha = m_config->getSPluginInfo("Alpha");
     QVERIFY(alpha);
+    const QImage oldDefaultIcon = alpha->icon.toImage();
     QVERIFY(m_config->renamePlugin(alpha, "Gamma"));
     QVERIFY(!m_config->getSPluginInfo("Alpha"));
     QCOMPARE(m_config->getSPluginInfo("Gamma"), alpha);
+    QVERIFY(alpha->usesDefaultIcon);
+    QVERIFY(alpha->icon.toImage() != oldDefaultIcon);
 
     SPluginInfo *duplicateName = makePlugin("HighIndex");
     QVERIFY(!m_config->renamePlugin(alpha, duplicateName->name));

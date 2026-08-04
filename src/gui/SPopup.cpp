@@ -157,6 +157,7 @@ void SPopup::initGui()
     if (!m_timer)
     {
         m_timer = new QTimer(this);
+        m_timer->setSingleShot(true);
         m_timer->setInterval(ICON_TIMEOUT);
         QObject::connect(m_timer, &QTimer::timeout, this, &QWidget::hide);
     }
@@ -331,13 +332,17 @@ void SPopup::restoreItems()
 
 void SPopup::enterEvent(QEnterEvent *event)
 {
-    m_timer->stop();
+    if (!m_statusWidget || !m_statusWidget->isVisible())
+    {
+        m_timer->stop();
+    }
     QWidget::enterEvent(event);
 }
 
 void SPopup::leaveEvent(QEvent *event)
 {
-    if (isVisible() && !m_statusLoading)
+    if (isVisible()
+        && (!m_statusWidget || !m_statusWidget->isVisible()))
     {
         m_timer->start(ICON_TIMEOUT);
     }

@@ -20,6 +20,7 @@
 
 #include <QObject>
 #include <QPixmap>
+#include <QSize>
 #include <QString>
 
 #include "SConfig.h"
@@ -40,7 +41,8 @@ public:
         const int _index = 0,           
         const QString &_tip = "",       
         const bool _iconEnabled = false,
-        const bool _nameEnabled = true);
+        const bool _nameEnabled = true,
+        const bool _usesDefaultIcon = false);
 
     SPluginInfo(
         const QString &_name,           
@@ -49,7 +51,14 @@ public:
         const int _index = 0,           
         const QString &_tip = "",       
         const bool _iconEnabled = false,
-        const bool _nameEnabled = true);   
+        const bool _nameEnabled = true,
+        const bool _usesDefaultIcon = false);
+
+    static QString defaultIconText(const QString &name);
+    static QPixmap createDefaultIcon(
+        const QString &name,
+        const QSize &size = QSize(96, 96));
+    void refreshDefaultIcon();
 
 signals:
     void edited(SPluginInfo *_ = nullptr); // name, script, tip
@@ -72,6 +81,7 @@ public:
     QString script;     // 插件执行命令
     QString iconPath;   // 插件图标路径
     QPixmap icon;       // 插件图标
+    bool    usesDefaultIcon; // 是否根据插件名称生成默认字符图标
     int     index;      // 插件排序
     bool    iconEnabled;    // 是否启用图标显示
     bool    nameEnabled;    // 是否启用名称显示

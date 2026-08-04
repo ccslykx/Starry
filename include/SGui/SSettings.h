@@ -97,6 +97,7 @@ private:
     SButton                 *m_requestAccessibilityPermissionButton = nullptr;
 #endif
     QWidget                 *m_pluginWidget = nullptr; // 内容页-插件
+    QLabel                  *m_pluginTitleLabel = nullptr;
     QListWidget             *m_pluginListWidget = nullptr; // 内容页-插件-已有插件列表
     SButton                 *m_newPluginButton = nullptr;
     QWidget                 *m_taskWidget = nullptr; // 内容页-任务管理器
@@ -105,9 +106,12 @@ private:
     QListWidget             *m_taskListWidget = nullptr;
     QLabel                  *m_emptyTaskLabel = nullptr;
     QHash<SPluginTask*, QListWidgetItem*> m_taskItems;
-    QListWidget             *m_shortcutWidget = nullptr; // 内容页-快捷键
+    QWidget                 *m_shortcutWidget = nullptr; // 内容页-快捷键
+    QLabel                  *m_shortcutTitleLabel = nullptr;
+    QListWidget             *m_shortcutListWidget = nullptr;
     QLabel                  *m_shortcutHelpLabel = nullptr;
     QWidget                 *m_aboutWidget = nullptr; // 内容页-关于
+    QLabel                  *m_aboutTitleLabel = nullptr;
     QLabel                  *m_aboutContentLabel = nullptr;
     bool                     m_darkStyle = false;
     bool                     m_styleInitialized = false;

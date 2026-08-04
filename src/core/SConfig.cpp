@@ -1,5 +1,6 @@
 #include <QSettings>
 #include <QDir>
+#include <QImage>
 #include <QLocale>
 #include <QSaveFile>
 #include <QStandardPaths>
@@ -14,6 +15,50 @@ namespace
 const QString SELECTION_POPUP_KEY = QStringLiteral("selectionPopupEnabled");
 const QString DEBUG_MODE_KEY = QStringLiteral("debugModeEnabled");
 const QString LANGUAGE_KEY = QStringLiteral("language");
+
+bool isLegacyDefaultIcon(const QString &path)
+{
+    const QImage icon(path);
+    const QImage legacyDefault(QStringLiteral(":/default_icon.png"));
+    if (icon.isNull()
+        || legacyDefault.isNull()
+        || icon.size() != legacyDefault.size())
+    {
+        return false;
+    }
+
+    const QImage normalizedIcon =
+        icon.convertToFormat(QImage::Format_ARGB32);
+    const QImage normalizedDefault =
+        legacyDefault.convertToFormat(QImage::Format_ARGB32);
+    for (int y = 0; y < normalizedIcon.height(); ++y)
+    {
+        const QRgb *iconLine =
+            reinterpret_cast<const QRgb *>(normalizedIcon.constScanLine(y));
+        const QRgb *defaultLine =
+            reinterpret_cast<const QRgb *>(normalizedDefault.constScanLine(y));
+        for (int x = 0; x < normalizedIcon.width(); ++x)
+        {
+            const QRgb iconPixel = iconLine[x];
+            const QRgb defaultPixel = defaultLine[x];
+            if (qAbs(qAlpha(iconPixel) - qAlpha(defaultPixel)) > 1)
+            {
+                return false;
+            }
+            if (qMax(qAlpha(iconPixel), qAlpha(defaultPixel)) <= 1)
+            {
+                continue;
+            }
+            if (qAbs(qRed(iconPixel) - qRed(defaultPixel)) > 2
+                || qAbs(qGreen(iconPixel) - qGreen(defaultPixel)) > 2
+                || qAbs(qBlue(iconPixel) - qBlue(defaultPixel)) > 2)
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
 
 QString defaultLanguageCode()
 {
@@ -140,6 +185,7 @@ void SConfig::saveToFile(const QString &path)
         s.setValue(QString("index"), info->index);
         s.setValue(QString("iconEnabled"), info->iconEnabled);
         s.setValue(QString("nameEnabled"), info->nameEnabled);
+        s.setValue(QString("usesDefaultIcon"), info->usesDefaultIcon);
         s.endGroup();
     }
     s.endGroup();
@@ -192,6 +238,9 @@ void SConfig::readFromFile(const QString &path)
         QString tip = s.value(QString("tip")).toString();
         QString script = s.value(QString("script")).toString();
         QString iconPath = s.value(QString("iconPath")).toString();
+        const bool hasDefaultIconSetting = s.contains("usesDefaultIcon");
+        bool usesDefaultIcon =
+            s.value("usesDefaultIcon", false).toBool();
         bool validIndex = false;
         int index = s.value(QString("index")).toInt(&validIndex);
         bool iconEnabled = s.value(QString("iconEnabled")).toBool();
@@ -205,10 +254,22 @@ void SConfig::readFromFile(const QString &path)
         }
         if (iconPath.isEmpty() || !QFileInfo::exists(iconPath))
         {
-            qWarning() << pName + "'s icon file not found, use default icon";
-            iconPath = ":/default_icon.png";
+            qWarning() << pName + "'s icon file not found, use default character icon";
+            usesDefaultIcon = true;
         }
-        SPluginInfo *info = new SPluginInfo(pName, script, iconPath, index, tip, iconEnabled, nameEnabled);
+        else if (!hasDefaultIconSetting && isLegacyDefaultIcon(iconPath))
+        {
+            usesDefaultIcon = true;
+        }
+        SPluginInfo *info = new SPluginInfo(
+            pName,
+            script,
+            iconPath,
+            index,
+            tip,
+            iconEnabled,
+            nameEnabled,
+            usesDefaultIcon);
         pluginInfos.push_back(info);
     }
     s.endGroup();
@@ -445,16 +506,19 @@ bool SConfig::renamePlugin(SPluginInfo *info, const QString &newName)
 
     const QString oldName = info->name;
     const QString oldIconPath = info->iconPath;
+    const QPixmap oldIcon = info->icon;
     pInfoMap.erase(current);
     info->name = newName;
     pInfoMap.insert(newName, info);
 
     info->iconPath = QDir::cleanPath(m_configPath + QDir::separator() + "icons" + QDir::separator() + newName + ".png");
+    info->refreshDefaultIcon();
     if (!savePluginIcon(info))
     {
         pInfoMap.remove(newName);
         info->name = oldName;
         info->iconPath = oldIconPath;
+        info->icon = oldIcon;
         pInfoMap.insert(oldName, info);
         return false;
     }
@@ -462,6 +526,10 @@ bool SConfig::renamePlugin(SPluginInfo *info, const QString &newName)
         && oldIconPath.compare(info->iconPath, Qt::CaseInsensitive) != 0)
     {
         QFile::remove(oldIconPath);
+    }
+    if (info->usesDefaultIcon)
+    {
+        emit info->iconChanged(info);
     }
     emit info->nameChanged(info);
     return true;

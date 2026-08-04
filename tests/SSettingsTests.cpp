@@ -4,11 +4,13 @@
 #include <QApplication>
 #include <QComboBox>
 #include <QDir>
+#include <QEnterEvent>
 #include <QEvent>
 #include <QFileInfo>
 #include <QFrame>
 #include <QGuiApplication>
 #include <QHBoxLayout>
+#include <QImage>
 #include <QLabel>
 #include <QMessageBox>
 #include <QPalette>
@@ -53,6 +55,7 @@ private slots:
     void nativeControlsSupportKeyboard();
     void synchronizesSelectionPopupSetting();
     void buttonRolesAndNavigationSelection();
+    void detailPagesShowTitlesAtTop();
     void supportsRuntimeLanguageSwitching();
     void aboutPageUsesCMakeVersion();
     void showsAccessibilityPermissionOnlyOnMac();
@@ -66,6 +69,7 @@ private slots:
     void editorUsesInlineValidationInsideSettings();
     void popupItemsExposeTipsAndElideLongNames();
     void popupHonorsVisibilityAndEscapeRules();
+    void popupStatusTimeoutIgnoresHover();
     void reportsNonZeroPluginExit();
     void tracksPopupTasksAndAllowsConfirmedForceStop();
 
@@ -310,6 +314,46 @@ void SSettingsTests::buttonRolesAndNavigationSelection()
     QVERIFY(!pluginsButton->isSelected());
     QVERIFY(!generalButton->isSelected());
     QCOMPARE(menu->currentRow(), 2);
+}
+
+void SSettingsTests::detailPagesShowTitlesAtTop()
+{
+    struct ExpectedTitle
+    {
+        const char *objectName;
+        QString text;
+    };
+    const QList<ExpectedTitle> expectedTitles{
+        {"generalPageTitle", QStringLiteral("General Settings")},
+        {"pluginsPageTitle", QStringLiteral("Plugins")},
+        {"tasksPageTitle", QStringLiteral("Plugin Task Manager")},
+        {"shortcutsPageTitle", QStringLiteral("Shortcuts")},
+        {"aboutPageTitle", QStringLiteral("About")},
+    };
+
+    for (const ExpectedTitle &expected : expectedTitles)
+    {
+        QLabel *title = m_settings->findChild<QLabel *>(expected.objectName);
+        QVERIFY(title);
+        QCOMPARE(title->text(), expected.text);
+        QVERIFY(title->parentWidget());
+        QVERIFY(title->parentWidget()->layout());
+        QCOMPARE(title->parentWidget()->layout()->itemAt(0)->widget(), title);
+        QVERIFY(title->styleSheet().contains("font-size: 20px"));
+    }
+
+    m_settings->showContent(2);
+    QCoreApplication::processEvents();
+    QLabel *taskTitle =
+        m_settings->findChild<QLabel *>("tasksPageTitle");
+    QVBoxLayout *taskLayout =
+        qobject_cast<QVBoxLayout *>(taskTitle->parentWidget()->layout());
+    QVERIFY(taskLayout);
+    QCOMPARE(
+        taskTitle->alignment() & Qt::AlignVertical_Mask,
+        Qt::AlignTop);
+    QCOMPARE(taskLayout->stretch(2), 1);
+    QCOMPARE(taskLayout->stretch(3), 1);
 }
 
 void SSettingsTests::supportsRuntimeLanguageSwitching()
@@ -904,8 +948,15 @@ void SSettingsTests::editorUsesInlineValidationInsideSettings()
     QCOMPARE(scriptEdit->font().pointSizeF(), nameEdit->font().pointSizeF());
     QCOMPARE(scriptEdit->lineWrapMode(), QPlainTextEdit::NoWrap);
     QVERIFY(scriptEdit->horizontalScrollBarPolicy() != Qt::ScrollBarAlwaysOff);
+    QVERIFY(insertButton->geometry().bottom()
+            <= insertUrlButton->geometry().top());
 
-    nameEdit->setText("ValidatedPlugin");
+    const QImage initialDefaultIcon =
+        iconPicker->icon().pixmap(iconPicker->iconSize()).toImage();
+    nameEdit->setText("Validated Plugin");
+    QCoreApplication::processEvents();
+    QVERIFY(iconPicker->icon().pixmap(iconPicker->iconSize()).toImage()
+            != initialDefaultIcon);
     scriptEdit->setPlainText("/usr/bin/true");
     QVERIFY(createButton->isEnabled());
     insertButton->click();
@@ -1016,6 +1067,39 @@ void SSettingsTests::popupHonorsVisibilityAndEscapeRules()
 
     popup->deleteItem(enabled->popupItem);
     enabled->deleteLater();
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+}
+
+void SSettingsTests::popupStatusTimeoutIgnoresHover()
+{
+    SPopup *popup = SPopup::instance();
+    SPluginInfo *info = makePlugin("StatusTimeoutPlugin");
+    info->script = "starry copy2clipboard";
+    popup->addItem(info);
+    popup->showPopup();
+
+    info->popupItem->exec();
+    QLabel *statusLabel =
+        popup->findChild<QLabel *>("popupExecutionStatus");
+    QVERIFY(statusLabel);
+    QCOMPARE(statusLabel->text(), QString("Copied"));
+
+    const QPointF localPosition(1.0, 1.0);
+    const QPointF globalPosition(popup->mapToGlobal(QPoint(1, 1)));
+    QEnterEvent enterEvent(
+        localPosition,
+        localPosition,
+        globalPosition);
+    QCoreApplication::sendEvent(popup, &enterEvent);
+    QEvent leaveEvent(QEvent::Leave);
+    QCoreApplication::sendEvent(popup, &leaveEvent);
+
+    QTest::qWait(550);
+    QVERIFY(popup->isVisible());
+    QTRY_VERIFY_WITH_TIMEOUT(!popup->isVisible(), 500);
+
+    popup->deleteItem(info->popupItem);
+    info->deleteLater();
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 }
 

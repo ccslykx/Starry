@@ -117,6 +117,10 @@ SPluginItem::SPluginItem(SPluginInfo *pluginInfo, QWidget *parent)
     this->setParent(parent);
     m_info->pluginItem = this;
     QObject::connect(m_info, &SPluginInfo::edited, this, &SPluginItem::refresh);
+    QObject::connect(m_info, &SPluginInfo::nameChanged,
+                     this, &SPluginItem::refresh);
+    QObject::connect(m_info, &SPluginInfo::iconChanged,
+                     this, &SPluginItem::refresh);
     initGui();
 }
 
