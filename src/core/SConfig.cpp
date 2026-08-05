@@ -16,6 +16,15 @@ const QString SELECTION_POPUP_KEY = QStringLiteral("selectionPopupEnabled");
 const QString DEBUG_MODE_KEY = QStringLiteral("debugModeEnabled");
 const QString LANGUAGE_KEY = QStringLiteral("language");
 
+QSettings::Format configFileFormat()
+{
+#ifdef Q_OS_WIN
+    return QSettings::IniFormat;
+#else
+    return QSettings::NativeFormat;
+#endif
+}
+
 bool isLegacyDefaultIcon(const QString &path)
 {
     const QImage icon(path);
@@ -172,7 +181,7 @@ void SConfig::saveToFile(const QString &path)
     // Save configs
     QString settingPath = QDir::cleanPath(m_configPath + QDir::separator() + "starry.conf");
     qDebug() << "SConfig::saveToFile: settingPath:" << settingPath;
-    QSettings s(settingPath, QSettings::NativeFormat);
+    QSettings s(settingPath, configFileFormat());
     // Save plugins
     s.remove(QString("STARRY_PLUGINS"));
     s.beginGroup(QString("STARRY_PLUGINS"));
@@ -197,6 +206,13 @@ void SConfig::saveToFile(const QString &path)
         s.setValue(i.key(), i.value());
     }
     s.endGroup();
+#ifdef Q_OS_WIN
+    s.sync();
+    if (s.status() != QSettings::NoError)
+    {
+        qWarning() << "SConfig::saveToFile: failed to write settings:" << settingPath;
+    }
+#endif
 }
 
 void SConfig::readFromFile(const QString &path)
@@ -223,7 +239,7 @@ void SConfig::readFromFile(const QString &path)
     // }
     // f.close();
 
-    QSettings s(conf, QSettings::Format::NativeFormat);
+    QSettings s(conf, configFileFormat());
     
     // Plugins
     s.beginGroup(QString("STARRY_PLUGINS"));

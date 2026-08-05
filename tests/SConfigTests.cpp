@@ -14,6 +14,18 @@
 #include "SConfig.h"
 #include "SPluginInfo.h"
 
+namespace
+{
+QSettings::Format configFileFormat()
+{
+#ifdef Q_OS_WIN
+    return QSettings::IniFormat;
+#else
+    return QSettings::NativeFormat;
+#endif
+}
+}
+
 class SConfigTests : public QObject
 {
     Q_OBJECT
@@ -49,7 +61,7 @@ void SConfigTests::initTestCase()
     QVERIFY(m_configDir->isValid());
     QVERIFY(QDir().mkpath(m_configDir->filePath("icons")));
 
-    QSettings settings(m_configDir->filePath("starry.conf"), QSettings::NativeFormat);
+    QSettings settings(m_configDir->filePath("starry.conf"), configFileFormat());
     const QString legacyDefaultIconPath =
         m_configDir->filePath("icons/legacy-default.png");
     const QString customIconPath =
@@ -208,7 +220,7 @@ void SConfigTests::persistsSelectionPopupState()
     QCOMPARE(selectionPopupSpy.count(), 1);
 
     m_config->saveToFile(m_configDir->path());
-    QSettings settings(m_configDir->filePath("starry.conf"), QSettings::NativeFormat);
+    QSettings settings(m_configDir->filePath("starry.conf"), configFileFormat());
     QCOMPARE(
         settings.value(
             QStringLiteral("STARRY_SETTINGS/selectionPopupEnabled")).toBool(),
@@ -229,7 +241,7 @@ void SConfigTests::persistsDebugMode()
     QCOMPARE(debugModeSpy.count(), 1);
 
     m_config->saveToFile(m_configDir->path());
-    QSettings settings(m_configDir->filePath("starry.conf"), QSettings::NativeFormat);
+    QSettings settings(m_configDir->filePath("starry.conf"), configFileFormat());
     QCOMPARE(
         settings.value(QStringLiteral("STARRY_SETTINGS/debugModeEnabled")).toBool(),
         true);
@@ -252,7 +264,7 @@ void SConfigTests::persistsLanguage()
     QCOMPARE(languageSpy.count(), 2);
 
     m_config->saveToFile(m_configDir->path());
-    QSettings settings(m_configDir->filePath("starry.conf"), QSettings::NativeFormat);
+    QSettings settings(m_configDir->filePath("starry.conf"), configFileFormat());
     QCOMPARE(
         settings.value(QStringLiteral("STARRY_SETTINGS/language")).toString(),
         QStringLiteral("ja"));
