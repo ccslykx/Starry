@@ -38,9 +38,14 @@ if (CMAKE_HOST_LINUX)
 		src/core/platform/WaylandMouseListener.cpp
 	)
 elseif (CMAKE_HOST_WIN32)
+	set(WINDOWS_SELECTION_FILE
+		include/Core/Platform/WinSelectionProvider.h
+		src/core/platform/WinSelectionProvider.cpp
+	)
 	set(PLATFORM_FILE
 		include/Core/Platform/WinMouseListener.h
 		src/core/platform/WinMouseListener.cpp
+		${WINDOWS_SELECTION_FILE}
 	)
 elseif (CMAKE_HOST_APPLE)
 	set(MAC_PERMISSION_FILE
@@ -86,6 +91,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 find_package(Qt6 COMPONENTS Core Widgets Concurrent Gui LinguistTools REQUIRED)
 
 set(LIBRARYS Qt6::Core Qt6::Widgets	Qt6::Concurrent	Qt6::Gui)
+
+if (CMAKE_HOST_WIN32)
+	set(WINDOWS_SELECTION_LIBRARIES ole32 oleaut32 uiautomationcore)
+	list(APPEND LIBRARYS ${WINDOWS_SELECTION_LIBRARIES})
+endif()
 
 find_package(Libinput)
 
@@ -181,6 +191,7 @@ if (BUILD_TESTING)
 		src/gui/SSettings.cpp
 		src/gui/SSwitcher.cpp
 		${MAC_PERMISSION_FILE}
+		${WINDOWS_SELECTION_FILE}
 		${RESOURCES}
 	)
 	target_include_directories(StarrySettingsTests PRIVATE
@@ -191,11 +202,17 @@ if (BUILD_TESTING)
 	)
 	target_link_libraries(StarrySettingsTests PRIVATE
 		Qt6::Core
+		Qt6::Concurrent
 		Qt6::Gui
 		Qt6::Widgets
 		Qt6::Test
 		${APPLICATION_SERVICES_FRAMEWORK}
 	)
+	if (CMAKE_HOST_WIN32)
+		target_link_libraries(StarrySettingsTests PRIVATE
+			${WINDOWS_SELECTION_LIBRARIES}
+		)
+	endif()
 	add_test(NAME StarrySettingsTests COMMAND StarrySettingsTests)
 	set_tests_properties(StarrySettingsTests PROPERTIES
 		ENVIRONMENT "QT_QPA_PLATFORM=offscreen"

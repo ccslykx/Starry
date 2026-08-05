@@ -1,20 +1,18 @@
 #include "SSelection.h"
-#include "SConfig.h"
 #include "utils.h"
 
-#include <QGuiApplication>
-#include <QMimeData>
+#ifndef _WIN32
+#   include <QGuiApplication>
+#endif
 #include <QProcessEnvironment>
-#include <QThread>
-
-#include <memory>
 
 #ifdef __linux__
 #elif __APPLE__
+#   include "SConfig.h"
+
 #   include <ApplicationServices/ApplicationServices.h>
 #elif _WIN32
-#   include <Windows.h>
-#   include <WinUser.h>
+#   include "Platform/WinSelectionProvider.h"
 #endif
 
 SSelection* SSelection::m_instance = nullptr;
@@ -45,7 +43,10 @@ void SSelection::refresh()
 #elif __APPLE__ && TARGET_OS_MAC /* Need Test */
         tmp = getSelection_mac();
 #elif _WIN32
-    tmp = getSelection_win();
+    if (!WinSelectionProvider::tryQuerySelectedText(tmp))
+    {
+        return;
+    }
 #endif
     if (tmp.isEmpty())
     {
@@ -65,81 +66,22 @@ QString SSelection::selection()
 
 SSelection::SSelection()
 {
+#ifndef _WIN32
     if (!m_clipboard)
     {
         m_clipboard = QGuiApplication::clipboard();
     }
+#endif
 }
 
 QString SSelection::getSelection_win()
 {
     SDEBUG
-    QString res;
-
+    QString selection;
 #ifdef _WIN32
-    std::unique_ptr<QMimeData> clipboardBackup = std::make_unique<QMimeData>();
-    if (const QMimeData *currentMimeData = m_clipboard->mimeData())
-    {
-        for (const QString &format : currentMimeData->formats())
-        {
-            clipboardBackup->setData(format, currentMimeData->data(format));
-        }
-    }
-
-    // Simulate Ctrl + C
-    // Ref: https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendinput
-    INPUT inputs[4] = {};
-    ZeroMemory(inputs, sizeof(inputs));
-
-    inputs[0].type = INPUT_KEYBOARD;
-    inputs[0].ki.wVk = VK_CONTROL;
-
-    inputs[1].type = INPUT_KEYBOARD;
-    inputs[1].ki.wVk = 'C';
-
-    inputs[2].type = INPUT_KEYBOARD;
-    inputs[2].ki.wVk = 'C';
-    inputs[2].ki.dwFlags = KEYEVENTF_KEYUP;
-
-    inputs[3].type = INPUT_KEYBOARD;
-    inputs[3].ki.wVk = VK_CONTROL;
-    inputs[3].ki.dwFlags = KEYEVENTF_KEYUP;
-
-    const DWORD sequenceBeforeCopy = GetClipboardSequenceNumber();
-    const UINT uSent = SendInput(ARRAYSIZE(inputs), inputs, sizeof(INPUT));
-    if (uSent != ARRAYSIZE(inputs))
-    {
-        qWarning() << "Simulate 'Ctrl + C' failed" << HRESULT_FROM_WIN32(GetLastError());
-        return res;
-    }
-
-    bool clipboardChanged = false;
-    constexpr int maxAttempts = 20;
-    for (int attempt = 0; attempt < maxAttempts; ++attempt)
-    {
-        if (GetClipboardSequenceNumber() != sequenceBeforeCopy)
-        {
-            clipboardChanged = true;
-            break;
-        }
-        QThread::msleep(10);
-    }
-
-    if (clipboardChanged)
-    {
-        res = m_clipboard->text(QClipboard::Clipboard);
-    }
-    else
-    {
-        qWarning() << "Clipboard did not change after simulating Ctrl + C";
-    }
-
-    // QClipboard takes ownership. Restoring all advertised MIME formats also
-    // preserves Unicode text and file/URL clipboard contents.
-    m_clipboard->setMimeData(clipboardBackup.release(), QClipboard::Clipboard);
+    WinSelectionProvider::tryQuerySelectedText(selection);
 #endif
-
-    return res;
+    return selection;
 }
 
 QString SSelection::getSelection_linux()
