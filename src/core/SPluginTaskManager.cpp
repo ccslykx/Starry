@@ -1,7 +1,125 @@
 #include <QCoreApplication>
+#include <QProcessEnvironment>
+#include <QStandardPaths>
 #include <QTimer>
 
 #include "SPluginTaskManager.h"
+
+namespace
+{
+#ifdef Q_OS_WIN
+bool isWindowsCommandBuiltin(const QString &program)
+{
+    static const QStringList builtins{
+        QStringLiteral("assoc"),
+        QStringLiteral("break"),
+        QStringLiteral("call"),
+        QStringLiteral("cd"),
+        QStringLiteral("chdir"),
+        QStringLiteral("cls"),
+        QStringLiteral("color"),
+        QStringLiteral("copy"),
+        QStringLiteral("date"),
+        QStringLiteral("del"),
+        QStringLiteral("dir"),
+        QStringLiteral("echo"),
+        QStringLiteral("endlocal"),
+        QStringLiteral("erase"),
+        QStringLiteral("exit"),
+        QStringLiteral("for"),
+        QStringLiteral("ftype"),
+        QStringLiteral("goto"),
+        QStringLiteral("if"),
+        QStringLiteral("md"),
+        QStringLiteral("mkdir"),
+        QStringLiteral("mklink"),
+        QStringLiteral("move"),
+        QStringLiteral("path"),
+        QStringLiteral("pause"),
+        QStringLiteral("popd"),
+        QStringLiteral("prompt"),
+        QStringLiteral("pushd"),
+        QStringLiteral("rd"),
+        QStringLiteral("rem"),
+        QStringLiteral("ren"),
+        QStringLiteral("rename"),
+        QStringLiteral("rmdir"),
+        QStringLiteral("set"),
+        QStringLiteral("setlocal"),
+        QStringLiteral("shift"),
+        QStringLiteral("start"),
+        QStringLiteral("time"),
+        QStringLiteral("title"),
+        QStringLiteral("type"),
+        QStringLiteral("ver"),
+        QStringLiteral("verify"),
+        QStringLiteral("vol"),
+    };
+    return builtins.contains(program, Qt::CaseInsensitive);
+}
+
+bool requiresWindowsCommandInterpreter(const QString &program)
+{
+    return isWindowsCommandBuiltin(program)
+        || program.endsWith(QStringLiteral(".bat"), Qt::CaseInsensitive)
+        || program.endsWith(QStringLiteral(".cmd"), Qt::CaseInsensitive)
+        || QStandardPaths::findExecutable(program).isEmpty();
+}
+
+QString escapeWindowsCommandToken(const QString &token)
+{
+    if (token.isEmpty())
+    {
+        return QStringLiteral("\"\"");
+    }
+
+    static const QString specialCharacters = QStringLiteral(" \t&|<>()^%!\"");
+    QString escaped;
+    escaped.reserve(token.size() * 2);
+    for (const QChar character : token)
+    {
+        if (character == QLatin1Char('\r') || character == QLatin1Char('\n'))
+        {
+            // A literal line break would begin another command in cmd.exe.
+            escaped.append(QLatin1Char('^'));
+            escaped.append(QLatin1Char(' '));
+            continue;
+        }
+        if (specialCharacters.contains(character))
+        {
+            escaped.append(QLatin1Char('^'));
+        }
+        escaped.append(character);
+    }
+    return escaped;
+}
+
+QString windowsCommandLine(
+    const QString &program,
+    const QStringList &arguments)
+{
+    QStringList tokens;
+    tokens.reserve(arguments.size() + 1);
+    tokens.append(escapeWindowsCommandToken(program));
+    for (const QString &argument : arguments)
+    {
+        tokens.append(escapeWindowsCommandToken(argument));
+    }
+    return tokens.join(QLatin1Char(' '));
+}
+
+QString windowsCommandInterpreter()
+{
+    const QString configuredInterpreter =
+        QProcessEnvironment::systemEnvironment().value(QStringLiteral("ComSpec"));
+    if (!configuredInterpreter.isEmpty())
+    {
+        return configuredInterpreter;
+    }
+    return QStandardPaths::findExecutable(QStringLiteral("cmd.exe"));
+}
+#endif
+}
 
 SPluginTaskManager *SPluginTaskManager::m_instance = nullptr;
 
@@ -100,8 +218,20 @@ void SPluginTask::start()
     {
         return;
     }
-    m_process->setProgram(m_program);
-    m_process->setArguments(m_arguments);
+#ifdef Q_OS_WIN
+    if (requiresWindowsCommandInterpreter(m_program))
+    {
+        m_process->setProgram(windowsCommandInterpreter());
+        m_process->setNativeArguments(
+            QStringLiteral("/d /v:off /s /c ")
+            + windowsCommandLine(m_program, m_arguments));
+    }
+    else
+#endif
+    {
+        m_process->setProgram(m_program);
+        m_process->setArguments(m_arguments);
+    }
     m_process->setStandardOutputFile(QProcess::nullDevice());
     m_process->setStandardErrorFile(QProcess::nullDevice());
     m_process->start();

@@ -41,6 +41,18 @@
 #include "SSettings.h"
 #include "SSwitcher.h"
 
+namespace
+{
+QSettings::Format configFileFormat()
+{
+#ifdef Q_OS_WIN
+    return QSettings::IniFormat;
+#else
+    return QSettings::NativeFormat;
+#endif
+}
+}
+
 class SSettingsTests : public QObject
 {
     Q_OBJECT
@@ -50,6 +62,7 @@ private slots:
     void deletesTheRequestedPluginWithoutASelectedRow();
     void deletesPopupItems();
     void supportsQuotedPluginArguments();
+    void runsWindowsCommandBuiltins();
     void synchronizesPopupOrder();
     void restoresMinimizedSettingsWindow();
     void nativeControlsSupportKeyboard();
@@ -161,6 +174,60 @@ void SSettingsTests::supportsQuotedPluginArguments()
 #endif
 }
 
+void SSettingsTests::runsWindowsCommandBuiltins()
+{
+#ifndef Q_OS_WIN
+    QSKIP("This command-interpreter test targets Windows");
+#else
+    SPluginTask *task = SPluginTaskManager::instance()->startTask(
+        QStringLiteral("WindowsBuiltin"),
+        QStringLiteral("echo"),
+        QStringList({QStringLiteral("test")}),
+        QStringLiteral("echo \"test\""));
+    QVERIFY(task);
+
+    QSignalSpy startedSpy(task, &SPluginTask::started);
+    QSignalSpy failedSpy(task, &SPluginTask::failed);
+    QSignalSpy finishedSpy(task, &SPluginTask::finished);
+
+    QTRY_COMPARE_WITH_TIMEOUT(startedSpy.count(), 1, 2000);
+    QTRY_COMPARE_WITH_TIMEOUT(finishedSpy.count(), 1, 2000);
+    QCOMPARE(failedSpy.count(), 0);
+    QCOMPARE(finishedSpy.constFirst().at(1).toInt(), 0);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        SPluginTaskManager::instance()->activeTasks().isEmpty(),
+        2000);
+
+    SPluginTask *startTask = SPluginTaskManager::instance()->startTask(
+        QStringLiteral("WindowsStartBuiltin"),
+        QStringLiteral("start"),
+        QStringList({
+            QStringLiteral("/b"),
+            QStringLiteral("/wait"),
+            QString(),
+            QStringLiteral("cmd.exe"),
+            QStringLiteral("/d"),
+            QStringLiteral("/c"),
+            QStringLiteral("exit"),
+            QStringLiteral("0"),
+        }),
+        QStringLiteral("start /b /wait \"\" cmd.exe /d /c exit 0"));
+    QVERIFY(startTask);
+
+    QSignalSpy startStartedSpy(startTask, &SPluginTask::started);
+    QSignalSpy startFailedSpy(startTask, &SPluginTask::failed);
+    QSignalSpy startFinishedSpy(startTask, &SPluginTask::finished);
+
+    QTRY_COMPARE_WITH_TIMEOUT(startStartedSpy.count(), 1, 2000);
+    QTRY_COMPARE_WITH_TIMEOUT(startFinishedSpy.count(), 1, 2000);
+    QCOMPARE(startFailedSpy.count(), 0);
+    QCOMPARE(startFinishedSpy.constFirst().at(1).toInt(), 0);
+    QTRY_VERIFY_WITH_TIMEOUT(
+        SPluginTaskManager::instance()->activeTasks().isEmpty(),
+        2000);
+#endif
+}
+
 void SSettingsTests::synchronizesPopupOrder()
 {
     SPluginInfo *first = makePlugin("PopupFirst");
@@ -239,7 +306,7 @@ void SSettingsTests::synchronizesSelectionPopupSetting()
     QVERIFY(!m_config->selectionPopupEnabled());
     QSettings savedSettings(
         m_configDir->filePath("starry.conf"),
-        QSettings::NativeFormat);
+        configFileFormat());
     QCOMPARE(
         savedSettings.value(
             QStringLiteral("STARRY_SETTINGS/selectionPopupEnabled")).toBool(),
@@ -300,7 +367,7 @@ void SSettingsTests::buttonRolesAndNavigationSelection()
     QVERIFY(m_config->debugModeEnabled());
     QSettings savedSettings(
         m_configDir->filePath("starry.conf"),
-        QSettings::NativeFormat);
+        configFileFormat());
     QCOMPARE(
         savedSettings.value(
             QStringLiteral("STARRY_SETTINGS/debugModeEnabled")).toBool(),
@@ -439,7 +506,7 @@ void SSettingsTests::supportsRuntimeLanguageSwitching()
 
     QSettings savedSettings(
         m_configDir->filePath("starry.conf"),
-        QSettings::NativeFormat);
+        configFileFormat());
     QCOMPARE(
         savedSettings.value(QStringLiteral("STARRY_SETTINGS/language")).toString(),
         QStringLiteral("en"));
